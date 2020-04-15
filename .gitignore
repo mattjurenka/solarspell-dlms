@@ -1,0 +1,5 @@
+/.idea/
+/dlms/.env
+/dlms/builds/
+/dlms/media/
+/venv/
