@@ -80,3 +80,9 @@ class LibraryBuildUtil:
         return 'success'
 
 
+def build_container(data, success=True, error=""):
+    return {
+        "success": success,
+        "data": data,
+        "error": error
+    }

@@ -3,3 +3,5 @@
 /dlms/builds/
 /dlms/media/
 /venv/
+__pycache__
+.vscode
