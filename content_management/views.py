@@ -8,10 +8,15 @@ from content_management.utils import ContentSheetUtil, LibraryBuildUtil
 from content_management.serializers import ContentSerializer, MetadataSerializer, MetadataTypeSerializer, \
     LibLayoutImageSerializer, LibraryVersionSerializer, LibraryFolderSerializer
 
-from content_management.utils import build_container
+from content_management.utils import build_response
 
 
 class StandardDataView:
+
+    def retrieve(self, request, *args, **kwargs):
+            instance = self.get_object()
+            serializer = self.get_serializer(instance)
+            return build_response(serializer.data)
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -22,7 +27,7 @@ class StandardDataView:
             return self.get_paginated_response(serializer.data)
 
         serializer = self.get_serializer(queryset, many=True)
-        return Response(build_container(serializer.data))
+        return build_response(serializer.data)
 
 
 # Content ViewSet
@@ -62,7 +67,7 @@ class ContentSheetView(views.APIView):
         sheet_util = ContentSheetUtil()
         content_data = request.data
         result = sheet_util.upload_sheet_contents(content_data)
-        response = Response(build_container(result), status=status.HTTP_200_OK)
+        response = build_response(result)
         return response
 
 
@@ -72,5 +77,5 @@ class LibraryBuildView(views.APIView):
         version_id = int(kwargs['version_id'])
         build_util = LibraryBuildUtil()
         result = build_util.build_library(version_id)
-        response = Response(build_container(result), status=status.HTTP_200_OK)
+        response = build_response(result)
         return response
