@@ -1,0 +1,79 @@
+/*
+.accordion__item {
+    border: 1px solid #1882a3;
+}
+
+.accordion__title {
+    background-color: #68aacb;
+    height: 30px;
+    font-size: 20px;
+    margin: 5px auto 5px 5px;
+    padding: 0px;
+}
+*/
+
+body {
+    font-family: "Asap", "Roboto", "Helvetica", "Arial", sans-serif;
+}
+
+table {
+	color: #3592BE !important;
+	font-weight: bold;
+	background: white;
+}
+
+th {
+	color: #3592BE;
+	font-weight: bold;
+	font-size: 20px;
+}
+
+tr {
+	height: 45px;
+}
+
+td {
+    border-bottom: none !important;
+    border-bottom: 0px !important;
+	color: #3592BE !important;
+	font-size: 16px !important;
+}
+
+.accordion__title h3::after {
+    content: '+';
+    float: right;
+    margin-right: 5px;
+}
+
+.autoScrollX {
+    overflow-x: auto;
+}
+
+.dx-datagrid-headers .dx-header-row {
+  color: #3592BE;
+}
+
+.SearchPanelInputBase {
+    width: 100%;
+    margin: 0 auto;
+}
+
+.spellLogo {
+    height: 75px;
+	margin: 10px;
+}
+
+/* React Sortable Tree - Display hand pointer when hovering over the row. */
+.rst__row:hover {
+    cursor: pointer;
+}
+
+.rst__tree button span {
+    text-transform: none
+}
+
+.handPointer {
+    cursor: pointer;
+}
+
+.hidden {display: none}
