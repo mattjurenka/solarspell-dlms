@@ -80,3 +80,12 @@ class LibraryBuildUtil:
         return 'success'
 
 
+def build_container(data, success=True, error=""):
+    return {
+        "success": success,
+        "data": data,
+        "error": error
+    }
+
+def build_response(data, status=status.HTTP_200_OK, success=True, error=""):
+    return Response(build_container(data, success, error), status)

@@ -3,3 +3,7 @@
 /dlms/builds/
 /dlms/media/
 /venv/
+__pycache__
+.vscode
+/frontend/static
+/frontend/node_modules
