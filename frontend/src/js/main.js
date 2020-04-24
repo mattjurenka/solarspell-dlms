@@ -9,6 +9,12 @@ import Tab from '@material-ui/core/Tab';
 import solarSpellLogo from '../images/logo2.png'; 
 import '../css/style.css';
 
+import contents from "../images/home_icons/contents.png"
+import system_info from "../images/home_icons/system_info.png"
+import library_versions from "../images/home_icons/library_versions.png"
+import metadata from "../images/home_icons/metadata.png"
+import solarspell_images from "../images/home_icons/solarspell_images.png"
+
 class MainScreen extends React.Component {
     constructor(props) {
         super(props)
@@ -18,24 +24,34 @@ class MainScreen extends React.Component {
         this.tabs = {
             "home": {
                 display_label: <img src={solarSpellLogo} className="spellLogo" />,
-                component: <HomeScreen change_tab={this.change_tab}/>
+                component: (tabs) => <HomeScreen change_tab={this.change_tab} tabs={tabs}/>,
+                icon: null
             },
             "metadata": {
                 display_label: "Metadata",
-                component: <h1>metadata</h1>
+                component: (tabs) => <h1>metadata</h1>,
+                icon: metadata
             },
             "contents": {
                 display_label: "Contents",
-                component: <h1>contents</h1>
+                component: (tabs) => <h1>contents</h1>,
+                icon: contents
             },
             "libraries": {
                 display_label: "Libraries",
-                component: <h1>libraries</h1>
+                component: (tabs) => <h1>libraries</h1>,
+                icon: library_versions
             },
             "images": {
                 display_label: "SolarSPELL Images",
-                component: <h1>images</h1>
+                component: (tabs) => <h1>images</h1>,
+                icon: solarspell_images
             },
+            "system_info": {
+                display_label: "System Info",
+                component: (tabs) => <h1>images</h1>,
+                icon: system_info
+            }
         }
         
         this.state = {
@@ -52,7 +68,6 @@ class MainScreen extends React.Component {
         const tabs_jsx = Object.entries(this.tabs).map(([tab_name, tab_data]) => {
             return <Tab key={tab_name} value={tab_name} label={tab_data.display_label} />
         })
-        console.log(this.tabs,this.state.current_tab)
         return (
             <React.Fragment>
                 <Grid container justify="center" alignItems="center" style={{height: '100%'}}>
@@ -67,7 +82,7 @@ class MainScreen extends React.Component {
                     </Tabs>
                 </Grid>
                 <Grid container style={{marginTop: '20px'}}>
-                    {this.tabs[this.state.current_tab].component}
+                    {this.tabs[this.state.current_tab].component(this.tabs)}
                 </Grid>
             </React.Fragment>
         )
