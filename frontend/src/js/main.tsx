@@ -17,6 +17,7 @@ import metadata from "../images/home_icons/metadata.png"
 import solarspell_images from "../images/home_icons/solarspell_images.png"
 
 class MainScreen extends React.Component {
+    tabs: any
     constructor(props) {
         super(props)
         
@@ -67,7 +68,7 @@ class MainScreen extends React.Component {
 
     render() {
         const tabs_jsx = Object.entries(this.tabs).map(([tab_name, tab_data]) => {
-            return <Tab key={tab_name} value={tab_name} label={tab_data.display_label} />
+            return <Tab key={tab_name} value={tab_name} label={(tab_data as any).display_label} />
         })
         return (
             <React.Fragment>
@@ -75,7 +76,7 @@ class MainScreen extends React.Component {
                     <Tabs
                         value={this.state.current_tab}
                         TabIndicatorProps={{style: {backgroundColor: '#75B2DD', height: '5px', borderRadius: '5px'}}}
-                        onChange={(evt, value) => {this.setState({current_tab: value})}}
+                        onChange={(_, value) => {this.setState({current_tab: value})}}
                         centered
                         indicatorColor="secondary"
                     >

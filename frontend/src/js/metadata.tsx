@@ -27,6 +27,14 @@ import ActionPanel from "./action_panel"
 import Axios from "axios"
 
 export default class Metadata extends Component {
+    delete_default: any
+    create_type_default: any
+    create_meta_default: any
+    edit_meta_default: any
+    page_sizes: number[]
+    default_page_size: number
+    default_page: number
+
     constructor(props) {
         super(props)
 
@@ -76,19 +84,19 @@ export default class Metadata extends Component {
         this.loadMetadataTypes = this.loadMetadataTypes.bind(this)
     }
 
-    getColumn(type) {
+    getColumn(type: string) {
         return [
             { name: 'actions', title: 'Actions', getCellValue: (row) => {
                 return (
                     <ActionPanel
-                        editFn={evt => {
+                        editFn={_ => {
                             this.setState(prevState => {
                                 set(prevState, ["edit_meta", "is_open"], true)
                                 set(prevState, ["edit_meta", "meta_name"], row.name)
                                 return set(prevState, ["edit_meta", "id"], row.id)
                             })
                         }}
-                        deleteFn={evt => {
+                        deleteFn={_ => {
                             this.setState(prevState => {
                                 set(prevState, ["delete", "is_open"], true)
                                 set(prevState, ["delete", "metadata_name"], row.name)
@@ -103,16 +111,16 @@ export default class Metadata extends Component {
         ]
     }
 
-    createSetTypeAttribute(type, attribute, cb =() => {}) {
-        return (value) => {
+    createSetTypeAttribute(type: string, attribute: string, cb =() => {}) {
+        return (value: any) => {
             this.setState((prevState) => {
                 return set(prevState, ["panel_data", type, attribute], value)
             }, cb)
         }
     }
 
-    createHandleChange(type) {
-        return (_, expanded) => {
+    createHandleChange(type: string) {
+        return (_, expanded: boolean) => {
             this.setState((prevState) => {
                 return set(prevState, ["panel_data", type, "expanded"], expanded)
             }, () => {
@@ -121,7 +129,7 @@ export default class Metadata extends Component {
         }
     }
 
-    getLoadMetadataFunction(type) {
+    getLoadMetadataFunction(type: string) {
         return () => {
             const {
                 page,
@@ -139,7 +147,7 @@ export default class Metadata extends Component {
     loadMetadataTypes() {
         get_data(APP_URLS.METADATA_TYPES).then((data) => {
             this.setState({
-                panel_data: fromPairs(data.map(type_obj =>
+                panel_data: fromPairs(data.map(type_obj: any =>
                     [
                         type_obj.name,
                         {
@@ -161,13 +169,13 @@ export default class Metadata extends Component {
         this.loadMetadataTypes()
     }
 
-    deleteItem(item) {
+    deleteItem(item: number) {
         Axios.delete(APP_URLS.METADATA_ITEM(item)).then((res) => {
             console.log(res)
         })
     }
 
-    closeDialog(name, defaults) {
+    closeDialog(name: string, defaults: any) {
         this.setState({
             [name]: cloneDeep(defaults)
         })
@@ -189,7 +197,7 @@ export default class Metadata extends Component {
                         <ExpansionPanel expanded={expanded} onChange={this.createHandleChange(type)} onClick={evt => this.set}>
                             <ExpansionPanelSummary>
                                 <Typography>{type}</Typography>
-                                <Button onClick={evt => {
+                                <Button onClick={_ => {
                                     this.setState(prevState => {
                                         set(prevState, ["create_meta", "type_name"], type)
                                         return set(prevState, ["create_meta", "is_open"], true)

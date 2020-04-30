@@ -14,9 +14,12 @@ module.exports = {
         path: path.resolve(__dirname, 'static'),
         publicPath: "/static/"
     },
+    resolve: {
+        extensions: ['.ts', '.tsx', '.js']
+    },
     module: {
         rules: [{
-            test: /\.js$/,
+            test: /\.(ts|js)x?$/,
             exclude: /node_modules/,
             use: {
                 loader: 'babel-loader',

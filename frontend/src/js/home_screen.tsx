@@ -3,13 +3,13 @@ import { Grid } from "@material-ui/core";
 
 
 export default class HomeScreen extends Component {
-    constructor(props) {
+    constructor(props:any) {
         super(props)
     }
 
     render() {
         const icon_entries = Object.entries(this.props.tabs).map(([tab_name, tab_data]) => {
-            const {icon} = tab_data
+            const {icon} = tab_data as any
             if (icon === null) {
                 return null
             }

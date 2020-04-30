@@ -1,7 +1,7 @@
 import React from "react"
 import { Edit, Delete, CheckCircleOutline, HighlightOff, Visibility } from "@material-ui/icons"
 
-export default function ActionPanel(props) {
+export default function ActionPanel(props:any) {
     const { row, editFn, deleteFn, setActive, viewFn } = props
     const pointerStyle = {
         cursor: 'pointer'
