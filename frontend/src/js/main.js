@@ -1,6 +1,7 @@
 import React from 'react';
 
 import HomeScreen from "./home_screen.js"
+import Metadata from "./metadata.js"
 
 import Grid from '@material-ui/core/Grid';
 import Tabs from '@material-ui/core/Tabs';
@@ -29,7 +30,7 @@ class MainScreen extends React.Component {
             },
             "metadata": {
                 display_label: "Metadata",
-                component: (tabs) => <h1>metadata</h1>,
+                component: (tabs) => <Metadata />,
                 icon: metadata
             },
             "contents": {

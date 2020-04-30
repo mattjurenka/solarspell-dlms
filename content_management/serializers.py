@@ -38,9 +38,3 @@ class LibraryFolderSerializer(serializers.ModelSerializer):
     class Meta:
         model = LibraryFolder
         fields = '__all__'
-
-
-class MetadataTypeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = MetadataType
-        fields = '__all__'
