@@ -147,8 +147,8 @@ export default class Metadata extends Component {
     loadMetadataTypes() {
         get_data(APP_URLS.METADATA_TYPES).then((data) => {
             this.setState({
-                panel_data: fromPairs(data.map(type_obj: any =>
-                    [
+                panel_data: fromPairs(data.map((type_obj: any) => {
+                    return [
                         type_obj.name,
                         {
                             expanded: false,
@@ -159,7 +159,7 @@ export default class Metadata extends Component {
                             id: type_obj.id
                         }
                     ]
-                )),
+                })),
                 loaded: true
             })
         })
@@ -197,7 +197,7 @@ export default class Metadata extends Component {
                         <ExpansionPanel expanded={expanded} onChange={this.createHandleChange(type)} onClick={evt => this.set}>
                             <ExpansionPanelSummary>
                                 <Typography>{type}</Typography>
-                                <Button onClick={_ => {
+                                <Button onClick={evt => {
                                     this.setState(prevState => {
                                         set(prevState, ["create_meta", "type_name"], type)
                                         return set(prevState, ["create_meta", "is_open"], true)

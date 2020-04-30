@@ -1,7 +1,7 @@
 import React from 'react';
 
-import HomeScreen from "./home_screen.js"
-import Metadata from "./metadata.js"
+import HomeScreen from "./home_screen"
+import Metadata from "./metadata"
 
 import Grid from '@material-ui/core/Grid';
 import Tabs from '@material-ui/core/Tabs';

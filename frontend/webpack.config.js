@@ -5,7 +5,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 module.exports = {
     mode: 'development',
     devtool: 'source-map',
-    entry: ["babel-polyfill", './src/js/index.js'],
+    entry: ["babel-polyfill", './src/js/index.tsx'],
     node: {
         fs: 'empty'
     },

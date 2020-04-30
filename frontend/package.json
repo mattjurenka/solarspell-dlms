@@ -2,7 +2,7 @@
   "name": "build-automation-frontend",
   "version": "1.0.0",
   "description": "Front-end for SolarSPELL build automation using ReactJS",
-  "main": "index.js",
+  "main": "index.tsx",
   "scripts": {
     "clean": "rm -rf static /S",
     "build": "npm run-script clean; webpack --mode=development",
