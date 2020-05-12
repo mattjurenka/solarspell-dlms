@@ -16,9 +16,11 @@ import library_versions from "../images/home_icons/library_versions.png"
 import metadata from "../images/home_icons/metadata.png"
 import solarspell_images from "../images/home_icons/solarspell_images.png"
 
-class MainScreen extends React.Component {
-    tabs: any
-    constructor(props) {
+
+
+class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
+    tabs: TabDict
+    constructor(props: MainScreenState) {
         super(props)
         
         this.change_tab = this.change_tab.bind(this)
@@ -31,27 +33,27 @@ class MainScreen extends React.Component {
             },
             "metadata": {
                 display_label: "Metadata",
-                component: (tabs) => <Metadata />,
+                component: () => <Metadata />,
                 icon: metadata
             },
             "contents": {
                 display_label: "Contents",
-                component: (tabs) => <h1>contents</h1>,
+                component: () => <h1>contents</h1>,
                 icon: contents
             },
             "libraries": {
                 display_label: "Libraries",
-                component: (tabs) => <h1>libraries</h1>,
+                component: () => <h1>libraries</h1>,
                 icon: library_versions
             },
             "images": {
                 display_label: "SolarSPELL Images",
-                component: (tabs) => <h1>images</h1>,
+                component: () => <h1>images</h1>,
                 icon: solarspell_images
             },
             "system_info": {
                 display_label: "System Info",
-                component: (tabs) => <h1>images</h1>,
+                component: () => <h1>images</h1>,
                 icon: system_info
             }
         }
@@ -62,7 +64,7 @@ class MainScreen extends React.Component {
         
     }
 
-    change_tab(new_tab) {
+    change_tab(new_tab: string) {
         this.setState({current_tab: new_tab})
     }
 

@@ -26,7 +26,7 @@ import {
 import ActionPanel from "./action_panel"
 import Axios from "axios"
 
-export default class Metadata extends Component {
+export default class Metadata extends Component<MetadataProps, MetadataState> {
     delete_default: any
     create_type_default: any
     create_meta_default: any
@@ -35,7 +35,7 @@ export default class Metadata extends Component {
     default_page_size: number
     default_page: number
 
-    constructor(props) {
+    constructor(props: MetadataProps) {
         super(props)
 
         this.delete_default = {
@@ -89,14 +89,14 @@ export default class Metadata extends Component {
             { name: 'actions', title: 'Actions', getCellValue: (row) => {
                 return (
                     <ActionPanel
-                        editFn={_ => {
+                        editFn={() => {
                             this.setState(prevState => {
                                 set(prevState, ["edit_meta", "is_open"], true)
                                 set(prevState, ["edit_meta", "meta_name"], row.name)
                                 return set(prevState, ["edit_meta", "id"], row.id)
                             })
                         }}
-                        deleteFn={_ => {
+                        deleteFn={() => {
                             this.setState(prevState => {
                                 set(prevState, ["delete", "is_open"], true)
                                 set(prevState, ["delete", "metadata_name"], row.name)
@@ -120,7 +120,7 @@ export default class Metadata extends Component {
     }
 
     createHandleChange(type: string) {
-        return (_, expanded: boolean) => {
+        return (_:any, expanded: boolean) => {
             this.setState((prevState) => {
                 return set(prevState, ["panel_data", type, "expanded"], expanded)
             }, () => {
@@ -194,10 +194,10 @@ export default class Metadata extends Component {
                 } = this.state.panel_data[type]
                 return (
                     <React.Fragment key={type}>
-                        <ExpansionPanel expanded={expanded} onChange={this.createHandleChange(type)} onClick={evt => this.set}>
+                        <ExpansionPanel expanded={expanded} onChange={this.createHandleChange(type)}>
                             <ExpansionPanelSummary>
                                 <Typography>{type}</Typography>
-                                <Button onClick={evt => {
+                                <Button onClick={_ => {
                                     this.setState(prevState => {
                                         set(prevState, ["create_meta", "type_name"], type)
                                         return set(prevState, ["create_meta", "is_open"], true)
@@ -233,7 +233,7 @@ export default class Metadata extends Component {
             })
             return (
                 <React.Fragment>
-                    <Button onClick={evt => {
+                    <Button onClick={_ => {
                         this.setState(prevState => {
                             return set(prevState, ["create_type", "is_open"], true)
                         })

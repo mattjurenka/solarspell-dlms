@@ -1,15 +1,19 @@
 import React, { Component } from "react";
 import { Grid } from "@material-ui/core";
 
+interface HomeScreenProps {
+    tabs: TabDict,
+    change_tab: (tab_name: string) => void
+}
 
-export default class HomeScreen extends Component {
-    constructor(props:any) {
+export default class HomeScreen extends Component<HomeScreenProps, {}> {
+    constructor(props: HomeScreenProps) {
         super(props)
     }
 
     render() {
-        const icon_entries = Object.entries(this.props.tabs).map(([tab_name, tab_data]) => {
-            const {icon} = tab_data as any
+        const icon_entries = Object.entries<TabData>(this.props.tabs).map(([tab_name, tab_data]) => {
+            const {icon} = tab_data
             if (icon === null) {
                 return null
             }
