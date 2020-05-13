@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions, views
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from content_management.models import (
     Content, Metadata, MetadataType, LibLayoutImage, LibraryVersion, LibraryFolder)
 from content_management.utils import ContentSheetUtil, LibraryBuildUtil
@@ -9,6 +10,7 @@ from content_management.serializers import ContentSerializer, MetadataSerializer
     LibLayoutImageSerializer, LibraryVersionSerializer, LibraryFolderSerializer
 
 from content_management.utils import build_response
+from content_management.paginators import PageNumberSizePagination
 
 
 class StandardDataView:
@@ -34,12 +36,26 @@ class StandardDataView:
 class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
     queryset = Content.objects.all()
     serializer_class = ContentSerializer
+    pagination_class = PageNumberSizePagination
 
 
 class MetadataViewSet(StandardDataView, viewsets.ModelViewSet):
     queryset = Metadata.objects.all()
     serializer_class = MetadataSerializer
+    pagination_class = PageNumberSizePagination
 
+    @action(methods=['get'], detail=True)
+    def get(self, request, pk=None):
+        print(Metadata.objects.filter(type__name=pk))
+        queryset = self.filter_queryset(Metadata.objects.filter(type__name=pk))
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return build_response(serializer.data)
 
 class MetadataTypeViewSet(StandardDataView, viewsets.ModelViewSet):
     queryset = MetadataType.objects.all()

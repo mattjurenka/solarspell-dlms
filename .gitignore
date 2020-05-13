@@ -4,6 +4,6 @@
 /dlms/media/
 /venv/
 __pycache__
-.vscode
+.vscode/
 /frontend/static
-/frontend/node_modules
+node_modules/

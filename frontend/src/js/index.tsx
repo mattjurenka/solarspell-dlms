@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 
 import CssBaseline from '@material-ui/core/CssBaseline';
 
-import MainScreen from './main.js';
+import MainScreen from './main';
 /*
 * Load main screen
 */

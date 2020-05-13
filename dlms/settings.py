@@ -130,3 +130,8 @@ MEDIA_URL = '/media/'
 
 BUILDS_ROOT = env.str('BUILDS_ROOT')
 BUILDS_URL = '/builds/'
+
+# Settings for rest_framework library
+REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
+}

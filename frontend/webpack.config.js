@@ -5,7 +5,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 module.exports = {
     mode: 'development',
     devtool: 'source-map',
-    entry: ['./src/js/index.js'],
+    entry: ["babel-polyfill", './src/js/index.tsx'],
     node: {
         fs: 'empty'
     },
@@ -14,9 +14,12 @@ module.exports = {
         path: path.resolve(__dirname, 'static'),
         publicPath: "/static/"
     },
+    resolve: {
+        extensions: ['.ts', '.tsx', '.js']
+    },
     module: {
         rules: [{
-            test: /\.js$/,
+            test: /\.(ts|js)x?$/,
             exclude: /node_modules/,
             use: {
                 loader: 'babel-loader',
