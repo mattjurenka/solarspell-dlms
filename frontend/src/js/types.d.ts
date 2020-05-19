@@ -11,6 +11,7 @@ interface TabData {
 interface MainScreenProps {}
 
 interface MainScreenState {
+    url: URL,
     current_tab: string
 }
 

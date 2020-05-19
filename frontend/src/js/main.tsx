@@ -57,15 +57,34 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                 icon: system_info
             }
         }
-        
+
+
+        const url = new URL(window.location.href)
+
+        const default_tab = Object.keys(this.tabs)[0]
+        const tab_value = url.searchParams.get("tab")
+
         this.state = {
-            current_tab: Object.keys(this.tabs)[0]
+            //Makes sure current_tab exists and is actually a key in this.tabs otherwise set to default
+            url,
+            current_tab: tab_value === null ?
+                default_tab :
+                (tab_value in this.tabs ? tab_value : default_tab)
         }
         
     }
 
     change_tab(new_tab: string) {
-        this.setState({current_tab: new_tab})
+        this.setState(prevState => {
+            const new_url = new URL(prevState.url.toString())
+            new_url.searchParams.set("tab", new_tab)
+            return {
+                url: new_url,
+                current_tab: new_tab
+            }
+        }, () => {
+            history.replaceState({}, "DLMS", this.state.url.toString())
+        })
     }
 
     render() {
@@ -78,7 +97,7 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                     <Tabs
                         value={this.state.current_tab}
                         TabIndicatorProps={{style: {backgroundColor: '#75B2DD', height: '5px', borderRadius: '5px'}}}
-                        onChange={(_, value) => {this.setState({current_tab: value})}}
+                        onChange={(_, value) => {this.change_tab(value)}}
                         centered
                         indicatorColor="secondary"
                     >

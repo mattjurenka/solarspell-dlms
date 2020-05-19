@@ -15,7 +15,7 @@ const APP_URLS = {
     METADATA: url_with_params(`${base_url}/metadata/`),
     METADATA_ITEM: (id: number) => url_with_params(`${base_url}/metadata/${id}/`),
     METADATA_TYPES: url_with_params(`${base_url}/metadata_types/`),
-    METADATA_BY_TYPE: (type: string, page: number, page_size: number) => url_with_params(`${base_url}/metadata/${type}/get/`, [["page", String(page)], ["page_size", String(page_size)]]),
+    METADATA_BY_TYPE: (type: string) => url_with_params(`${base_url}/metadata/${type}/get/`),
 }
 
 //Transforms url into a promise containing the data or error from that api call
