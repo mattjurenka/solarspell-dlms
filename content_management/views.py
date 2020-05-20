@@ -42,11 +42,9 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
 class MetadataViewSet(StandardDataView, viewsets.ModelViewSet):
     queryset = Metadata.objects.all()
     serializer_class = MetadataSerializer
-    pagination_class = PageNumberSizePagination
 
     @action(methods=['get'], detail=True)
     def get(self, request, pk=None):
-        print(Metadata.objects.filter(type__name=pk))
         queryset = self.filter_queryset(Metadata.objects.filter(type__name=pk))
 
         page = self.paginate_queryset(queryset)

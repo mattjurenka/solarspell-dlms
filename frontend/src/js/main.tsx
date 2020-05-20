@@ -16,9 +16,11 @@ import library_versions from "../images/home_icons/library_versions.png"
 import metadata from "../images/home_icons/metadata.png"
 import solarspell_images from "../images/home_icons/solarspell_images.png"
 
-class MainScreen extends React.Component {
-    tabs: any
-    constructor(props) {
+
+
+class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
+    tabs: TabDict
+    constructor(props: MainScreenState) {
         super(props)
         
         this.change_tab = this.change_tab.bind(this)
@@ -31,39 +33,58 @@ class MainScreen extends React.Component {
             },
             "metadata": {
                 display_label: "Metadata",
-                component: (tabs) => <Metadata />,
+                component: () => <Metadata />,
                 icon: metadata
             },
             "contents": {
                 display_label: "Contents",
-                component: (tabs) => <h1>contents</h1>,
+                component: () => <h1>contents</h1>,
                 icon: contents
             },
             "libraries": {
                 display_label: "Libraries",
-                component: (tabs) => <h1>libraries</h1>,
+                component: () => <h1>libraries</h1>,
                 icon: library_versions
             },
             "images": {
                 display_label: "SolarSPELL Images",
-                component: (tabs) => <h1>images</h1>,
+                component: () => <h1>images</h1>,
                 icon: solarspell_images
             },
             "system_info": {
                 display_label: "System Info",
-                component: (tabs) => <h1>images</h1>,
+                component: () => <h1>images</h1>,
                 icon: system_info
             }
         }
-        
+
+
+        const url = new URL(window.location.href)
+
+        const default_tab = Object.keys(this.tabs)[0]
+        const tab_value = url.searchParams.get("tab")
+
         this.state = {
-            current_tab: Object.keys(this.tabs)[0]
+            //Makes sure current_tab exists and is actually a key in this.tabs otherwise set to default
+            url,
+            current_tab: tab_value === null ?
+                default_tab :
+                (tab_value in this.tabs ? tab_value : default_tab)
         }
         
     }
 
-    change_tab(new_tab) {
-        this.setState({current_tab: new_tab})
+    change_tab(new_tab: string) {
+        this.setState(prevState => {
+            const new_url = new URL(prevState.url.toString())
+            new_url.searchParams.set("tab", new_tab)
+            return {
+                url: new_url,
+                current_tab: new_tab
+            }
+        }, () => {
+            history.replaceState({}, "DLMS", this.state.url.toString())
+        })
     }
 
     render() {
@@ -76,7 +97,7 @@ class MainScreen extends React.Component {
                     <Tabs
                         value={this.state.current_tab}
                         TabIndicatorProps={{style: {backgroundColor: '#75B2DD', height: '5px', borderRadius: '5px'}}}
-                        onChange={(_, value) => {this.setState({current_tab: value})}}
+                        onChange={(_, value) => {this.change_tab(value)}}
                         centered
                         indicatorColor="secondary"
                     >
