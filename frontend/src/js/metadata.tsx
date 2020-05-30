@@ -13,7 +13,6 @@ import { fromPairs, set, cloneDeep } from "lodash"
 import {
     FilteringState,
     IntegratedFiltering,
-    CustomPaging,
     PagingState,
     IntegratedPaging
 } from "@devexpress/dx-react-grid"
@@ -28,6 +27,33 @@ import {
 import ActionPanel from "./action_panel"
 import Axios from "axios"
 import ActionDialog from './action_dialog'
+
+interface MetadataProps {}
+
+interface MetadataState {
+    panel_data: any,
+    loaded: boolean,
+    delete: {
+        is_open: boolean,
+        metadata_name: string,
+        metadata_type: string,
+        id: number
+    },
+    create_type: {
+        is_open: boolean,
+        type_name: string
+    },
+    create_meta: {
+        is_open: boolean,
+        type_name: string,
+        meta_name: string
+    },
+    edit_meta: {
+        is_open: boolean,
+        meta_name: string,
+        id: number
+    }
+}
 
 export default class Metadata extends Component<MetadataProps, MetadataState> {
     delete_default: any

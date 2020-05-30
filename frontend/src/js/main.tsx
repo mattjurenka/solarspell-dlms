@@ -2,6 +2,7 @@ import React from 'react';
 
 import HomeScreen from "./home_screen"
 import Metadata from "./metadata"
+import Content from "./content"
 
 import Grid from '@material-ui/core/Grid';
 import Tabs from '@material-ui/core/Tabs';
@@ -15,8 +16,15 @@ import system_info from "../images/home_icons/system_info.png"
 import library_versions from "../images/home_icons/library_versions.png"
 import metadata from "../images/home_icons/metadata.png"
 import solarspell_images from "../images/home_icons/solarspell_images.png"
+import { get_data, APP_URLS } from './urls';
 
+interface MainScreenProps {}
 
+interface MainScreenState {
+    url: URL,
+    current_tab: string
+    all_metadata: SerializedMetadata[]
+}
 
 class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
     tabs: TabDict
@@ -38,7 +46,7 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
             },
             "contents": {
                 display_label: "Contents",
-                component: () => <h1>contents</h1>,
+                component: () => <Content all_metadata={this.state.all_metadata}/>,
                 icon: contents
             },
             "libraries": {
@@ -69,9 +77,25 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
             url,
             current_tab: tab_value === null ?
                 default_tab :
-                (tab_value in this.tabs ? tab_value : default_tab)
+                (tab_value in this.tabs ? tab_value : default_tab),
+            all_metadata: []
         }
+
+        this.loadMetadataDict = this.loadMetadataDict.bind(this)
         
+    }
+
+    //gets the list of all metadata from the server and stores it in the state
+    loadMetadataDict() {
+        get_data(APP_URLS.METADATA).then((metadata: SerializedMetadata[]) => {
+            this.setState({
+                all_metadata: metadata
+            })
+        })
+    }
+
+    componentDidMount() {
+        this.loadMetadataDict()
     }
 
     change_tab(new_tab: string) {

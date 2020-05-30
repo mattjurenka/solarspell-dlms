@@ -2,7 +2,7 @@ import Axios from "axios"
 
 const base_url = "api"
 
-const url_with_params = (urlstr: string, params:[string, string][]=[]) => {
+const url_with_params = (urlstr: string, params:[string, any][]=[]) => {
     const url = new URL(urlstr, window.location.origin)
     params.map(([key, value]) => {
         url.searchParams.append(key, value)
@@ -12,10 +12,13 @@ const url_with_params = (urlstr: string, params:[string, string][]=[]) => {
 
 const APP_URLS = {
     API: url_with_params(base_url),
+    CONTENT: (page: number, size: number) => url_with_params(`${base_url}/contents/`, [["page", page], ["size", size]]),
+    CONTENT_ITEM: (id: number) => url_with_params(`${base_url}/contents/${id}/`),
     METADATA: url_with_params(`${base_url}/metadata/`),
     METADATA_ITEM: (id: number) => url_with_params(`${base_url}/metadata/${id}/`),
     METADATA_TYPES: url_with_params(`${base_url}/metadata_types/`),
     METADATA_BY_TYPE: (type: string) => url_with_params(`${base_url}/metadata/${type}/get/`),
+    
 }
 
 //Transforms url into a promise containing the data or error from that api call

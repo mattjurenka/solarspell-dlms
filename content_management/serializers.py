@@ -7,13 +7,14 @@ from content_management.models import (
 class ContentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Content
-        fields = '__all__'
+        fields = ('id', 'file_name', 'content_file', 'title', 'description', 'modified_on', 'copyright',
+        'rights_statement', 'published_date', 'active', 'metadata', 'metadata_info')
 
 
 class MetadataSerializer(serializers.ModelSerializer):
     class Meta:
         model = Metadata
-        fields = '__all__'
+        fields = ('id', 'name', 'type', 'type_name')
 
 
 class MetadataTypeSerializer(serializers.ModelSerializer):
