@@ -33,9 +33,10 @@ interface ContentState {
     current_page: number
     delete_modal: delete_modal_state
     add_modal: add_modal_state
+    view_modal: view_modal_state
 }
 
-type modal_state = "delete_modal" | "add_modal"
+type modal_state = "delete_modal" | "add_modal" | "view_modal"
 
 type add_modal_state = {
     is_open:        boolean
@@ -44,6 +45,11 @@ type add_modal_state = {
     description:    field_info<string>
     year:           field_info<string>
     metadata:       field_info<number[]>
+}
+
+type view_modal_state = {
+    is_open: boolean
+    row: any
 }
 
 type add_modal_state_fields = "content_file" | "title" | "description" | "year" | "metadata"
@@ -89,6 +95,14 @@ export default class Content extends Component<ContentProps, ContentState> {
                         setActive={(is_active) => {
                             Axios.patch(APP_URLS.CONTENT_ITEM(row.id), {
                                 active: is_active
+                            })
+                        }}
+                        viewFn={() => {
+                            this.setState({
+                                view_modal: {
+                                    is_open: true,
+                                    row
+                                }
                             })
                         }}
                     />
@@ -152,27 +166,20 @@ export default class Content extends Component<ContentProps, ContentState> {
 
     loadContentRows(page: number, size: number) {
         // Add one to page because dx-react-grid and django paging start from different places
-        get_data(APP_URLS.CONTENT(page + 1, size)).then((data: any) => {
+        get_data(APP_URLS.CONTENT_PAGE(page + 1, size)).then((data: any) => {
             const rows = data.results.map((row: any) => {
-                const static_fields = {
-                    id: row.id,
-                    title: row.title,
-                    description: row.description,
-                    published_date: row.published_date,
-                    file_name: row.file_name
-                }
                 row.metadata_info.map((info:any) => {
                     if (content_display.includes(info.type)) {
-                        const new_metadata_entry = get(static_fields, [info.type], []).concat([info.name])
-                        set(static_fields, [info.type], new_metadata_entry)
+                        const new_metadata_entry = get(row, [info.type], []).concat([info.name])
+                        set(row, [info.type], new_metadata_entry)
                     }
                 })
                 content_display.map(type_name => {
-                    const display_string = get(static_fields, [type_name], []).join(", ")
-                    set(static_fields, [type_name], display_string)
+                    const display_string = get(row, [type_name], []).join(", ")
+                    set(row, [type_name], display_string)
                 })
 
-                return static_fields
+                return row
             })
 
             this.setState({
@@ -210,7 +217,8 @@ export default class Content extends Component<ContentProps, ContentState> {
                 <Button
                     onClick={_ => {
                         this.setState(prevState => {
-                            return set(prevState, ["add_modal", "is_open"], true)
+                            const new_state = cloneDeep(prevState)
+                            return set(new_state, ["add_modal", "is_open"], true)
                         })
                     }}
                     style={{
@@ -268,12 +276,25 @@ export default class Content extends Component<ContentProps, ContentState> {
                     actions={[(
                         <Button
                             key={1}
+                            onClick={() => {
+                                this.closeDialog("add_modal")
+                            }}
+                            color="secondary"
+                        >
+                            Cancel
+                        </Button>
+                    ), (
+                        <Button
+                            key={2}
                             onClick={()=> {
+                                console.log("click1")
                                 this.setState((prevState) => {
+                                    const new_state = cloneDeep(prevState)
                                     const file_raw = this.file_input.current?.files?.item(0)
                                     const file = file_raw === undefined ? null : file_raw
-                                    return set(prevState, ["add_modal", "content_file", "value"], file)
+                                    return set(new_state, ["add_modal", "content_file", "value"], file)
                                 }, () => {
+                                    console.log("click2")
                                     //Makes sure the values for each field stored in state are valid
                                     const validators: [add_modal_state_fields, (raw: any) => string][] = [
                                         ["content_file", VALIDATORS.FILE],
@@ -283,34 +304,40 @@ export default class Content extends Component<ContentProps, ContentState> {
                                         ["metadata", VALIDATORS.METADATA]
                                     ]
                                     this.setState(prevState => {
+                                        const new_state = cloneDeep(prevState)
                                         validators.map((validator_entry) => {
                                             const [state_field, validator_fn] = validator_entry
+                                            console.log(validator_fn(this.state.add_modal[state_field].value))
                                             set(
-                                                prevState,
+                                                new_state,
                                                 ["add_modal", state_field, "reason"],
                                                 validator_fn(this.state.add_modal[state_field].value)
                                             )
                                         })
 
-                                        return prevState
+                                        return new_state
                                     }, () => {
                                         for (const validator_entry of validators) {
                                             const [state_field] = validator_entry
+                                            console.log(state_field)
                                             if (this.state.add_modal[state_field].reason !== "") return
                                         }
+
+                                        const data = this.state.add_modal
+                                        const file: File | undefined = get(this.file_input.current?.files, 0, undefined)
+                                        Axios.post(APP_URLS.CONTENT, {
+                                            file_name: file?.name,
+                                            content_file: file?.stream,
+                                            title: data.title.value,
+                                            description: data.description.value,
+                                            published_date: new Date(parseInt(data.year.value), 1, 1),
+                                            active: true,
+                                            metadata: data.metadata.value
+                                        })
+
                                         this.closeDialog("add_modal")
                                     })
                                 })
-                            }}
-                            color="secondary"
-                        >
-                            Cancel
-                        </Button>
-                    ), (
-                        <Button
-                            key={2}
-                            onClick={() => {
-                                this.closeDialog("add_modal")
                             }}
                             color="primary"
                         >
@@ -326,7 +353,8 @@ export default class Content extends Component<ContentProps, ContentState> {
                         onChange={(evt) => {
                             evt.persist()
                             this.setState((prevState) => {
-                                return set(prevState, ["add_modal", "title", "value"], evt.target.value)
+                                const new_state = cloneDeep(prevState)
+                                return set(new_state, ["add_modal", "title", "value"], evt.target.value)
                             })
                         }}
                     />
@@ -340,7 +368,8 @@ export default class Content extends Component<ContentProps, ContentState> {
                         onChange={(evt) => {
                             evt.persist()
                             this.setState((prevState) => {
-                                return set(prevState, ["add_modal", "description", "value"], evt.target.value)
+                                const new_state = cloneDeep(prevState)
+                                return set(new_state, ["add_modal", "description", "value"], evt.target.value)
                             })
                         }}
                     />
@@ -362,7 +391,8 @@ export default class Content extends Component<ContentProps, ContentState> {
                         onChange={(evt) => {
                             evt.persist()
                             this.setState((prevState) => {
-                                return set(prevState, ["add_modal", "year", "value"], evt.target.value)
+                                const new_state = cloneDeep(prevState)
+                                return set(new_state, ["add_modal", "year", "value"], evt.target.value)
                             })
                         }}
                     />
@@ -384,10 +414,31 @@ export default class Content extends Component<ContentProps, ContentState> {
                         )}
                         onChange={(_evt, values) => {
                             this.setState((prevState) => {
-                                return set(prevState, ["add_modal", "metadata", "value"], values.map(metadata => metadata.id))
+                                const new_state = cloneDeep(prevState)
+                                return set(new_state, ["add_modal", "metadata", "value"], values.map(metadata => metadata.id))
                             })
                         }}
                     />
+                </ActionDialog>
+                <ActionDialog
+                    title={"View Content Item"}
+                    open={this.state.view_modal.row}
+                    actions={[(
+                        <Button
+                            key={1}
+                            onClick={() => {
+                                this.closeDialog("view_modal")
+                            }}
+                            color="secondary"
+                        >
+                            Close
+                        </Button>
+                    )]}
+                >
+                    <Typography>Title: {this.state.view_modal.row.title}</Typography>
+                    <Typography>File Name: {this.state.view_modal.row.file_name}</Typography>
+                    <Typography>Published Year: {this.state.view_modal.row.published_date}</Typography>
+                    <Typography>Rights Statement: {this.state.view_modal.row.rights_statment}</Typography>
                 </ActionDialog>
             </React.Fragment>
         )

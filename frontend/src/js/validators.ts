@@ -13,6 +13,9 @@ export default class VALIDATORS {
         return ""
     }
     static TITLE(title_str: string): string {
+        if (title_str === "") {
+            return "Field Required"
+        }
         if (title_str.length > 300) {
             return "Title must be less than 300 characters"
         }

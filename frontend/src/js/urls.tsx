@@ -12,7 +12,8 @@ const url_with_params = (urlstr: string, params:[string, any][]=[]) => {
 
 const APP_URLS = {
     API: url_with_params(base_url),
-    CONTENT: (page: number, size: number) => url_with_params(`${base_url}/contents/`, [["page", page], ["size", size]]),
+    CONTENT: url_with_params(`${base_url}/contents/`),
+    CONTENT_PAGE: (page: number, size: number) => url_with_params(`${base_url}/contents/`, [["page", page], ["size", size]]),
     CONTENT_ITEM: (id: number) => url_with_params(`${base_url}/contents/${id}/`),
     METADATA: url_with_params(`${base_url}/metadata/`),
     METADATA_ITEM: (id: number) => url_with_params(`${base_url}/metadata/${id}/`),
