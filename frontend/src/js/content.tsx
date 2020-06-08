@@ -17,7 +17,7 @@ import { APP_URLS, get_data } from './urls';
 import { content_display } from './settings';
 import { get, set, cloneDeep } from 'lodash';
 import ActionDialog from './action_dialog';
-import { Button, Typography, TextField } from '@material-ui/core';
+import { Button, Typography, TextField, Paper, Chip } from '@material-ui/core';
 import { Autocomplete } from "@material-ui/lab"
 import Axios from 'axios';
 import VALIDATORS from './validators';
@@ -71,6 +71,7 @@ export default class Content extends Component<ContentProps, ContentState> {
 
     delete_modal_defaults: delete_modal_state
     add_modal_defaults: add_modal_state
+    view_modal_defaults: view_modal_state
 
     file_input: RefObject<HTMLInputElement>
     constructor(props: ContentProps) {
@@ -149,6 +150,10 @@ export default class Content extends Component<ContentProps, ContentState> {
                 reason: ""
             }
         }
+        this.view_modal_defaults = {
+            is_open: false,
+            row: {}
+        }
 
         this.state = {
             rows: [],
@@ -156,7 +161,8 @@ export default class Content extends Component<ContentProps, ContentState> {
             current_page: 0,
             page_size: this.page_sizes[0],
             delete_modal: this.delete_modal_defaults,
-            add_modal: this.add_modal_defaults
+            add_modal: this.add_modal_defaults,
+            view_modal: this.view_modal_defaults
         }
 
         this.loadContentRows = this.loadContentRows.bind(this)
@@ -164,9 +170,12 @@ export default class Content extends Component<ContentProps, ContentState> {
         this.closeDialog = this.closeDialog.bind(this)
     }
 
+    //Loads rows into state from database by page number and page size
     loadContentRows(page: number, size: number) {
         // Add one to page because dx-react-grid and django paging start from different places
         get_data(APP_URLS.CONTENT_PAGE(page + 1, size)).then((data: any) => {
+            //Adds the MetadataTypes defined in content_displayy as a key to each item in row so it can be easily accessed
+            //by dx-react-grid later
             const rows = data.results.map((row: any) => {
                 row.metadata_info.map((info:any) => {
                     if (content_display.includes(info.type)) {
@@ -189,20 +198,26 @@ export default class Content extends Component<ContentProps, ContentState> {
         })
     }
 
+    //Make a simple delete request given the DB id of a row
     deleteItem(id: number) {
         Axios.delete(APP_URLS.CONTENT_ITEM(id)).then(console.log)
     }
 
+    //Initially load content roads
     componentDidMount() {
         this.loadContentRows(this.state.current_page, this.state.page_size)
     }
 
+    //Resets the state of a given modal. Use this to close the modal.
     closeDialog(dialog: modal_state) {
         const default_dict = {
             add_modal: this.add_modal_defaults,
-            delete_modal: this.delete_modal_defaults
+            delete_modal: this.delete_modal_defaults,
+            view_modal: this.view_modal_defaults
         }
-        // This is correct but I don't know how to get ts-lint to recognize it 
+        // This is correct but I don't know how to get ts-lint to recognize it
+        // Maybe someone better at TypeScript can fix it
+        // I think it has something to do with how it reads the type of default_dict[dialog] and it cant match it to the expected state type
         this.setState({
             [dialog]: cloneDeep(default_dict[dialog]) 
         }, () => {
@@ -212,6 +227,8 @@ export default class Content extends Component<ContentProps, ContentState> {
     }
 
     render() {
+        const view_row = this.state.view_modal.row
+
         return (
             <React.Fragment>
                 <Button
@@ -242,6 +259,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                     <TableHeaderRow />
                     <PagingPanel pageSizes={this.page_sizes}/>
                 </DataGrid>
+                {/* Most of the code in these ActionDialogs is still boilerplate, we should revisit how to make this more concise. */}
                 <ActionDialog
                     title={`Delete Content item ${this.state.delete_modal.row.name}?`}
                     open={this.state.delete_modal.is_open}
@@ -289,13 +307,14 @@ export default class Content extends Component<ContentProps, ContentState> {
                             onClick={()=> {
                                 console.log("click1")
                                 this.setState((prevState) => {
+                                    //Sets the file object in state to point to the file attached to the input in DOM
                                     const new_state = cloneDeep(prevState)
                                     const file_raw = this.file_input.current?.files?.item(0)
                                     const file = file_raw === undefined ? null : file_raw
                                     return set(new_state, ["add_modal", "content_file", "value"], file)
                                 }, () => {
                                     console.log("click2")
-                                    //Makes sure the values for each field stored in state are valid
+                                    //Array that specifies which state fields to validate and with what functions
                                     const validators: [add_modal_state_fields, (raw: any) => string][] = [
                                         ["content_file", VALIDATORS.FILE],
                                         ["title", VALIDATORS.TITLE],
@@ -305,6 +324,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     ]
                                     this.setState(prevState => {
                                         const new_state = cloneDeep(prevState)
+                                        //Runs validation on all state_fields
                                         validators.map((validator_entry) => {
                                             const [state_field, validator_fn] = validator_entry
                                             console.log(validator_fn(this.state.add_modal[state_field].value))
@@ -317,6 +337,7 @@ export default class Content extends Component<ContentProps, ContentState> {
 
                                         return new_state
                                     }, () => {
+                                        //If theres is invalid user input exit upload logic without closing the modal
                                         for (const validator_entry of validators) {
                                             const [state_field] = validator_entry
                                             console.log(state_field)
@@ -324,15 +345,24 @@ export default class Content extends Component<ContentProps, ContentState> {
                                         }
 
                                         const data = this.state.add_modal
+                                        
+                                        //Form data instead of js object needed so the file upload works as multipart
+                                        //There might be a better way to do this with Axios
                                         const file: File | undefined = get(this.file_input.current?.files, 0, undefined)
-                                        Axios.post(APP_URLS.CONTENT, {
-                                            file_name: file?.name,
-                                            content_file: file?.stream,
-                                            title: data.title.value,
-                                            description: data.description.value,
-                                            published_date: new Date(parseInt(data.year.value), 1, 1),
-                                            active: true,
-                                            metadata: data.metadata.value
+                                        if (typeof(file) == "undefined") return
+                                        const formData = new FormData()
+                                        formData.append('file_name', file.name)
+                                        formData.append('content_file', file)
+                                        formData.append('title', data.title.value)
+                                        formData.append('description', data.description.value)
+                                        formData.append('published_date', `${data.year.value}-01-01`)
+                                        formData.append('active', "true")
+                                        data.metadata.value.forEach(metadata => formData.append('metadata', `${metadata}`))
+
+                                        Axios.post(APP_URLS.CONTENT, formData, {
+                                            headers: {
+                                                'Content-Type': 'multipart/form-data'
+                                            }
                                         })
 
                                         this.closeDialog("add_modal")
@@ -422,7 +452,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                 </ActionDialog>
                 <ActionDialog
                     title={"View Content Item"}
-                    open={this.state.view_modal.row}
+                    open={this.state.view_modal.is_open}
                     actions={[(
                         <Button
                             key={1}
@@ -435,10 +465,20 @@ export default class Content extends Component<ContentProps, ContentState> {
                         </Button>
                     )]}
                 >
-                    <Typography>Title: {this.state.view_modal.row.title}</Typography>
-                    <Typography>File Name: {this.state.view_modal.row.file_name}</Typography>
-                    <Typography>Published Year: {this.state.view_modal.row.published_date}</Typography>
-                    <Typography>Rights Statement: {this.state.view_modal.row.rights_statment}</Typography>
+                    <Typography>Title: {view_row.title}</Typography>
+                    <Typography>Description: {view_row.description}</Typography>
+                    <Typography>File Name: {view_row.file_name}</Typography>
+                    <Typography>Published Year: {view_row.published_date}</Typography>
+                    <Typography>Rights Statement: {view_row.rights_statment}</Typography>
+                    <Paper>
+                        {view_row.metadata_info?.map((metadata_info_obj: any, idx: number) => (
+                            <li key={idx} style={{listStyle: "none"}}>
+                                <Chip
+                                    label={`${metadata_info_obj.type}: ${metadata_info_obj.name}`}
+                                />
+                            </li>
+                        ))}
+                    </Paper>
                 </ActionDialog>
             </React.Fragment>
         )

@@ -8,7 +8,6 @@ interface ActionDialogProps {
     on_close?: () => void
 }
 
-
 const ActionDialog: React.SFC<ActionDialogProps> = (props) => {
     const on_close = props.on_close || (() => {})
     return (
