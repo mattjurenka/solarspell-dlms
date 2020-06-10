@@ -38,6 +38,45 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
     serializer_class = ContentSerializer
     pagination_class = PageNumberSizePagination
 
+    def get_queryset(self):
+        queryset = self.queryset
+
+        title = self.request.GET.get("title", None)
+        if title is not None:
+            queryset = queryset.filter(title__icontains=title)
+        
+        file_name = self.request.GET.get("file_name", None)
+        if file_name is not None:
+            queryset = queryset.filter(file_name__icontains=file_name)
+        
+        copyright = self.request.GET.get("copyright", None)
+        if copyright is not None:
+            queryset = queryset.filter(copyright__icontains=copyright)
+        
+        active_raw = self.request.GET.get("active", None)
+        if active_raw is not None:
+            active = active_raw.lower() == "true"
+            queryset = queryset.filter(active=active)
+        
+        metadata_raw = self.request.GET.get("metadata", None)
+        if metadata_raw is not None:
+            try:
+                metadata = [int(x) for x in metadata_raw.split(",")]
+                for id in metadata:
+                    queryset = queryset.filter(metadata__contains=id)
+            except:
+                pass
+
+        year_raw = self.request.GET.get("published_date", None)
+        if year_raw is not None:
+            try:
+                years_range = [year+"-01-01" for year in year_raw.split(",")[0:2]]
+                queryset = queryset.filter(published_date__range=years_range)
+            except:
+                pass
+
+        return queryset
+
 
 class MetadataViewSet(StandardDataView, viewsets.ModelViewSet):
     queryset = Metadata.objects.all()

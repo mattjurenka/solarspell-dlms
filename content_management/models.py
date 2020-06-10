@@ -12,8 +12,12 @@ class MetadataType(models.Model):
 
 
 class Metadata(models.Model):
+    #TODO: Make sure there are no metadata with the same type and the same name when creating a new one
     name = models.CharField(max_length=300)
     type = models.ForeignKey(MetadataType, on_delete=models.CASCADE)
+
+    def type_name(self):
+        return self.type.name
 
     def __str__(self):
         return f'[{self.type}]{self.name}'
@@ -34,6 +38,12 @@ class Content(models.Model):
     rights_statement = models.TextField(null=True)
     published_date = models.DateField(null=True)
     active = models.BooleanField(default=1)
+
+    def metadata_info(self):
+        return [{
+            "name": metadata.name,
+            "type": metadata.type.name
+        } for metadata in self.metadata.all()]
 
     class Meta:
         ordering = ['pk']
