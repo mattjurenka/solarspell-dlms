@@ -14,3 +14,12 @@ interface SerializedMetadata {
     type: number
     type_name: string
 }
+
+type content_filters = {
+    title?: string
+    years?: [number, number]
+    filename?: string
+    copyright?: string
+    active?: boolean
+    metadata?: number[]
+}

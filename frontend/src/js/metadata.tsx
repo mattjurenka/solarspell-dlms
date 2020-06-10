@@ -144,7 +144,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
         ]
     }
 
-    createSetTypeAttribute(type: string, attribute: string, cb =() => {}) {
+    createSetTypeAttribute(type: string, attribute: string, cb=() => {}) {
         return (value: any) => {
             this.setState((prevState) => {
                 return set(prevState, ["panel_data", type, attribute], value)

@@ -17,7 +17,7 @@ import { APP_URLS, get_data } from './urls';
 import { content_display } from './settings';
 import { get, set, cloneDeep } from 'lodash';
 import ActionDialog from './action_dialog';
-import { Button, Typography, TextField, Paper, Chip } from '@material-ui/core';
+import { Button, Typography, TextField, Paper, Chip, Grid, ExpansionPanelSummary, ExpansionPanelDetails, ExpansionPanel, Checkbox } from '@material-ui/core';
 import { Autocomplete } from "@material-ui/lab"
 import Axios from 'axios';
 import VALIDATORS from './validators';
@@ -34,6 +34,7 @@ interface ContentState {
     delete_modal: delete_modal_state
     add_modal: add_modal_state
     view_modal: view_modal_state
+    search: search_state
 }
 
 type modal_state = "delete_modal" | "add_modal" | "view_modal"
@@ -45,6 +46,11 @@ type add_modal_state = {
     description:    field_info<string>
     year:           field_info<string>
     metadata:       field_info<number[]>
+}
+
+type field_info<T> = {
+    value: T
+    reason: string
 }
 
 type view_modal_state = {
@@ -59,9 +65,15 @@ type delete_modal_state = {
     row: any
 }
 
-type field_info<T> = {
-    value: T
-    reason: string
+type search_state = {
+    is_open: boolean
+    title: string
+    copyright: string
+    years_from: string
+    years_to: string
+    active: boolean
+    filename: string
+    metadata: number[]
 }
 
 export default class Content extends Component<ContentProps, ContentState> {
@@ -162,7 +174,17 @@ export default class Content extends Component<ContentProps, ContentState> {
             page_size: this.page_sizes[0],
             delete_modal: this.delete_modal_defaults,
             add_modal: this.add_modal_defaults,
-            view_modal: this.view_modal_defaults
+            view_modal: this.view_modal_defaults,
+            search: {
+                is_open: false,
+                title: "",
+                copyright: "",
+                years_from: "",
+                years_to: "",
+                active: true,
+                metadata: [],
+                filename: ""
+            }
         }
 
         this.loadContentRows = this.loadContentRows.bind(this)
@@ -170,10 +192,17 @@ export default class Content extends Component<ContentProps, ContentState> {
         this.closeDialog = this.closeDialog.bind(this)
     }
 
-    //Loads rows into state from database by page number and page size
-    loadContentRows(page: number, size: number) {
+    //Loads rows into state from database
+    loadContentRows() {
+        const search = this.state.search
+        const filters: content_filters = {
+            title: search.title,
+            copyright: search.copyright,
+            metadata: search.metadata,
+            active: search.active
+        }
         // Add one to page because dx-react-grid and django paging start from different places
-        get_data(APP_URLS.CONTENT_PAGE(page + 1, size)).then((data: any) => {
+        get_data(APP_URLS.CONTENT_PAGE(this.state.current_page + 1, this.state.page_size, filters)).then((data: any) => {
             //Adds the MetadataTypes defined in content_displayy as a key to each item in row so it can be easily accessed
             //by dx-react-grid later
             const rows = data.results.map((row: any) => {
@@ -205,7 +234,7 @@ export default class Content extends Component<ContentProps, ContentState> {
 
     //Initially load content roads
     componentDidMount() {
-        this.loadContentRows(this.state.current_page, this.state.page_size)
+        this.loadContentRows()
     }
 
     //Resets the state of a given modal. Use this to close the modal.
@@ -221,7 +250,7 @@ export default class Content extends Component<ContentProps, ContentState> {
         this.setState({
             [dialog]: cloneDeep(default_dict[dialog]) 
         }, () => {
-            this.loadContentRows(this.state.current_page, this.state.page_size)
+            this.loadContentRows()
         })
         
     }
@@ -231,6 +260,68 @@ export default class Content extends Component<ContentProps, ContentState> {
 
         return (
             <React.Fragment>
+                <ExpansionPanel expanded={this.state.search.is_open} onChange={(_:any, expanded: boolean) => {
+                    this.setState((prevState) => {
+                        const new_state = cloneDeep(prevState)
+                        return set(new_state, ["search", "is_open"], expanded)
+                    })
+                }}>
+                    <ExpansionPanelSummary>Search</ExpansionPanelSummary>
+                    <ExpansionPanelDetails>
+                        <TextField
+                            label={"Title"}
+                            value={this.state.search.title}
+                            onChange={(evt) => {
+                                evt.persist()
+                                this.setState((prevState) => {
+                                    const new_state = cloneDeep(prevState)
+                                    return set(new_state, ["search", "title"], evt.target.value)
+                                }, this.loadContentRows)
+                            }}
+                        />
+                        <TextField
+                            label={"Copyright"}
+                            value={this.state.search.copyright}
+                            onChange={(evt) => {
+                                evt.persist()
+                                this.setState((prevState) => {
+                                    const new_state = cloneDeep(prevState)
+                                    return set(new_state, ["search", "copyright"], evt.target.value)
+                                }, this.loadContentRows)
+                            }}
+                        />
+                        <Checkbox
+                            checked={this.state.search.active}
+                            onChange={(evt) => {
+                                evt.persist()
+                                this.setState((prevState) => {
+                                    const new_state = cloneDeep(prevState)
+                                    return set(new_state, ["search", "active"], evt.target.checked)
+                                }, this.loadContentRows)
+                            }}
+                        />
+                        <Autocomplete
+                            multiple
+                            options={this.props.all_metadata}
+                            getOptionLabel={(option) => `${option.type_name}: ${option.name}`}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    variant={"standard"}
+                                    label={"Metadata"}
+                                    placeholder={"Metadata"}
+                                />
+                            )}
+                            onChange={(_evt, values) => {
+                                this.setState((prevState) => {
+                                    const new_state = cloneDeep(prevState)
+                                    return set(new_state, ["search", "metadata"], values.map(metadata => metadata.id))
+                                }, this.loadContentRows)
+                            }}
+                        />
+                    </ExpansionPanelDetails>
+                </ExpansionPanel>
+                <br />
                 <Button
                     onClick={_ => {
                         this.setState(prevState => {
