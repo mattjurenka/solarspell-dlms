@@ -36,4 +36,13 @@ export default class VALIDATORS {
         }
         return ""
     }
+    static COPYRIGHT(copyright_str: string): string {
+        if (copyright_str.length >= 500) {
+            return "Copyright must be less than 500 characters"
+        }
+        return ""
+    }
+    static RIGHTS_STATEMENT(_rights_statement_str: string): string {
+        return ""
+    }
 }

@@ -63,6 +63,7 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
             try:
                 metadata = [int(x) for x in metadata_raw.split(",")]
                 for id in metadata:
+                    print(id)
                     queryset = queryset.filter(metadata__contains=id)
             except:
                 pass

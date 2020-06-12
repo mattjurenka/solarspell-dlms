@@ -17,7 +17,7 @@ import { APP_URLS, get_data } from './urls';
 import { content_display } from './settings';
 import { get, set, cloneDeep } from 'lodash';
 import ActionDialog from './action_dialog';
-import { Button, Typography, TextField, Paper, Chip, Grid, ExpansionPanelSummary, ExpansionPanelDetails, ExpansionPanel, Checkbox } from '@material-ui/core';
+import { Button, Typography, TextField, Paper, Chip, ExpansionPanelSummary, ExpansionPanelDetails, ExpansionPanel, Checkbox } from '@material-ui/core';
 import { Autocomplete } from "@material-ui/lab"
 import Axios from 'axios';
 import VALIDATORS from './validators';
@@ -32,33 +32,47 @@ interface ContentState {
     page_size: number
     current_page: number
     delete_modal: delete_modal_state
-    add_modal: add_modal_state
+    add_modal: content_modal_state
+    edit_modal: content_modal_state
     view_modal: view_modal_state
     search: search_state
 }
 
-type modal_state = "delete_modal" | "add_modal" | "view_modal"
+//modal_state contains keys in the state that represent data used for modals
+type modal_state = "delete_modal" | "add_modal" | "view_modal" | "edit_modal"
 
-type add_modal_state = {
-    is_open:        boolean
-    content_file:   field_info<File|null>
-    title:          field_info<string>
-    description:    field_info<string>
-    year:           field_info<string>
-    metadata:       field_info<number[]>
+//Add and edit modal use the same type because they use the same data
+type content_modal_state = {
+    is_open:            boolean
+    input:              HTMLInputElement | null
+    row:                any //Includes Row to know which content item to patch if an edit modal
+    content_file:       field_info<File|null>
+    title:              field_info<string>
+    description:        field_info<string>
+    year:               field_info<string>
+    metadata:           field_info<number[]>
+    copyright:          field_info<string>
+    rights_statement:   field_info<string>
 }
 
+
+//content_modal_state_fields are the keys in the content_modal_state actually uploaded as part of the content data
+type content_modal_state_fields = "content_file" | "title" | "description" | "year" | "metadata" |
+"copyright" | "rights_statement"
+
+//field_info contains data of a field and information about whether that data is valid.
+//reason should default to the empty string "" and any other value will contain a human-readable string
+//saying why the data in value is invalid
 type field_info<T> = {
     value: T
     reason: string
 }
 
+
 type view_modal_state = {
     is_open: boolean
     row: any
 }
-
-type add_modal_state_fields = "content_file" | "title" | "description" | "year" | "metadata"
 
 type delete_modal_state = {
     is_open: boolean
@@ -76,27 +90,37 @@ type search_state = {
     metadata: number[]
 }
 
+
+
 export default class Content extends Component<ContentProps, ContentState> {
     columns: any
     columnExtensions: any
     page_sizes: number[]
 
     delete_modal_defaults: delete_modal_state
-    add_modal_defaults: add_modal_state
+    content_modal_defaults: content_modal_state
     view_modal_defaults: view_modal_state
 
-    file_input: RefObject<HTMLInputElement>
     constructor(props: ContentProps) {
         super(props)
-
-        this.file_input = React.createRef()
 
         this.columns = [
             {name: "actions", title: "Actions", getCellValue: (row: any) => {
                 return (
                     <ActionPanel
                         row={row}
-                        editFn={() => {}}
+                        editFn={() => {
+                            this.setState(prevState => {
+                                const a: content_modal_state
+                                const new_state = cloneDeep(prevState)
+                                set(new_state, ["edit_modal", "is_open"], true)
+                                set(new_state, ["edit_modal", "row"], row)
+                                set(new_state, ["edit_modal", "title"], row.title)
+                                set(new_state, ["edit_modal", "description"], row.description)
+                                set(new_state, ["edit_modal", "year"], row.description)
+                                return set(new_state, ["edit_modal", "is_open"], true)
+                            })
+                        }}
                         deleteFn={() => {
                             this.setState({
                                 delete_modal: {
@@ -139,8 +163,10 @@ export default class Content extends Component<ContentProps, ContentState> {
             is_open: false,
             row: {}
         }
-        this.add_modal_defaults = {
+        this.content_modal_defaults = {
             is_open: false,
+            input: null,
+            row: {},
             content_file: {
                 value: null,
                 reason: ""
@@ -160,6 +186,14 @@ export default class Content extends Component<ContentProps, ContentState> {
             metadata: {
                 value: [],
                 reason: ""
+            },
+            rights_statement: {
+                value: "",
+                reason: ""
+            },
+            copyright: {
+                value: "",
+                reason: ""
             }
         }
         this.view_modal_defaults = {
@@ -173,7 +207,8 @@ export default class Content extends Component<ContentProps, ContentState> {
             current_page: 0,
             page_size: this.page_sizes[0],
             delete_modal: this.delete_modal_defaults,
-            add_modal: this.add_modal_defaults,
+            add_modal: this.content_modal_defaults,
+            edit_modal: this.content_modal_defaults,
             view_modal: this.view_modal_defaults,
             search: {
                 is_open: false,
@@ -240,9 +275,10 @@ export default class Content extends Component<ContentProps, ContentState> {
     //Resets the state of a given modal. Use this to close the modal.
     closeDialog(dialog: modal_state) {
         const default_dict = {
-            add_modal: this.add_modal_defaults,
+            add_modal: this.content_modal_defaults,
             delete_modal: this.delete_modal_defaults,
-            view_modal: this.view_modal_defaults
+            view_modal: this.view_modal_defaults,
+            edit_modal: this.content_modal_defaults
         }
         // This is correct but I don't know how to get ts-lint to recognize it
         // Maybe someone better at TypeScript can fix it
@@ -335,7 +371,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                         backgroundColor: "#75b2dd",
                         color: "#FFFFFF"
                     }}
-                >New Metadata Type</Button>
+                >New Content</Button>
                 <DataGrid
                     columns={this.columns}
                     rows={this.state.rows}
@@ -396,22 +432,22 @@ export default class Content extends Component<ContentProps, ContentState> {
                         <Button
                             key={2}
                             onClick={()=> {
-                                console.log("click1")
                                 this.setState((prevState) => {
                                     //Sets the file object in state to point to the file attached to the input in DOM
                                     const new_state = cloneDeep(prevState)
-                                    const file_raw = this.file_input.current?.files?.item(0)
-                                    const file = file_raw === undefined ? null : file_raw
+                                    const file_raw = this.state.add_modal.input?.files?.item(0)
+                                    const file = typeof(file_raw) === "undefined" ? null : file_raw
                                     return set(new_state, ["add_modal", "content_file", "value"], file)
                                 }, () => {
-                                    console.log("click2")
                                     //Array that specifies which state fields to validate and with what functions
-                                    const validators: [add_modal_state_fields, (raw: any) => string][] = [
+                                    const validators: [content_modal_state_fields, (raw: any) => string][] = [
                                         ["content_file", VALIDATORS.FILE],
                                         ["title", VALIDATORS.TITLE],
                                         ["description", VALIDATORS.DESCRIPTION],
                                         ["year", VALIDATORS.YEAR],
-                                        ["metadata", VALIDATORS.METADATA]
+                                        ["metadata", VALIDATORS.METADATA],
+                                        ["copyright", VALIDATORS.COPYRIGHT],
+                                        ["rights_statement", VALIDATORS.RIGHTS_STATEMENT]
                                     ]
                                     this.setState(prevState => {
                                         const new_state = cloneDeep(prevState)
@@ -439,8 +475,8 @@ export default class Content extends Component<ContentProps, ContentState> {
                                         
                                         //Form data instead of js object needed so the file upload works as multipart
                                         //There might be a better way to do this with Axios
-                                        const file: File | undefined = get(this.file_input.current?.files, 0, undefined)
-                                        if (typeof(file) == "undefined") return
+                                        const file: File | null | undefined = data.input?.files?.item(0)
+                                        if (typeof(file) == "undefined" || file === null) return
                                         const formData = new FormData()
                                         formData.append('file_name', file.name)
                                         formData.append('content_file', file)
@@ -500,7 +536,12 @@ export default class Content extends Component<ContentProps, ContentState> {
                         accept="*"
                         id="raised-button-file"
                         type="file"
-                        ref={this.file_input}
+                        ref={(elemnent: HTMLInputElement) => {
+                            this.setState(prevState => {
+                                const new_state = cloneDeep(prevState)
+                                return set(new_state, ["add_modal", "input"], elemnent)
+                            })
+                        }}
                     />
                     <br />
                     <br />
@@ -514,6 +555,36 @@ export default class Content extends Component<ContentProps, ContentState> {
                             this.setState((prevState) => {
                                 const new_state = cloneDeep(prevState)
                                 return set(new_state, ["add_modal", "year", "value"], evt.target.value)
+                            })
+                        }}
+                    />
+                    <br />
+                    <br />
+                    <TextField
+                        error={this.state.add_modal.copyright.reason !== ""}
+                        helperText={this.state.add_modal.copyright.reason}
+                        label={"Copyright"}
+                        value={this.state.add_modal.copyright.value}
+                        onChange={(evt) => {
+                            evt.persist()
+                            this.setState((prevState) => {
+                                const new_state = cloneDeep(prevState)
+                                return set(new_state, ["add_modal", "copyright", "value"], evt.target.value)
+                            })
+                        }}
+                    />
+                    <br />
+                    <br />
+                    <TextField
+                        error={this.state.add_modal.rights_statement.reason !== ""}
+                        helperText={this.state.add_modal.rights_statement.reason}
+                        label={"Rights Statement"}
+                        value={this.state.add_modal.rights_statement.value}
+                        onChange={(evt) => {
+                            evt.persist()
+                            this.setState((prevState) => {
+                                const new_state = cloneDeep(prevState)
+                                return set(new_state, ["add_modal", "rights_statement", "value"], evt.target.value)
                             })
                         }}
                     />
@@ -537,6 +608,202 @@ export default class Content extends Component<ContentProps, ContentState> {
                             this.setState((prevState) => {
                                 const new_state = cloneDeep(prevState)
                                 return set(new_state, ["add_modal", "metadata", "value"], values.map(metadata => metadata.id))
+                            })
+                        }}
+                    />
+                </ActionDialog>
+                <ActionDialog
+                    title={"Edit content item"}
+                    open={this.state.edit_modal.is_open}
+                    actions={[(
+                        <Button
+                            key={1}
+                            onClick={() => {
+                                this.closeDialog("edit_modal")
+                            }}
+                            color="secondary"
+                        >
+                            Cancel
+                        </Button>
+                    ), (
+                        <Button
+                            key={2}
+                            onClick={()=> {
+                                this.setState((prevState) => {
+                                    //Sets the file object in state to point to the file attached to the input in DOM
+                                    const new_state = cloneDeep(prevState)
+                                    const file_raw = this.state.edit_modal.input?.files?.item(0)
+                                    const file = typeof(file_raw) === "undefined" ? null : file_raw
+                                    return set(new_state, ["edit_modal", "content_file", "value"], file)
+                                }, () => {
+                                    //Array that specifies which state fields to validate and with what functions
+                                    const validators: [content_modal_state_fields, (raw: any) => string][] = [
+                                        ["content_file", VALIDATORS.FILE],
+                                        ["title", VALIDATORS.TITLE],
+                                        ["description", VALIDATORS.DESCRIPTION],
+                                        ["year", VALIDATORS.YEAR],
+                                        ["metadata", VALIDATORS.METADATA],
+                                        ["copyright", VALIDATORS.COPYRIGHT],
+                                        ["rights_statement", VALIDATORS.RIGHTS_STATEMENT]
+                                    ]
+                                    this.setState(prevState => {
+                                        const new_state = cloneDeep(prevState)
+                                        //Runs validation on all state_fields
+                                        validators.map((validator_entry) => {
+                                            const [state_field, validator_fn] = validator_entry
+                                            console.log(validator_fn(this.state.edit_modal[state_field].value))
+                                            set(
+                                                new_state,
+                                                ["edit_modal", state_field, "reason"],
+                                                validator_fn(this.state.edit_modal[state_field].value)
+                                            )
+                                        })
+
+                                        return new_state
+                                    }, () => {
+                                        //If theres is invalid user input exit upload logic without closing the modal
+                                        for (const validator_entry of validators) {
+                                            const [state_field] = validator_entry
+                                            if (this.state.edit_modal[state_field].reason !== "") return
+                                        }
+
+                                        const data = this.state.edit_modal
+                                        
+                                        //Form data instead of js object needed so the file upload works as multipart
+                                        //There might be a better way to do this with Axios
+                                        const file: File | null | undefined = data.input?.files?.item(0)
+                                        if (typeof(file) == "undefined" || file === null) return
+                                        const formData = new FormData()
+                                        formData.append('file_name', file.name)
+                                        formData.append('content_file', file)
+                                        formData.append('title', data.title.value)
+                                        formData.append('description', data.description.value)
+                                        formData.append('published_date', `${data.year.value}-01-01`)
+                                        formData.append('active', "true")
+                                        data.metadata.value.forEach(metadata => formData.append('metadata', `${metadata}`))
+
+                                        Axios.patch(APP_URLS.CONTENT_ITEM(data.row.id), formData, {
+                                            headers: {
+                                                'Content-Type': 'multipart/form-data'
+                                            }
+                                        })
+
+                                        this.closeDialog("edit_modal")
+                                    })
+                                })
+                            }}
+                            color="primary"
+                        >
+                            Add
+                        </Button>
+                    )]}
+                >
+                    <TextField
+                        error={this.state.edit_modal.title.reason !== ""}
+                        helperText={this.state.edit_modal.title.reason}
+                        label={"Title"}
+                        value={this.state.edit_modal.title.value}
+                        onChange={(evt) => {
+                            evt.persist()
+                            this.setState((prevState) => {
+                                const new_state = cloneDeep(prevState)
+                                return set(new_state, ["edit_modal", "title", "value"], evt.target.value)
+                            })
+                        }}
+                    />
+                    <br />
+                    <br />
+                    <TextField
+                        error={this.state.edit_modal.description.reason !== ""}
+                        helperText={this.state.edit_modal.description.reason}
+                        label={"Description"}
+                        value={this.state.edit_modal.description.value}
+                        onChange={(evt) => {
+                            evt.persist()
+                            this.setState((prevState) => {
+                                const new_state = cloneDeep(prevState)
+                                return set(new_state, ["edit_modal", "description", "value"], evt.target.value)
+                            })
+                        }}
+                    />
+                    <br />
+                    <br />
+                    <input
+                        accept="*"
+                        id="raised-button-file"
+                        type="file"
+                        ref={(elemnent: HTMLInputElement) => {
+                            this.setState(prevState => {
+                                const new_state = cloneDeep(prevState)
+                                return set(new_state, ["edit_modal", "input"], elemnent)
+                            })
+                        }}
+                    />
+                    <br />
+                    <br />
+                    <TextField
+                        error={this.state.edit_modal.year.reason !== ""}
+                        helperText={this.state.edit_modal.year.reason}
+                        label={"Year Published"}
+                        value={this.state.edit_modal.year.value}
+                        onChange={(evt) => {
+                            evt.persist()
+                            this.setState((prevState) => {
+                                const new_state = cloneDeep(prevState)
+                                return set(new_state, ["edit_modal", "year", "value"], evt.target.value)
+                            })
+                        }}
+                    />
+                    <br />
+                    <br />
+                    <TextField
+                        error={this.state.edit_modal.copyright.reason !== ""}
+                        helperText={this.state.edit_modal.copyright.reason}
+                        label={"Copyright"}
+                        value={this.state.edit_modal.copyright.value}
+                        onChange={(evt) => {
+                            evt.persist()
+                            this.setState((prevState) => {
+                                const new_state = cloneDeep(prevState)
+                                return set(new_state, ["edit_modal", "copyright", "value"], evt.target.value)
+                            })
+                        }}
+                    />
+                    <br />
+                    <br />
+                    <TextField
+                        error={this.state.edit_modal.rights_statement.reason !== ""}
+                        helperText={this.state.edit_modal.rights_statement.reason}
+                        label={"Rights Statement"}
+                        value={this.state.edit_modal.rights_statement.value}
+                        onChange={(evt) => {
+                            evt.persist()
+                            this.setState((prevState) => {
+                                const new_state = cloneDeep(prevState)
+                                return set(new_state, ["edit_modal", "rights_statement", "value"], evt.target.value)
+                            })
+                        }}
+                    />
+                    <br />
+                    <br />
+                    <Autocomplete
+                        multiple
+                        options={this.props.all_metadata}
+                        getOptionLabel={(option) => `${option.type_name}: ${option.name}`}
+                        renderInput={(params) => (
+                            <TextField
+                                error={this.state.edit_modal.metadata.reason !== ""}
+                                helperText={this.state.edit_modal.metadata.reason}
+                                {...params}
+                                variant={"standard"}
+                                label={"Metadata"}
+                                placeholder={"Metadata"}
+                            />
+                        )}
+                        onChange={(_evt, values) => {
+                            this.setState((prevState) => {
+                                const new_state = cloneDeep(prevState)
+                                return set(new_state, ["edit_modal", "metadata", "value"], values.map(metadata => metadata.id))
                             })
                         }}
                     />
