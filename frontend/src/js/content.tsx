@@ -14,13 +14,14 @@ import {
 
 import ActionPanel from './action_panel';
 import { APP_URLS, get_data } from './urls';
-import { content_display } from './settings';
+import { content_display, content_folder_url } from './settings';
 import { get, set, cloneDeep } from 'lodash';
 import ActionDialog from './action_dialog';
 import { Button, Typography, TextField, Paper, Chip, ExpansionPanelSummary, ExpansionPanelDetails, ExpansionPanel, Checkbox } from '@material-ui/core';
 import { Autocomplete } from "@material-ui/lab"
 import Axios from 'axios';
 import VALIDATORS from './validators';
+import { get_metadata } from './utils';
 
 interface ContentProps {
     all_metadata: SerializedMetadata[]
@@ -111,13 +112,14 @@ export default class Content extends Component<ContentProps, ContentState> {
                         row={row}
                         editFn={() => {
                             this.setState(prevState => {
-                                const a: content_modal_state
                                 const new_state = cloneDeep(prevState)
-                                set(new_state, ["edit_modal", "is_open"], true)
                                 set(new_state, ["edit_modal", "row"], row)
-                                set(new_state, ["edit_modal", "title"], row.title)
-                                set(new_state, ["edit_modal", "description"], row.description)
-                                set(new_state, ["edit_modal", "year"], row.description)
+                                set(new_state, ["edit_modal", "copyright", "value"], row.copyright)
+                                set(new_state, ["edit_modal", "rights_statement", "value"], row.rights_statement)
+                                set(new_state, ["edit_modal", "title", "value"], row.title)
+                                set(new_state, ["edit_modal", "description", "value"], row.description)
+                                set(new_state, ["edit_modal", "year", "value"], row.description)
+                                set(new_state, ["edit_modal", "metadata", "value"], row.metadata)
                                 return set(new_state, ["edit_modal", "is_open"], true)
                             })
                         }}
@@ -293,6 +295,7 @@ export default class Content extends Component<ContentProps, ContentState> {
 
     render() {
         const view_row = this.state.view_modal.row
+        console.log(content_folder_url)
 
         return (
             <React.Fragment>
@@ -536,10 +539,11 @@ export default class Content extends Component<ContentProps, ContentState> {
                         accept="*"
                         id="raised-button-file"
                         type="file"
-                        ref={(elemnent: HTMLInputElement) => {
+                        ref={(element: HTMLInputElement) => {
+                            if (this.state.add_modal.input !== null) return
                             this.setState(prevState => {
                                 const new_state = cloneDeep(prevState)
-                                return set(new_state, ["add_modal", "input"], elemnent)
+                                return set(new_state, ["add_modal", "input"], element)
                             })
                         }}
                     />
@@ -733,6 +737,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                         id="raised-button-file"
                         type="file"
                         ref={(elemnent: HTMLInputElement) => {
+                            if (this.state.edit_modal.input !== null) return
                             this.setState(prevState => {
                                 const new_state = cloneDeep(prevState)
                                 return set(new_state, ["edit_modal", "input"], elemnent)
@@ -789,7 +794,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                     <Autocomplete
                         multiple
                         options={this.props.all_metadata}
-                        getOptionLabel={(option) => `${option.type_name}: ${option.name}`}
+                        getOptionLabel={(option: SerializedMetadata) => `${option.type_name}: ${option.name}`}
                         renderInput={(params) => (
                             <TextField
                                 error={this.state.edit_modal.metadata.reason !== ""}
@@ -806,6 +811,16 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 return set(new_state, ["edit_modal", "metadata", "value"], values.map(metadata => metadata.id))
                             })
                         }}
+                        defaultValue={this.state.edit_modal.metadata.value.map(id => {
+                                const result = get_metadata(this.props.all_metadata, id)
+                                return result === null ? {
+                                    id: 0,
+                                    type_name: "Error",
+                                    name: "Metadata Not Found",
+                                    type: 0
+                                } : result
+                            })
+                        }
                     />
                 </ActionDialog>
                 <ActionDialog
@@ -825,7 +840,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                 >
                     <Typography>Title: {view_row.title}</Typography>
                     <Typography>Description: {view_row.description}</Typography>
-                    <Typography>File Name: {view_row.file_name}</Typography>
+                    <Typography>File: <a href={new URL(view_row.file_name, content_folder_url).href}>{view_row.file_name}</a></Typography>
                     <Typography>Published Year: {view_row.published_date}</Typography>
                     <Typography>Rights Statement: {view_row.rights_statment}</Typography>
                     <Paper>
