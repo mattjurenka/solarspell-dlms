@@ -1,4 +1,4 @@
-import React, { Component, RefObject } from 'react';
+import React, { Component } from 'react';
 
 import {
     Grid as DataGrid,
@@ -17,7 +17,7 @@ import { APP_URLS, get_data } from './urls';
 import { content_display, content_folder_url } from './settings';
 import { get, set, cloneDeep } from 'lodash';
 import ActionDialog from './action_dialog';
-import { Button, Typography, TextField, Paper, Chip, ExpansionPanelSummary, ExpansionPanelDetails, ExpansionPanel, Checkbox } from '@material-ui/core';
+import { Button, Typography, TextField, Paper, Chip, ExpansionPanelSummary, ExpansionPanelDetails, ExpansionPanel, Grid, Select, MenuItem } from '@material-ui/core';
 import { Autocomplete } from "@material-ui/lab"
 import Axios from 'axios';
 import VALIDATORS from './validators';
@@ -45,7 +45,6 @@ type modal_state = "delete_modal" | "add_modal" | "view_modal" | "edit_modal"
 //Add and edit modal use the same type because they use the same data
 type content_modal_state = {
     is_open:            boolean
-    input:              HTMLInputElement | null
     row:                any //Includes Row to know which content item to patch if an edit modal
     content_file:       field_info<File|null>
     title:              field_info<string>
@@ -86,7 +85,7 @@ type search_state = {
     copyright: string
     years_from: string
     years_to: string
-    active: boolean
+    active: "active" | "inactive" | "all"
     filename: string
     metadata: number[]
 }
@@ -102,6 +101,9 @@ export default class Content extends Component<ContentProps, ContentState> {
     content_modal_defaults: content_modal_state
     view_modal_defaults: view_modal_state
 
+    add_modal_ref: React.RefObject<HTMLInputElement>
+    edit_modal_ref: React.RefObject<HTMLInputElement>
+
     constructor(props: ContentProps) {
         super(props)
 
@@ -112,6 +114,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                         row={row}
                         editFn={() => {
                             this.setState(prevState => {
+                                console.log("editfn")
                                 const new_state = cloneDeep(prevState)
                                 set(new_state, ["edit_modal", "row"], row)
                                 set(new_state, ["edit_modal", "copyright", "value"], row.copyright)
@@ -134,6 +137,8 @@ export default class Content extends Component<ContentProps, ContentState> {
                         setActive={(is_active) => {
                             Axios.patch(APP_URLS.CONTENT_ITEM(row.id), {
                                 active: is_active
+                            }).then(_ => {
+                                this.loadContentRows()
                             })
                         }}
                         viewFn={() => {
@@ -161,13 +166,15 @@ export default class Content extends Component<ContentProps, ContentState> {
 
         this.page_sizes = [10, 25, 100]
 
+        this.edit_modal_ref = React.createRef()
+        this.add_modal_ref = React.createRef()
+
         this.delete_modal_defaults = {
             is_open: false,
             row: {}
         }
         this.content_modal_defaults = {
             is_open: false,
-            input: null,
             row: {},
             content_file: {
                 value: null,
@@ -218,7 +225,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                 copyright: "",
                 years_from: "",
                 years_to: "",
-                active: true,
+                active: "all",
                 metadata: [],
                 filename: ""
             }
@@ -232,11 +239,16 @@ export default class Content extends Component<ContentProps, ContentState> {
     //Loads rows into state from database
     loadContentRows() {
         const search = this.state.search
+        const active_filter = {
+            "all": undefined,
+            "active": true,
+            "inactive": false
+        }[search.active]
         const filters: content_filters = {
             title: search.title,
             copyright: search.copyright,
             metadata: search.metadata,
-            active: search.active
+            active: active_filter
         }
         // Add one to page because dx-react-grid and django paging start from different places
         get_data(APP_URLS.CONTENT_PAGE(this.state.current_page + 1, this.state.page_size, filters)).then((data: any) => {
@@ -299,6 +311,21 @@ export default class Content extends Component<ContentProps, ContentState> {
 
         return (
             <React.Fragment>
+                <Button
+                    onClick={_ => {
+                        this.setState(prevState => {
+                            const new_state = cloneDeep(prevState)
+                            return set(new_state, ["add_modal", "is_open"], true)
+                        })
+                    }}
+                    style={{
+                        marginLeft: "1em",
+                        marginBottom: "1em",
+                        backgroundColor: "#75b2dd",
+                        color: "#FFFFFF"
+                    }}
+                >New Content</Button>
+                <br />
                 <ExpansionPanel expanded={this.state.search.is_open} onChange={(_:any, expanded: boolean) => {
                     this.setState((prevState) => {
                         const new_state = cloneDeep(prevState)
@@ -318,6 +345,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 }, this.loadContentRows)
                             }}
                         />
+                        <br />
                         <TextField
                             label={"Copyright"}
                             value={this.state.search.copyright}
@@ -329,16 +357,22 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 }, this.loadContentRows)
                             }}
                         />
-                        <Checkbox
-                            checked={this.state.search.active}
-                            onChange={(evt) => {
-                                evt.persist()
+                        <br />
+                        <Select
+                            label={"Active"}
+                            value={this.state.search.active}
+                            onChange={(event) => {
                                 this.setState((prevState) => {
                                     const new_state = cloneDeep(prevState)
-                                    return set(new_state, ["search", "active"], evt.target.checked)
+                                    return set(new_state, ["search", "active"], event.target.value)
                                 }, this.loadContentRows)
                             }}
-                        />
+                        >
+                            <MenuItem value={"all"}>All</MenuItem>
+                            <MenuItem value={"active"}>Active</MenuItem>
+                            <MenuItem value={"inactive"}>Inactive</MenuItem>
+                        </Select>
+                        <br />
                         <Autocomplete
                             multiple
                             options={this.props.all_metadata}
@@ -361,20 +395,6 @@ export default class Content extends Component<ContentProps, ContentState> {
                     </ExpansionPanelDetails>
                 </ExpansionPanel>
                 <br />
-                <Button
-                    onClick={_ => {
-                        this.setState(prevState => {
-                            const new_state = cloneDeep(prevState)
-                            return set(new_state, ["add_modal", "is_open"], true)
-                        })
-                    }}
-                    style={{
-                        marginLeft: "1em",
-                        marginBottom: "1em",
-                        backgroundColor: "#75b2dd",
-                        color: "#FFFFFF"
-                    }}
-                >New Content</Button>
                 <DataGrid
                     columns={this.columns}
                     rows={this.state.rows}
@@ -438,7 +458,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 this.setState((prevState) => {
                                     //Sets the file object in state to point to the file attached to the input in DOM
                                     const new_state = cloneDeep(prevState)
-                                    const file_raw = this.state.add_modal.input?.files?.item(0)
+                                    const file_raw = this.add_modal_ref.current?.files?.item(0)
                                     const file = typeof(file_raw) === "undefined" ? null : file_raw
                                     return set(new_state, ["add_modal", "content_file", "value"], file)
                                 }, () => {
@@ -478,8 +498,8 @@ export default class Content extends Component<ContentProps, ContentState> {
                                         
                                         //Form data instead of js object needed so the file upload works as multipart
                                         //There might be a better way to do this with Axios
-                                        const file: File | null | undefined = data.input?.files?.item(0)
-                                        if (typeof(file) == "undefined" || file === null) return
+                                        const file = data.content_file.value
+                                        if (file === null) return
                                         const formData = new FormData()
                                         formData.append('file_name', file.name)
                                         formData.append('content_file', file)
@@ -539,13 +559,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                         accept="*"
                         id="raised-button-file"
                         type="file"
-                        ref={(element: HTMLInputElement) => {
-                            if (this.state.add_modal.input !== null) return
-                            this.setState(prevState => {
-                                const new_state = cloneDeep(prevState)
-                                return set(new_state, ["add_modal", "input"], element)
-                            })
-                        }}
+                        ref={this.add_modal_ref}
                     />
                     <br />
                     <br />
@@ -636,7 +650,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 this.setState((prevState) => {
                                     //Sets the file object in state to point to the file attached to the input in DOM
                                     const new_state = cloneDeep(prevState)
-                                    const file_raw = this.state.edit_modal.input?.files?.item(0)
+                                    const file_raw = this.edit_modal_ref?.current?.files?.item(0)
                                     const file = typeof(file_raw) === "undefined" ? null : file_raw
                                     return set(new_state, ["edit_modal", "content_file", "value"], file)
                                 }, () => {
@@ -675,8 +689,8 @@ export default class Content extends Component<ContentProps, ContentState> {
                                         
                                         //Form data instead of js object needed so the file upload works as multipart
                                         //There might be a better way to do this with Axios
-                                        const file: File | null | undefined = data.input?.files?.item(0)
-                                        if (typeof(file) == "undefined" || file === null) return
+                                        const file: File | null | undefined = data.content_file.value
+                                        if (file === null) return
                                         const formData = new FormData()
                                         formData.append('file_name', file.name)
                                         formData.append('content_file', file)
@@ -686,6 +700,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                                         formData.append('active', "true")
                                         data.metadata.value.forEach(metadata => formData.append('metadata', `${metadata}`))
 
+                                        console.log("patched")
                                         Axios.patch(APP_URLS.CONTENT_ITEM(data.row.id), formData, {
                                             headers: {
                                                 'Content-Type': 'multipart/form-data'
@@ -736,13 +751,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                         accept="*"
                         id="raised-button-file"
                         type="file"
-                        ref={(elemnent: HTMLInputElement) => {
-                            if (this.state.edit_modal.input !== null) return
-                            this.setState(prevState => {
-                                const new_state = cloneDeep(prevState)
-                                return set(new_state, ["edit_modal", "input"], elemnent)
-                            })
-                        }}
+                        ref={this.edit_modal_ref}
                     />
                     <br />
                     <br />
@@ -838,20 +847,28 @@ export default class Content extends Component<ContentProps, ContentState> {
                         </Button>
                     )]}
                 >
-                    <Typography>Title: {view_row.title}</Typography>
-                    <Typography>Description: {view_row.description}</Typography>
-                    <Typography>File: <a href={new URL(view_row.file_name, content_folder_url).href}>{view_row.file_name}</a></Typography>
-                    <Typography>Published Year: {view_row.published_date}</Typography>
-                    <Typography>Rights Statement: {view_row.rights_statment}</Typography>
-                    <Paper>
-                        {view_row.metadata_info?.map((metadata_info_obj: any, idx: number) => (
-                            <li key={idx} style={{listStyle: "none"}}>
-                                <Chip
-                                    label={`${metadata_info_obj.type}: ${metadata_info_obj.name}`}
-                                />
-                            </li>
-                        ))}
-                    </Paper>
+                    <Grid container>
+                        <Grid item xs={4}>
+                            <Typography>Title: {view_row.title}</Typography>
+                            <Typography>Description: {view_row.description}</Typography>
+                            <Typography>Filename: {view_row.file_name}</Typography>
+                            <Typography>Published Year: {view_row.published_date}</Typography>
+                            <Typography>Copyright: {view_row.copyright}</Typography>
+                            <Typography>Rights Statement: {view_row.rights_statment}</Typography>
+                            <Paper>
+                                {view_row.metadata_info?.map((metadata_info_obj: any, idx: number) => (
+                                    <li key={idx} style={{listStyle: "none"}}>
+                                        <Chip
+                                            label={`${metadata_info_obj.type}: ${metadata_info_obj.name}`}
+                                        />
+                                    </li>
+                                ))}
+                            </Paper>
+                        </Grid>
+                        <Grid item xs={8}>
+                            <object data={new URL(view_row.file_name, content_folder_url).href} />
+                        </Grid>
+                    </Grid>
                 </ActionDialog>
             </React.Fragment>
         )

@@ -35,7 +35,7 @@ class Content(models.Model):
     title = models.CharField(max_length=300)
     description = models.TextField(null=True)
     modified_on = models.DateTimeField(default=datetime.now)
-    metadata = models.ManyToManyField(Metadata)
+    metadata = models.ManyToManyField(Metadata, blank=True)
     copyright = models.CharField(max_length=500, null=True)
     rights_statement = models.TextField(null=True)
     published_date = models.DateField(null=True)

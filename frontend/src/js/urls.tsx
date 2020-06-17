@@ -22,8 +22,6 @@ const APP_URLS = {
         } = content_filter
         const filters_arr: [string, any][] = [["page", `${page}`], ["size", `${size}`]]
         
-        
-
         if (typeof title !== "undefined" && title !== "") filters_arr.push(["title", title])
         if (typeof years !== "undefined") filters_arr.push(["years", `${years[0]},${years[1]}`])
         if (typeof filename !== "undefined") filters_arr.push(["file_name", filename])
