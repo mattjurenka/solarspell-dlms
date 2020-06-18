@@ -22,4 +22,5 @@ type content_filters = {
     copyright?: string
     active?: boolean
     metadata?: number[]
+    sort?: string
 }

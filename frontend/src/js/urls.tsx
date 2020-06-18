@@ -18,7 +18,7 @@ const APP_URLS = {
     CONTENT_PAGE: (page: number, size: number, filters?: content_filters) => {
         const content_filter = filters || {}
         const {
-            title, years, filename, copyright, active, metadata
+            title, years, filename, copyright, active, metadata, sort
         } = content_filter
         const filters_arr: [string, any][] = [["page", `${page}`], ["size", `${size}`]]
         
@@ -27,11 +27,9 @@ const APP_URLS = {
         if (typeof filename !== "undefined") filters_arr.push(["file_name", filename])
         if (typeof copyright !== "undefined" && copyright !== "") filters_arr.push(["copyright", copyright])
         if (typeof active !== "undefined") filters_arr.push(["active", active ? "true" : "false"])
-        if (typeof metadata !== "undefined" && metadata.length > 0) {
-            filters_arr.push(["metadata", metadata.join(",")])
-            console.log(metadata, metadata.join(","))
-        }
-    
+        if (typeof metadata !== "undefined" && metadata.length > 0) filters_arr.push(["metadata", metadata.join(",")])
+        if (typeof sort !== "undefined") filters_arr.push(["sort", sort])
+
         return url_with_params(`${base_url}/contents/`, filters_arr)
     },
     CONTENT_ITEM: (id: number) => url_with_params(`${base_url}/contents/${id}/`),

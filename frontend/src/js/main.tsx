@@ -24,6 +24,9 @@ interface MainScreenState {
     url: URL,
     current_tab: string
     all_metadata: SerializedMetadata[]
+    defined_metadata: {
+        [metadata_type: string]: SerializedMetadata[]
+    }
 }
 
 class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
@@ -78,7 +81,8 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
             current_tab: tab_value === null ?
                 default_tab :
                 (tab_value in this.tabs ? tab_value : default_tab),
-            all_metadata: []
+            all_metadata: [],
+            defined_metadata: {}
         }
 
         this.loadMetadataDict = this.loadMetadataDict.bind(this)

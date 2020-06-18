@@ -76,6 +76,15 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
             except:
                 pass
 
+        order_raw = self.request.GET.get("sort", None)
+        if order_raw is not None:
+            try:
+                split = order_raw.split(",")
+                order_str = ("-" if split[1] == "desc" else "") + split[0]
+                queryset = queryset.order_by(order_str)
+            except:
+                pass
+
         return queryset
 
 
