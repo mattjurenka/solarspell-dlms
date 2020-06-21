@@ -14,6 +14,7 @@ const ActionDialog: React.SFC<ActionDialogProps> = (props) => {
         <Dialog
             open={props.open}
             onClose={on_close}
+            maxWidth={false}
         >
             <DialogTitle>
                 {props.title}

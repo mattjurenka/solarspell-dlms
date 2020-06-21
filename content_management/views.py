@@ -63,6 +63,7 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
             try:
                 metadata = [int(x) for x in metadata_raw.split(",")]
                 for id in metadata:
+                    print(id)
                     queryset = queryset.filter(metadata__contains=id)
             except:
                 pass
@@ -72,6 +73,15 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
             try:
                 years_range = [year+"-01-01" for year in year_raw.split(",")[0:2]]
                 queryset = queryset.filter(published_date__range=years_range)
+            except:
+                pass
+
+        order_raw = self.request.GET.get("sort", None)
+        if order_raw is not None:
+            try:
+                split = order_raw.split(",")
+                order_str = ("-" if split[1] == "desc" else "") + split[0]
+                queryset = queryset.order_by(order_str)
             except:
                 pass
 
