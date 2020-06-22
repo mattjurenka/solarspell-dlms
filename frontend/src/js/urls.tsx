@@ -24,7 +24,7 @@ const APP_URLS = {
         
         if (typeof title !== "undefined" && title !== "") filters_arr.push(["title", title])
         if (typeof years !== "undefined") filters_arr.push(["years", `${years[0]},${years[1]}`])
-        if (typeof filename !== "undefined") filters_arr.push(["file_name", filename])
+        if (typeof filename !== "undefined" && filename !== "") filters_arr.push(["file_name", filename])
         if (typeof copyright !== "undefined" && copyright !== "") filters_arr.push(["copyright", copyright])
         if (typeof active !== "undefined") filters_arr.push(["active", active ? "true" : "false"])
         if (typeof metadata !== "undefined" && metadata.length > 0) filters_arr.push(["metadata", metadata.join(",")])

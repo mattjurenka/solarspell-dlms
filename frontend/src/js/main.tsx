@@ -132,7 +132,7 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                         {tabs_jsx}
                     </Tabs>
                 </Grid>
-                <Grid container style={{marginTop: '20px'}}>
+                <Grid style={{marginTop: '20px'}}>
                     {this.tabs[this.state.current_tab].component(this.tabs)}
                 </Grid>
             </React.Fragment>

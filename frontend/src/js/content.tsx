@@ -19,7 +19,7 @@ import { APP_URLS, get_data } from './urls';
 import { content_display, content_folder_url } from './settings';
 import { get, set, cloneDeep } from 'lodash';
 import ActionDialog from './action_dialog';
-import { Button, Typography, TextField, Paper, Chip, ExpansionPanelSummary, ExpansionPanelDetails, ExpansionPanel, Grid, Select, MenuItem } from '@material-ui/core';
+import { Button, Typography, TextField, Paper, Chip, ExpansionPanelSummary, ExpansionPanelDetails, ExpansionPanel, Grid, Select, MenuItem, Container, Divider } from '@material-ui/core';
 import { Autocomplete } from "@material-ui/lab"
 import Axios from 'axios';
 import VALIDATORS from './validators';
@@ -128,7 +128,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 edit_modal.rights_statement.value = row.rights_statement
                                 edit_modal.title.value = row.title
                                 edit_modal.description.value = row.description
-                                edit_modal.year.value = row.published_date
+                                edit_modal.year.value = row.published_year
                                 edit_modal.metadata.value = row.metadata
                                 
                                 edit_modal.is_open = true
@@ -162,7 +162,7 @@ export default class Content extends Component<ContentProps, ContentState> {
             }},
             {name: "title", title: "Title"},
             {name: "description", title: "Description"},
-            {name: "published_date", title: "Year Published"},
+            {name: "published_year", title: "Year Published"},
             {name: "file_name", title: "File Name"}
         ]
         this.columns = this.columns.concat(content_display.map((metadata_type:string) => {
@@ -328,7 +328,6 @@ export default class Content extends Component<ContentProps, ContentState> {
         }
         // This is correct but I don't know how to get ts-lint to recognize it
         // Maybe someone better at TypeScript can fix it
-        // I think it has something to do with how it reads the type of default_dict[dialog] and it cant match it to the expected state type
         this.update_state(draft => {
             draft[dialog] = cloneDeep(default_dict[dialog])
         }).then(this.loadContentRows)
@@ -354,7 +353,6 @@ export default class Content extends Component<ContentProps, ContentState> {
                         color: "#FFFFFF"
                     }}
                 >New Content</Button>
-                <br />
                 <ExpansionPanel expanded={this.state.search.is_open} onChange={(_:any, expanded: boolean) => {
                     this.update_state(draft => {
                         draft.search.is_open = expanded
@@ -362,93 +360,95 @@ export default class Content extends Component<ContentProps, ContentState> {
                 }}>
                     <ExpansionPanelSummary>Search</ExpansionPanelSummary>
                     <ExpansionPanelDetails>
-                        <TextField
-                            label={"Title"}
-                            value={this.state.search.title}
-                            onChange={(evt) => {
-                                evt.persist()
-                                this.update_state(draft => {
-                                    draft.search.title = evt.target.value
-                                }).then(this.loadContentRows)
-                            }}
-                        />
-                        <br />
-                        <TextField
-                            label={"Copyright"}
-                            value={this.state.search.copyright}
-                            onChange={(evt) => {
-                                evt.persist()
-                                this.update_state(draft => {
-                                    draft.search.copyright = evt.target.value
-                                }).then(this.loadContentRows)
-                            }}
-                        />
-                        <br />
-                        <TextField
-                            label={"Years From"}
-                            value={this.state.search.years_from}
-                            onChange={(evt) => {
-                                evt.persist()
-                                this.update_state(draft => {
-                                    draft.search.years_from = evt.target.value
-                                }).then(this.loadContentRows)
-                            }}
-                        />
-                        <br />
-                        <TextField
-                            label={"Years To"}
-                            value={this.state.search.years_to}
-                            onChange={(evt) => {
-                                evt.persist()
-                                this.update_state(draft => {
-                                    draft.search.years_to = evt.target.value
-                                })
-                            }}
-                        />
-                        <br />
-                        <TextField
-                            label={"Filename"}
-                            value={this.state.search.filename}
-                            onChange={(evt) => {
-                                evt.persist()
-                                this.update_state(draft => {
-                                    draft.search.filename = evt.target.value
-                                })
-                            }}
-                        />
-                        <br />
-                        <Select
-                            label={"Active"}
-                            value={this.state.search.active}
-                            onChange={(event) => {
-                                this.update_state(draft => {
-                                    draft.search.active = event.target.value as active_search_option
-                                })
-                            }}
-                        >
-                            <MenuItem value={"all"}>All</MenuItem>
-                            <MenuItem value={"active"}>Active</MenuItem>
-                            <MenuItem value={"inactive"}>Inactive</MenuItem>
-                        </Select>
-                        <br />
-                        <Autocomplete
-                            multiple
-                            options={this.props.all_metadata}
-                            getOptionLabel={(option) => `${option.type_name}: ${option.name}`}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    variant={"standard"}
-                                    label={"Metadata"}
-                                    placeholder={"Metadata"}
-                                />
-                            )}
-                            onChange={(_evt, values) => {
-                                this.update_state(draft => {
-                                    draft.search.metadata = values.map(metadata => metadata.id)
-                                }).then(this.loadContentRows)
-                            }}
-                        />
+                        <Container>
+                            <TextField
+                                label={"Title"}
+                                value={this.state.search.title}
+                                onChange={(evt) => {
+                                    evt.persist()
+                                    this.update_state(draft => {
+                                        draft.search.title = evt.target.value
+                                    }).then(this.loadContentRows)
+                                }}
+                            />
+                            <br />
+                            <TextField
+                                label={"Copyright"}
+                                value={this.state.search.copyright}
+                                onChange={(evt) => {
+                                    evt.persist()
+                                    this.update_state(draft => {
+                                        draft.search.copyright = evt.target.value
+                                    }).then(this.loadContentRows)
+                                }}
+                            />
+                            <br />
+                            <TextField
+                                label={"Years From"}
+                                value={this.state.search.years_from}
+                                onChange={(evt) => {
+                                    evt.persist()
+                                    this.update_state(draft => {
+                                        draft.search.years_from = evt.target.value
+                                    }).then(this.loadContentRows)
+                                }}
+                            />
+                            <br />
+                            <TextField
+                                label={"Years To"}
+                                value={this.state.search.years_to}
+                                onChange={(evt) => {
+                                    evt.persist()
+                                    this.update_state(draft => {
+                                        draft.search.years_to = evt.target.value
+                                    })
+                                }}
+                            />
+                            <br />
+                            <TextField
+                                label={"Filename"}
+                                value={this.state.search.filename}
+                                onChange={(evt) => {
+                                    evt.persist()
+                                    this.update_state(draft => {
+                                        draft.search.filename = evt.target.value
+                                    })
+                                }}
+                            />
+                            <br />
+                            <Select
+                                label={"Active"}
+                                value={this.state.search.active}
+                                onChange={(event) => {
+                                    this.update_state(draft => {
+                                        draft.search.active = event.target.value as active_search_option
+                                    })
+                                }}
+                            >
+                                <MenuItem value={"all"}>All</MenuItem>
+                                <MenuItem value={"active"}>Active</MenuItem>
+                                <MenuItem value={"inactive"}>Inactive</MenuItem>
+                            </Select>
+                            <br />
+                            <Autocomplete
+                                multiple
+                                options={this.props.all_metadata}
+                                getOptionLabel={(option) => `${option.type_name}: ${option.name}`}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        variant={"standard"}
+                                        label={"Metadata"}
+                                        placeholder={"Metadata"}
+                                    />
+                                )}
+                                onChange={(_evt, values) => {
+                                    this.update_state(draft => {
+                                        draft.search.metadata = values.map(metadata => metadata.id)
+                                    }).then(this.loadContentRows)
+                                }}
+                            />
+                        </Container>
                     </ExpansionPanelDetails>
                 </ExpansionPanel>
                 <br />
@@ -870,24 +870,39 @@ export default class Content extends Component<ContentProps, ContentState> {
                 >
                     <Grid container>
                         <Grid item xs={4}>
-                            <Typography>Title: {view_row.title}</Typography>
-                            <Typography>Description: {view_row.description}</Typography>
-                            <Typography>Filename: {view_row.file_name}</Typography>
-                            <Typography>Published Year: {view_row.published_date}</Typography>
-                            <Typography>Copyright: {view_row.copyright}</Typography>
-                            <Typography>Rights Statement: {view_row.rights_statment}</Typography>
-                            <Paper>
-                                {view_row.metadata_info?.map((metadata_info_obj: any, idx: number) => (
-                                    <li key={idx} style={{listStyle: "none"}}>
-                                        <Chip
-                                            label={`${metadata_info_obj.type}: ${metadata_info_obj.name}`}
-                                        />
-                                    </li>
-                                ))}
-                            </Paper>
+                            {[
+                                ["Title", view_row.title],
+                                ["Description", view_row.description],
+                                ["Filename", <a href={new URL(view_row.file_name, content_folder_url).href}>{view_row.file_name}</a>],
+                                ["Year Published", view_row.published_year],
+                                ["Copyright", view_row.copyright],
+                                ["Rights Statement", view_row.rights_statement]
+                            ].map(([title, value], idx) => {
+                                return (
+                                    <Container style={{marginBottom: "1em"}} key={idx}>
+                                        <Typography variant={"h6"}>{title}</Typography>
+                                        <Typography>{value === null ? <i>Not Available</i> : value}</Typography>
+                                    </Container>
+                                )
+                            })}
+                            <Container key={"meta"}>
+                                <Typography variant={"h6"}>Metadata</Typography>
+                                <Paper>
+                                    {view_row.metadata_info?.map((metadata_info_obj: any, idx: number) => (
+                                        <li key={idx} style={{listStyle: "none"}}>
+                                            <Chip
+                                                label={`${metadata_info_obj.type}: ${metadata_info_obj.name}`}
+                                            />
+                                        </li>
+                                    ))}
+                                </Paper>
+                            </Container>
                         </Grid>
                         <Grid item xs={8}>
-                            <object data={new URL(view_row.file_name, content_folder_url).href} />
+                            <object
+                                style={{maxWidth: "100%"}}
+                                data={new URL(view_row.file_name, content_folder_url).href}
+                            />
                         </Grid>
                     </Grid>
                 </ActionDialog>
