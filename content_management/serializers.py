@@ -5,16 +5,11 @@ from content_management.models import (
 
 
 class ContentSerializer(serializers.ModelSerializer):
-    published_year = serializers.SerializerMethodField('get_published_year')
-
-    def get_published_year(self, content):
-        date = content.published_date
-        return None if date == None else str(date.year)
-
     class Meta:
         model = Content
         fields = ('id', 'file_name', 'content_file', 'title', 'description', 'modified_on', 'copyright',
-        'rights_statement', 'published_date', 'active', 'metadata', 'metadata_info', "published_year")
+        'rights_statement', 'published_date', 'active', 'metadata', 'metadata_info', "published_year",
+        "file_name")
 
 
 class MetadataSerializer(serializers.ModelSerializer):

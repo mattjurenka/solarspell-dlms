@@ -25,12 +25,8 @@ class Metadata(models.Model):
 
 class Content(models.Model):
     def set_file_name(self, file_name):
-        self.file_name = file_name
-        path = os.path.join("contents", file_name)
-        print(path)
-        return path
+        return os.path.join("contents", file_name)
 
-    file_name = models.CharField(max_length=300)
     content_file = models.FileField("File", upload_to=set_file_name, max_length=300)
     title = models.CharField(max_length=300)
     description = models.TextField(null=True)
@@ -40,6 +36,13 @@ class Content(models.Model):
     rights_statement = models.TextField(null=True)
     published_date = models.DateField(null=True)
     active = models.BooleanField(default=1)
+
+    def published_year(self):
+        return None if self.published_date == None else str(self.published_date.year)
+
+    def file_name(self):
+        return os.path.basename(self.content_file.name)
+
 
     def metadata_info(self):
         return [{
@@ -57,11 +60,11 @@ class Content(models.Model):
 class LibLayoutImage(models.Model):
 
     def get_folder_name(self, file_name):
-        if self.image_group is 1:
+        if self.image_group == 1:
             return os.path.join("images", "logos", file_name)
-        elif self.image_group is 2:
+        elif self.image_group == 2:
             return os.path.join("images", "banners", file_name)
-        elif self.image_group is 3:
+        elif self.image_group == 3:
             return os.path.join("images", "libversions", file_name)
 
     GROUPS = (

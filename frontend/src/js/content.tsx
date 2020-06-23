@@ -11,6 +11,7 @@ import {
     PagingState,
     SortingState,
     Sorting,
+    Column,
 
 } from "@devexpress/dx-react-grid"
 
@@ -19,7 +20,7 @@ import { APP_URLS, get_data } from './urls';
 import { content_display, content_folder_url } from './settings';
 import { get, set, cloneDeep } from 'lodash';
 import ActionDialog from './action_dialog';
-import { Button, Typography, TextField, Paper, Chip, ExpansionPanelSummary, ExpansionPanelDetails, ExpansionPanel, Grid, Select, MenuItem, Container, Divider } from '@material-ui/core';
+import { Button, Typography, TextField, Paper, Chip, ExpansionPanelSummary, ExpansionPanelDetails, ExpansionPanel, Grid, Select, MenuItem, Container } from '@material-ui/core';
 import { Autocomplete } from "@material-ui/lab"
 import Axios from 'axios';
 import VALIDATORS from './validators';
@@ -31,7 +32,8 @@ interface ContentProps {
 }
 
 interface ContentState {
-    rows: any[]
+    display_rows: any[]
+    loaded_content: SerializedContent[]
     total_count: number
     page_size: number
     current_page: number
@@ -49,7 +51,7 @@ type modal_state = "delete_modal" | "add_modal" | "view_modal" | "edit_modal"
 //Add and edit modal use the same type because they use the same data
 type content_modal_state = {
     is_open:            boolean
-    row:                any //Includes Row to know which content item to patch if an edit modal
+    row:                SerializedContent //Includes Row to know which content item to patch if an edit modal
     content_file:       field_info<File|null>
     title:              field_info<string>
     description:        field_info<string>
@@ -75,12 +77,12 @@ type field_info<T> = {
 
 type view_modal_state = {
     is_open: boolean
-    row: any
+    row: SerializedContent
 }
 
 type delete_modal_state = {
     is_open: boolean
-    row: any
+    row: SerializedContent
 }
 
 
@@ -98,24 +100,26 @@ type search_state = {
 
 
 export default class Content extends Component<ContentProps, ContentState> {
-    columns: any[]
+    columns: Column[]
     page_sizes: number[]
 
     delete_modal_defaults: Readonly<delete_modal_state>
     content_modal_defaults: Readonly<content_modal_state>
     view_modal_defaults: Readonly<view_modal_state>
+    row_defaults: Readonly<SerializedContent>
 
     add_modal_ref: React.RefObject<HTMLInputElement>
     edit_modal_ref: React.RefObject<HTMLInputElement>
 
-    content_validators: [content_modal_state_fields, (raw: any) => string][]
+    add_content_validators: [content_modal_state_fields, (raw: any) => string][]
+    edit_content_validators: [content_modal_state_fields, (raw: any) => string][]
     constructor(props: ContentProps) {
         super(props)
 
         this.update_state = this.update_state.bind(this)
 
         this.columns = [
-            {name: "actions", title: "Actions", getCellValue: (row: any) => {
+            {name: "actions", title: "Actions", getCellValue: (row: SerializedContent) => {
                 return (
                     <ActionPanel
                         row={row}
@@ -124,11 +128,11 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 const edit_modal = draft.edit_modal
                                 edit_modal.row = row
 
-                                edit_modal.copyright.value = row.copyright
-                                edit_modal.rights_statement.value = row.rights_statement
+                                edit_modal.copyright.value = row.copyright === null ? "" : row.copyright
+                                edit_modal.rights_statement.value = row.rights_statement === null ? "" : row.rights_statement
                                 edit_modal.title.value = row.title
-                                edit_modal.description.value = row.description
-                                edit_modal.year.value = row.published_year
+                                edit_modal.description.value = row.description === null ? "" : row.description
+                                edit_modal.year.value = row.published_year === null ? "" : row.published_year
                                 edit_modal.metadata.value = row.metadata
                                 
                                 edit_modal.is_open = true
@@ -177,13 +181,28 @@ export default class Content extends Component<ContentProps, ContentState> {
         this.edit_modal_ref = React.createRef()
         this.add_modal_ref = React.createRef()
 
+        this.row_defaults = {
+            id: 0,
+            file_name: "",
+            content_file: "",
+            title: "",
+            description: null,
+            modified_on: "",
+            copyright: null,
+            rights_statement: null,
+            active: false,
+            metadata: [],
+            metadata_info: [],
+            published_year: ""
+        }
+
         this.delete_modal_defaults = {
             is_open: false,
-            row: {}
+            row: cloneDeep(this.row_defaults)
         }
         this.content_modal_defaults = {
             is_open: false,
-            row: {},
+            row: cloneDeep(this.row_defaults),
             content_file: {
                 value: null,
                 reason: ""
@@ -215,11 +234,12 @@ export default class Content extends Component<ContentProps, ContentState> {
         }
         this.view_modal_defaults = {
             is_open: false,
-            row: {}
+            row: cloneDeep(this.row_defaults)
         }
 
         this.state = {
-            rows: [],
+            display_rows: [],
+            loaded_content: [],
             total_count: 0,
             current_page: 0,
             page_size: this.page_sizes[0],
@@ -240,9 +260,20 @@ export default class Content extends Component<ContentProps, ContentState> {
             }
         }
 
-        //Array that specifies which state fields to validate and with what functions
-        this.content_validators = [
-            ["content_file", VALIDATORS.FILE],
+        //Array that specifies which state fields to validate and with what functions for the add_modal
+        this.add_content_validators = [
+            ["content_file", VALIDATORS.ADD_FILE],
+            ["title", VALIDATORS.TITLE],
+            ["description", VALIDATORS.DESCRIPTION],
+            ["year", VALIDATORS.YEAR],
+            ["metadata", VALIDATORS.METADATA],
+            ["copyright", VALIDATORS.COPYRIGHT],
+            ["rights_statement", VALIDATORS.RIGHTS_STATEMENT]
+        ]
+
+        //The same for the edit_modal
+        this.edit_content_validators = [
+            ["content_file", VALIDATORS.EDIT_FILE],
             ["title", VALIDATORS.TITLE],
             ["description", VALIDATORS.DESCRIPTION],
             ["year", VALIDATORS.YEAR],
@@ -267,7 +298,7 @@ export default class Content extends Component<ContentProps, ContentState> {
     }
 
     //Loads rows into state from database
-    loadContentRows() {
+    async loadContentRows() {
         const search = this.state.search
         const active_filter = {
             "all": undefined,
@@ -286,7 +317,8 @@ export default class Content extends Component<ContentProps, ContentState> {
         get_data(APP_URLS.CONTENT_PAGE(this.state.current_page + 1, this.state.page_size, filters)).then((data: any) => {
             //Adds the MetadataTypes defined in content_displayy as a key to each item in row so it can be easily accessed
             //by dx-react-grid later
-            const rows = data.results.map((row: any) => {
+            const rows = data.results as SerializedContent[]
+            const display_rows = cloneDeep(rows).map((row: any) => {
                 row.metadata_info.map((info:any) => {
                     if (content_display.includes(info.type)) {
                         const new_metadata_entry = get(row, [info.type], []).concat([info.name])
@@ -294,15 +326,15 @@ export default class Content extends Component<ContentProps, ContentState> {
                     }
                 })
                 content_display.map(type_name => {
-                    const display_string = get(row, [type_name], []).join(", ")
-                    set(row, [type_name], display_string)
+                    row[type_name] = get(row, [type_name], []).join(", ")
                 })
 
                 return row
             })
 
             this.update_state(draft => {
-                draft.rows = rows
+                draft.loaded_content = rows
+                draft.display_rows = display_rows
                 draft.total_count = data.count
             })
         })
@@ -310,7 +342,7 @@ export default class Content extends Component<ContentProps, ContentState> {
 
     //Make a simple delete request given the DB id of a row
     deleteItem(id: number) {
-        Axios.delete(APP_URLS.CONTENT_ITEM(id)).then(console.log)
+        Axios.delete(APP_URLS.CONTENT_ITEM(id))
     }
 
     //Initially load content roads
@@ -331,8 +363,17 @@ export default class Content extends Component<ContentProps, ContentState> {
         this.update_state(draft => {
             draft[dialog] = cloneDeep(default_dict[dialog])
         }).then(this.loadContentRows)
+    }
 
-        
+    //Runs validation on all state_fields
+    run_validators(modal: "add_modal" | "edit_modal") {
+        this.update_state(draft => {
+            const validators = modal === "add_modal" ? this.add_content_validators : this.edit_content_validators
+            validators.map((validator_entry) => {
+                const [state_field, validator_fn] = validator_entry
+                draft[modal][state_field].reason = validator_fn(this.state[modal][state_field].value)
+            })
+        })
     }
 
     render() {
@@ -454,7 +495,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                 <br />
                 <DataGrid
                     columns={this.columns}
-                    rows={this.state.rows}
+                    rows={this.state.display_rows}
                 >
                     <SortingState
                         sorting={this.state.sorting}
@@ -472,8 +513,17 @@ export default class Content extends Component<ContentProps, ContentState> {
                     />
                     <PagingState
                         currentPage={this.state.current_page}
-                        onCurrentPageChange={() => {}}
+                        onCurrentPageChange={(current_page: number) => {
+                            this.update_state(draft => {
+                                draft.current_page = current_page
+                            }).then(this.loadContentRows)
+                        }}
                         pageSize={this.state.page_size}
+                        onPageSizeChange={(page_size: number) => {
+                            this.update_state(draft => {
+                                draft.page_size = page_size
+                            }).then(this.loadContentRows)
+                        }}
                     />
                     <CustomPaging totalCount={this.state.total_count}/>
                     <Table />
@@ -482,7 +532,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                 </DataGrid>
                 {/* Most of the code in these ActionDialogs is still boilerplate, we should revisit how to make this more concise. */}
                 <ActionDialog
-                    title={`Delete Content item ${this.state.delete_modal.row.name}?`}
+                    title={`Delete Content item ${this.state.delete_modal.row.title}?`}
                     open={this.state.delete_modal.is_open}
                     actions={[(
                         <Button
@@ -531,19 +581,12 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     const file_raw = this.add_modal_ref.current?.files?.item(0)
                                     const file = typeof(file_raw) === "undefined" ? null : file_raw
                                     draft.add_modal.content_file.value = file
-                                }).then(() => {
-                                    return this.update_state(draft => {
-                                        //Runs validation on all state_fields
-                                        this.content_validators.map((validator_entry) => {
-                                            const [state_field, validator_fn] = validator_entry
-                                            draft.add_modal[state_field].reason = validator_fn(this.state.add_modal[state_field].value)
-                                        })
-                                    })
-                                }).then(() => {
+                                })
+                                .then(() => this.run_validators("add_modal"))
+                                .then(() => {
                                     //If theres is invalid user input exit upload logic without closing the modal
-                                    for (const validator_entry of this.content_validators) {
+                                    for (const validator_entry of this.add_content_validators) {
                                         const [state_field] = validator_entry
-                                        console.log(state_field)
                                         if (this.state.add_modal[state_field].reason !== "") return
                                     }
 
@@ -554,7 +597,6 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     const file = data.content_file.value
                                     if (file === null) return
                                     const formData = new FormData()
-                                    formData.append('file_name', file.name)
                                     formData.append('content_file', file)
                                     formData.append('title', data.title.value)
                                     formData.append('description', data.description.value)
@@ -568,6 +610,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                                         }
                                     })
 
+                                    this.loadContentRows()
                                     this.closeDialog("add_modal")
                                 })
                             }}
@@ -698,17 +741,11 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     const file_raw = this.edit_modal_ref?.current?.files?.item(0)
                                     const file = typeof(file_raw) === "undefined" ? null : file_raw
                                     draft.edit_modal.content_file.value = file
-                                }).then(() => {
-                                    return this.update_state(draft => {
-                                        //Runs validation on all state_fields
-                                        this.content_validators.map((validator_entry) => {
-                                            const [state_field, validator_fn] = validator_entry
-                                            draft.edit_modal[state_field].reason = validator_fn(this.state.edit_modal[state_field].value)
-                                        })
-                                    })
-                                }).then(() => {
+                                })
+                                .then(() => this.run_validators("edit_modal"))
+                                .then(() => {
                                     //If theres is invalid user input exit upload logic without closing the modal
-                                    for (const validator_entry of this.content_validators) {
+                                    for (const validator_entry of this.edit_content_validators) {
                                         const [state_field] = validator_entry
                                         if (this.state.edit_modal[state_field].reason !== "") return
                                     }
@@ -717,30 +754,30 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     
                                     //Form data instead of js object needed so the file upload works as multipart
                                     //There might be a better way to do this with Axios
-                                    const file: File | null | undefined = data.content_file.value
-                                    if (file === null) return
+                                    const file: File | null = data.content_file.value
                                     const formData = new FormData()
-                                    formData.append('file_name', file.name)
-                                    formData.append('content_file', file)
+                                    if (file !== null) {
+                                        formData.append('content_file', file)
+                                    }
                                     formData.append('title', data.title.value)
                                     formData.append('description', data.description.value)
                                     formData.append('published_date', `${data.year.value}-01-01`)
                                     formData.append('active', "true")
                                     data.metadata.value.forEach(metadata => formData.append('metadata', `${metadata}`))
 
-                                    console.log("patched")
                                     Axios.patch(APP_URLS.CONTENT_ITEM(data.row.id), formData, {
                                         headers: {
                                             'Content-Type': 'multipart/form-data'
                                         }
                                     })
 
+                                    this.loadContentRows()
                                     this.closeDialog("edit_modal")
                                 })
                             }}
                             color="primary"
                         >
-                            Add
+                            Save
                         </Button>
                     )]}
                 >
@@ -899,10 +936,12 @@ export default class Content extends Component<ContentProps, ContentState> {
                             </Container>
                         </Grid>
                         <Grid item xs={8}>
-                            <object
-                                style={{maxWidth: "100%"}}
-                                data={new URL(view_row.file_name, content_folder_url).href}
-                            />
+                            {this.state.view_modal.is_open ? (
+                                <object
+                                    style={{maxWidth: "100%"}}
+                                    data={new URL(view_row.file_name, content_folder_url).href}
+                                />
+                            ) : null}
                         </Grid>
                     </Grid>
                 </ActionDialog>
