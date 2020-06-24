@@ -1,7 +1,5 @@
 import Axios from "axios"
 
-
-
 const base_url = "api"
 
 const url_with_params = (urlstr: string, params:[string, any][]=[]) => {
@@ -23,7 +21,7 @@ const APP_URLS = {
         const filters_arr: [string, any][] = [["page", `${page}`], ["size", `${size}`]]
         
         if (typeof title !== "undefined" && title !== "") filters_arr.push(["title", title])
-        if (typeof years !== "undefined") filters_arr.push(["years", `${years[0]},${years[1]}`])
+        if (typeof years !== "undefined") filters_arr.push(["published_year", `${years[0]},${years[1]}`])
         if (typeof filename !== "undefined" && filename !== "") filters_arr.push(["file_name", filename])
         if (typeof copyright !== "undefined" && copyright !== "") filters_arr.push(["copyright", copyright])
         if (typeof active !== "undefined") filters_arr.push(["active", active ? "true" : "false"])

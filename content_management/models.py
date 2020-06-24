@@ -27,7 +27,7 @@ class Content(models.Model):
     def set_file_name(self, file_name):
         return os.path.join("contents", file_name)
 
-    content_file = models.FileField("File", upload_to=set_file_name, max_length=300)
+    content_file = models.FileField("File", upload_to="contents/", max_length=300)
     title = models.CharField(max_length=300)
     description = models.TextField(null=True)
     modified_on = models.DateTimeField(default=datetime.now)

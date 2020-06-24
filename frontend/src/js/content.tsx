@@ -18,7 +18,7 @@ import {
 import ActionPanel from './action_panel';
 import { APP_URLS, get_data } from './urls';
 import { content_display, content_folder_url } from './settings';
-import { get, set, cloneDeep } from 'lodash';
+import { get, set, cloneDeep, debounce } from 'lodash';
 import ActionDialog from './action_dialog';
 import { Button, Typography, TextField, Paper, Chip, ExpansionPanelSummary, ExpansionPanelDetails, ExpansionPanel, Grid, Select, MenuItem, Container } from '@material-ui/core';
 import { Autocomplete } from "@material-ui/lab"
@@ -150,7 +150,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                             Axios.patch(APP_URLS.CONTENT_ITEM(row.id), {
                                 active: is_active
                             }).then(_ => {
-                                this.loadContentRows()
+                                this.load_content_rows()
                             })
                         }}
                         viewFn={() => {
@@ -282,9 +282,11 @@ export default class Content extends Component<ContentProps, ContentState> {
             ["rights_statement", VALIDATORS.RIGHTS_STATEMENT]
         ]
 
-        this.loadContentRows = this.loadContentRows.bind(this)
+        this.load_content_rows = this.load_content_rows.bind(this)
+        this.debounce_load_rows = this.debounce_load_rows.bind(this)
         this.deleteItem = this.deleteItem.bind(this)
         this.closeDialog = this.closeDialog.bind(this)
+        this.add_file = this.add_file.bind(this)
     }
 
     // Custom implementation of setState, just abstracts away boilerplate so we can save lines when using immer functions
@@ -298,14 +300,24 @@ export default class Content extends Component<ContentProps, ContentState> {
     }
 
     //Loads rows into state from database
-    async loadContentRows() {
+    async load_content_rows() {
         const search = this.state.search
         const active_filter = {
             "all": undefined,
             "active": true,
             "inactive": false
         }[search.active]
+
+        //Converts years_from and years_to to a two array of the integers.
+        //Validates that years_from and years_to are valid integers and years_from <= years_to
+        //If invalid years will be undefined
+        const years_raw: [number, number] = [parseInt(search.years_from), parseInt(search.years_to)]
+        const years = (years_raw.filter(year_raw => !isNaN(year_raw)).length === 2) ? (
+            (years_raw[0] <= years_raw[1]) ? years_raw : undefined
+        ) : undefined
+
         const filters: content_filters = {
+            years,
             title: search.title,
             copyright: search.copyright,
             metadata: search.metadata,
@@ -313,6 +325,7 @@ export default class Content extends Component<ContentProps, ContentState> {
             filename: search.filename,
             sort: this.state.sorting.length > 0 ? `${this.state.sorting[0].columnName},${this.state.sorting[0].direction}` : undefined
         }
+        console.log(filters)
         // Add one to page because dx-react-grid and django paging start from different places
         get_data(APP_URLS.CONTENT_PAGE(this.state.current_page + 1, this.state.page_size, filters)).then((data: any) => {
             //Adds the MetadataTypes defined in content_displayy as a key to each item in row so it can be easily accessed
@@ -340,6 +353,9 @@ export default class Content extends Component<ContentProps, ContentState> {
         })
     }
 
+    //Delays the function call to load_content_rows to whenev
+    debounce_load_rows = debounce(this.load_content_rows, 200)
+
     //Make a simple delete request given the DB id of a row
     deleteItem(id: number) {
         Axios.delete(APP_URLS.CONTENT_ITEM(id))
@@ -347,7 +363,7 @@ export default class Content extends Component<ContentProps, ContentState> {
 
     //Initially load content roads
     componentDidMount() {
-        this.loadContentRows()
+        this.load_content_rows()
     }
 
     //Resets the state of a given modal. Use this to close the modal.
@@ -362,17 +378,25 @@ export default class Content extends Component<ContentProps, ContentState> {
         // Maybe someone better at TypeScript can fix it
         this.update_state(draft => {
             draft[dialog] = cloneDeep(default_dict[dialog])
-        }).then(this.loadContentRows)
+        }).then(this.load_content_rows)
     }
 
     //Runs validation on all state_fields
-    run_validators(modal: "add_modal" | "edit_modal") {
-        this.update_state(draft => {
+    async run_validators(modal: "add_modal" | "edit_modal") {
+        return this.update_state(draft => {
             const validators = modal === "add_modal" ? this.add_content_validators : this.edit_content_validators
             validators.map((validator_entry) => {
                 const [state_field, validator_fn] = validator_entry
                 draft[modal][state_field].reason = validator_fn(this.state[modal][state_field].value)
             })
+        })
+    }
+    
+    //Sets the file object in state to point to the file attached to the input in DOM
+    async add_file(modal: "add_modal" | "edit_modal") {
+        return this.update_state(draft => {
+            const file_raw = this.add_modal_ref.current?.files?.item(0)
+            draft[modal].content_file.value = typeof(file_raw) === "undefined" ? null : file_raw
         })
     }
 
@@ -409,7 +433,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     evt.persist()
                                     this.update_state(draft => {
                                         draft.search.title = evt.target.value
-                                    }).then(this.loadContentRows)
+                                    }).then(this.debounce_load_rows)
                                 }}
                             />
                             <br />
@@ -420,7 +444,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     evt.persist()
                                     this.update_state(draft => {
                                         draft.search.copyright = evt.target.value
-                                    }).then(this.loadContentRows)
+                                    }).then(this.debounce_load_rows)
                                 }}
                             />
                             <br />
@@ -431,7 +455,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     evt.persist()
                                     this.update_state(draft => {
                                         draft.search.years_from = evt.target.value
-                                    }).then(this.loadContentRows)
+                                    }).then(this.debounce_load_rows)
                                 }}
                             />
                             <br />
@@ -442,7 +466,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     evt.persist()
                                     this.update_state(draft => {
                                         draft.search.years_to = evt.target.value
-                                    })
+                                    }).then(this.debounce_load_rows)
                                 }}
                             />
                             <br />
@@ -453,7 +477,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     evt.persist()
                                     this.update_state(draft => {
                                         draft.search.filename = evt.target.value
-                                    })
+                                    }).then(this.debounce_load_rows)
                                 }}
                             />
                             <br />
@@ -463,7 +487,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 onChange={(event) => {
                                     this.update_state(draft => {
                                         draft.search.active = event.target.value as active_search_option
-                                    })
+                                    }).then(this.debounce_load_rows)
                                 }}
                             >
                                 <MenuItem value={"all"}>All</MenuItem>
@@ -486,7 +510,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 onChange={(_evt, values) => {
                                     this.update_state(draft => {
                                         draft.search.metadata = values.map(metadata => metadata.id)
-                                    }).then(this.loadContentRows)
+                                    }).then(this.load_content_rows)
                                 }}
                             />
                         </Container>
@@ -502,7 +526,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                         onSortingChange={(sorting) => {
                             this.update_state(draft => {
                                 draft.sorting = sorting
-                            }).then(this.loadContentRows)
+                            }).then(this.load_content_rows)
                         }}
                         columnExtensions={this.columns.map(column => {
                             return {
@@ -516,13 +540,13 @@ export default class Content extends Component<ContentProps, ContentState> {
                         onCurrentPageChange={(current_page: number) => {
                             this.update_state(draft => {
                                 draft.current_page = current_page
-                            }).then(this.loadContentRows)
+                            }).then(this.load_content_rows)
                         }}
                         pageSize={this.state.page_size}
                         onPageSizeChange={(page_size: number) => {
                             this.update_state(draft => {
                                 draft.page_size = page_size
-                            }).then(this.loadContentRows)
+                            }).then(this.load_content_rows)
                         }}
                     />
                     <CustomPaging totalCount={this.state.total_count}/>
@@ -539,6 +563,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                             key={1}
                             onClick={()=> {
                                 this.deleteItem(this.state.delete_modal.row.id)
+                                this.load_content_rows()
                                 this.closeDialog("delete_modal")
                             }}
                             color="secondary"
@@ -576,12 +601,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                         <Button
                             key={2}
                             onClick={()=> {
-                                this.update_state(draft => {
-                                    //Sets the file object in state to point to the file attached to the input in DOM
-                                    const file_raw = this.add_modal_ref.current?.files?.item(0)
-                                    const file = typeof(file_raw) === "undefined" ? null : file_raw
-                                    draft.add_modal.content_file.value = file
-                                })
+                                this.add_file("add_modal")
                                 .then(() => this.run_validators("add_modal"))
                                 .then(() => {
                                     //If theres is invalid user input exit upload logic without closing the modal
@@ -610,7 +630,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                                         }
                                     })
 
-                                    this.loadContentRows()
+                                    this.load_content_rows()
                                     this.closeDialog("add_modal")
                                 })
                             }}
@@ -736,12 +756,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                         <Button
                             key={2}
                             onClick={()=> {
-                                this.update_state(draft => {
-                                    //Sets the file object in state to point to the file attached to the input in DOM
-                                    const file_raw = this.edit_modal_ref?.current?.files?.item(0)
-                                    const file = typeof(file_raw) === "undefined" ? null : file_raw
-                                    draft.edit_modal.content_file.value = file
-                                })
+                                this.add_file("edit_modal")
                                 .then(() => this.run_validators("edit_modal"))
                                 .then(() => {
                                     //If theres is invalid user input exit upload logic without closing the modal
@@ -771,7 +786,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                                         }
                                     })
 
-                                    this.loadContentRows()
+                                    this.load_content_rows()
                                     this.closeDialog("edit_modal")
                                 })
                             }}
