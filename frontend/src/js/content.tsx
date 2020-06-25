@@ -29,9 +29,12 @@ import { produce } from "immer"
 
 interface ContentProps {
     all_metadata: SerializedMetadata[]
+    all_metadata_types: SerializedMetadataType[]
+    metadata_type_dict: metadata_dict
 }
 
 interface ContentState {
+    last_request_timestamp: number
     display_rows: any[]
     loaded_content: SerializedContent[]
     total_count: number
@@ -95,7 +98,7 @@ type search_state = {
     years_to: string
     active: active_search_option
     filename: string
-    metadata: number[]
+    metadata: metadata_dict
 }
 
 
@@ -238,6 +241,7 @@ export default class Content extends Component<ContentProps, ContentState> {
         }
 
         this.state = {
+            last_request_timestamp: 0,
             display_rows: [],
             loaded_content: [],
             total_count: 0,
@@ -255,7 +259,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                 years_from: "",
                 years_to: "",
                 active: "all",
-                metadata: [],
+                metadata: {},
                 filename: ""
             }
         }
@@ -320,36 +324,45 @@ export default class Content extends Component<ContentProps, ContentState> {
             years,
             title: search.title,
             copyright: search.copyright,
-            metadata: search.metadata,
+            //Turn metadata_dict back to array of integers for search
+            metadata: Object.keys(search.metadata).reduce((prev, current) => {
+                return prev.concat(search.metadata[current].map(metadata => metadata.id))
+            }, [] as number[]),
             active: active_filter,
             filename: search.filename,
             sort: this.state.sorting.length > 0 ? `${this.state.sorting[0].columnName},${this.state.sorting[0].direction}` : undefined
         }
-        console.log(filters)
+
+        const req_timestamp = new Date().getTime()
+
         // Add one to page because dx-react-grid and django paging start from different places
         get_data(APP_URLS.CONTENT_PAGE(this.state.current_page + 1, this.state.page_size, filters)).then((data: any) => {
-            //Adds the MetadataTypes defined in content_displayy as a key to each item in row so it can be easily accessed
-            //by dx-react-grid later
-            const rows = data.results as SerializedContent[]
-            const display_rows = cloneDeep(rows).map((row: any) => {
-                row.metadata_info.map((info:any) => {
-                    if (content_display.includes(info.type)) {
-                        const new_metadata_entry = get(row, [info.type], []).concat([info.name])
-                        set(row, [info.type], new_metadata_entry)
-                    }
+            // Only update the state if the request was sent after the most recent revied request
+            if (req_timestamp >= this.state.last_request_timestamp) {
+                //Adds the MetadataTypes defined in content_displayy as a key to each item in row so it can be easily accessed
+                //by dx-react-grid later
+                const rows = data.results as SerializedContent[]
+                const display_rows = cloneDeep(rows).map((row: any) => {
+                    row.metadata_info.map((info:any) => {
+                        if (content_display.includes(info.type)) {
+                            const new_metadata_entry = get(row, [info.type], []).concat([info.name])
+                            set(row, [info.type], new_metadata_entry)
+                        }
+                    })
+                    content_display.map(type_name => {
+                        row[type_name] = get(row, [type_name], []).join(", ")
+                    })
+    
+                    return row
                 })
-                content_display.map(type_name => {
-                    row[type_name] = get(row, [type_name], []).join(", ")
+    
+                this.update_state(draft => {
+                    draft.last_request_timestamp = req_timestamp
+                    draft.loaded_content = rows
+                    draft.display_rows = display_rows
+                    draft.total_count = data.count
                 })
-
-                return row
-            })
-
-            this.update_state(draft => {
-                draft.loaded_content = rows
-                draft.display_rows = display_rows
-                draft.total_count = data.count
-            })
+            }
         })
     }
 
@@ -423,97 +436,120 @@ export default class Content extends Component<ContentProps, ContentState> {
                         draft.search.is_open = expanded
                     })
                 }}>
-                    <ExpansionPanelSummary>Search</ExpansionPanelSummary>
+                    <ExpansionPanelSummary>
+                        <Typography variant={"h6"}>Search</Typography>
+                    </ExpansionPanelSummary>
                     <ExpansionPanelDetails>
-                        <Container>
-                            <TextField
-                                label={"Title"}
-                                value={this.state.search.title}
-                                onChange={(evt) => {
-                                    evt.persist()
-                                    this.update_state(draft => {
-                                        draft.search.title = evt.target.value
-                                    }).then(this.debounce_load_rows)
-                                }}
-                            />
-                            <br />
-                            <TextField
-                                label={"Copyright"}
-                                value={this.state.search.copyright}
-                                onChange={(evt) => {
-                                    evt.persist()
-                                    this.update_state(draft => {
-                                        draft.search.copyright = evt.target.value
-                                    }).then(this.debounce_load_rows)
-                                }}
-                            />
-                            <br />
-                            <TextField
-                                label={"Years From"}
-                                value={this.state.search.years_from}
-                                onChange={(evt) => {
-                                    evt.persist()
-                                    this.update_state(draft => {
-                                        draft.search.years_from = evt.target.value
-                                    }).then(this.debounce_load_rows)
-                                }}
-                            />
-                            <br />
-                            <TextField
-                                label={"Years To"}
-                                value={this.state.search.years_to}
-                                onChange={(evt) => {
-                                    evt.persist()
-                                    this.update_state(draft => {
-                                        draft.search.years_to = evt.target.value
-                                    }).then(this.debounce_load_rows)
-                                }}
-                            />
-                            <br />
-                            <TextField
-                                label={"Filename"}
-                                value={this.state.search.filename}
-                                onChange={(evt) => {
-                                    evt.persist()
-                                    this.update_state(draft => {
-                                        draft.search.filename = evt.target.value
-                                    }).then(this.debounce_load_rows)
-                                }}
-                            />
-                            <br />
-                            <Select
-                                label={"Active"}
-                                value={this.state.search.active}
-                                onChange={(event) => {
-                                    this.update_state(draft => {
-                                        draft.search.active = event.target.value as active_search_option
-                                    }).then(this.debounce_load_rows)
-                                }}
-                            >
-                                <MenuItem value={"all"}>All</MenuItem>
-                                <MenuItem value={"active"}>Active</MenuItem>
-                                <MenuItem value={"inactive"}>Inactive</MenuItem>
-                            </Select>
-                            <br />
-                            <Autocomplete
-                                multiple
-                                options={this.props.all_metadata}
-                                getOptionLabel={(option) => `${option.type_name}: ${option.name}`}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        variant={"standard"}
-                                        label={"Metadata"}
-                                        placeholder={"Metadata"}
-                                    />
-                                )}
-                                onChange={(_evt, values) => {
-                                    this.update_state(draft => {
-                                        draft.search.metadata = values.map(metadata => metadata.id)
-                                    }).then(this.load_content_rows)
-                                }}
-                            />
-                        </Container>
+                        <Grid container spacing={2}>
+                            <Grid item xs={4}>
+                                <TextField
+                                    fullWidth
+                                    label={"Title"}
+                                    value={this.state.search.title}
+                                    onChange={(evt) => {
+                                        evt.persist()
+                                        this.update_state(draft => {
+                                            draft.search.title = evt.target.value
+                                        }).then(this.debounce_load_rows)
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={4}>
+                                <TextField
+                                    fullWidth
+                                    label={"Filename"}
+                                    value={this.state.search.filename}
+                                    onChange={(evt) => {
+                                        evt.persist()
+                                        this.update_state(draft => {
+                                            draft.search.filename = evt.target.value
+                                        }).then(this.debounce_load_rows)
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={4}>
+                                <TextField
+                                    fullWidth
+                                    label={"Copyright"}
+                                    value={this.state.search.copyright}
+                                    onChange={(evt) => {
+                                        evt.persist()
+                                        this.update_state(draft => {
+                                            draft.search.copyright = evt.target.value
+                                        }).then(this.debounce_load_rows)
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={3}>
+                                <TextField
+                                    fullWidth
+                                    label={"Years From"}
+                                    value={this.state.search.years_from}
+                                    onChange={(evt) => {
+                                        evt.persist()
+                                        this.update_state(draft => {
+                                            draft.search.years_from = evt.target.value
+                                        }).then(this.debounce_load_rows)
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={3}>
+                                <TextField
+                                    fullWidth
+                                    label={"Years To"}
+                                    value={this.state.search.years_to}
+                                    onChange={(evt) => {
+                                        evt.persist()
+                                        this.update_state(draft => {
+                                            draft.search.years_to = evt.target.value
+                                        }).then(this.debounce_load_rows)
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={2}>
+                                <Container disableGutters style={{display: "flex", height: "100%"}}>
+                                    <Select
+                                        style={{alignSelf: "bottom"}}
+                                        label={"Active"}
+                                        value={this.state.search.active}
+                                        onChange={(event) => {
+                                            this.update_state(draft => {
+                                                draft.search.active = event.target.value as active_search_option
+                                            }).then(this.debounce_load_rows)
+                                        }}
+                                    >
+                                        <MenuItem value={"all"}>All</MenuItem>
+                                        <MenuItem value={"active"}>Active</MenuItem>
+                                        <MenuItem value={"inactive"}>Inactive</MenuItem>
+                                    </Select>
+                                </Container>
+                            </Grid>
+                            <Grid item xs={4} />
+                            {this.props.all_metadata_types.map((metadata_type: SerializedMetadataType) => {
+                                return (
+                                    <Grid item xs={4} key={metadata_type.id}>
+                                        <Autocomplete
+                                            multiple
+                                            options={this.props.metadata_type_dict[metadata_type.name]}
+                                            getOptionLabel={option => option.name}
+                                            renderInput={(params) => (
+                                                <TextField
+                                                    {...params}
+                                                    variant={"standard"}
+                                                    label={metadata_type.name}
+                                                    placeholder={metadata_type.name}
+                                                />
+                                            )}
+                                            onChange={(_evt, values) => {
+                                                this.update_state(draft => {
+                                                    draft.search.metadata[metadata_type.name] = values
+                                                }).then(this.debounce_load_rows)
+                                            }}
+                                        />
+                                    </Grid>
+                                )
+                            })}
+                        </Grid>
                     </ExpansionPanelDetails>
                 </ExpansionPanel>
                 <br />

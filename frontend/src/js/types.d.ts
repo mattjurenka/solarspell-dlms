@@ -39,3 +39,12 @@ interface SerializedContent {
     metadata_info: SerializedMetadata[]
     published_year: string|null
 }
+
+interface SerializedMetadataType {
+    id: number
+    name: string
+}
+
+interface metadata_dict {
+    [metadata_type: string]: SerializedMetadata[]
+}
