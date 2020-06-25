@@ -11,7 +11,7 @@ export default class VALIDATORS {
         }
         return ""
     }
-    static METADATA(_metadata_arr: number[]): string {
+    static METADATA(_metadata_arr: metadata_dict): string {
         return ""
     }
     static TITLE(title_str: any): string {

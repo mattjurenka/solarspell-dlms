@@ -46,8 +46,10 @@ class Content(models.Model):
 
     def metadata_info(self):
         return [{
+            "id": metadata.id,
             "name": metadata.name,
-            "type": metadata.type.name
+            "type_name": metadata.type.name,
+            "type": metadata.type.id
         } for metadata in self.metadata.all()]
 
     class Meta:

@@ -24,7 +24,6 @@ import { Button, Typography, TextField, Paper, Chip, ExpansionPanelSummary, Expa
 import { Autocomplete } from "@material-ui/lab"
 import Axios from 'axios';
 import VALIDATORS from './validators';
-import { get_metadata } from './utils';
 import { produce } from "immer"
 
 interface ContentProps {
@@ -59,7 +58,7 @@ type content_modal_state = {
     title:              field_info<string>
     description:        field_info<string>
     year:               field_info<string>
-    metadata:           field_info<number[]>
+    metadata:           field_info<metadata_dict>
     copyright:          field_info<string>
     rights_statement:   field_info<string>
 }
@@ -136,7 +135,9 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 edit_modal.title.value = row.title
                                 edit_modal.description.value = row.description === null ? "" : row.description
                                 edit_modal.year.value = row.published_year === null ? "" : row.published_year
-                                edit_modal.metadata.value = row.metadata
+                                edit_modal.metadata.value = this.props.all_metadata_types.reduce((prev, current) => {
+                                    return set(prev, [current.name], row.metadata_info.filter(metadata => metadata.type_name == current.name))
+                                }, {} as metadata_dict)
                                 
                                 edit_modal.is_open = true
                             })
@@ -223,7 +224,9 @@ export default class Content extends Component<ContentProps, ContentState> {
                 reason: ""
             },
             metadata: {
-                value: [],
+                value: this.props.all_metadata_types.reduce((prev, current) => {
+                    return set(prev, [current.name], [])
+                }, {}),
                 reason: ""
             },
             rights_statement: {
@@ -343,10 +346,10 @@ export default class Content extends Component<ContentProps, ContentState> {
                 //by dx-react-grid later
                 const rows = data.results as SerializedContent[]
                 const display_rows = cloneDeep(rows).map((row: any) => {
-                    row.metadata_info.map((info:any) => {
-                        if (content_display.includes(info.type)) {
-                            const new_metadata_entry = get(row, [info.type], []).concat([info.name])
-                            set(row, [info.type], new_metadata_entry)
+                    row.metadata_info.map((info:SerializedMetadata) => {
+                        if (content_display.includes(info.type_name)) {
+                            const new_metadata_entry = get(row, [info.type_name], []).concat([info.name])
+                            set(row, [info.type_name], new_metadata_entry)
                         }
                     })
                     content_display.map(type_name => {
@@ -658,7 +661,9 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     formData.append('description', data.description.value)
                                     formData.append('published_date', `${data.year.value}-01-01`)
                                     formData.append('active', "true")
-                                    data.metadata.value.forEach(metadata => formData.append('metadata', `${metadata}`))
+                                    this.props.all_metadata_types.map(type => data.metadata.value[type.name].map(metadata => {
+                                        formData.append("metadata", `${metadata.id}`)
+                                    }))
 
                                     Axios.post(APP_URLS.CONTENT, formData, {
                                         headers: {
@@ -754,26 +759,32 @@ export default class Content extends Component<ContentProps, ContentState> {
                     />
                     <br />
                     <br />
-                    <Autocomplete
-                        multiple
-                        options={this.props.all_metadata}
-                        getOptionLabel={(option) => `${option.type_name}: ${option.name}`}
-                        renderInput={(params) => (
-                            <TextField
-                                error={this.state.add_modal.metadata.reason !== ""}
-                                helperText={this.state.add_modal.metadata.reason}
-                                {...params}
-                                variant={"standard"}
-                                label={"Metadata"}
-                                placeholder={"Metadata"}
-                            />
-                        )}
-                        onChange={(_evt, values) => {
-                            this.update_state(draft => {
-                                draft.add_modal.metadata.value = values.map(metadata => metadata.id)
-                            })
-                        }}
-                    />
+                    {this.props.all_metadata_types.map((metadata_type: SerializedMetadataType) => {
+                        return (
+                            <Grid item xs={4} key={metadata_type.id}>
+                                <Autocomplete
+                                    multiple
+                                    options={this.props.metadata_type_dict[metadata_type.name]}
+                                    getOptionLabel={option => option.name}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            error={this.state.add_modal.metadata.reason !== ""}
+                                            helperText={this.state.add_modal.metadata.reason}
+                                            {...params}
+                                            variant={"standard"}
+                                            label={metadata_type.name}
+                                            placeholder={metadata_type.name}
+                                        />
+                                    )}
+                                    onChange={(_evt, values) => {
+                                        this.update_state(draft => {
+                                            draft.add_modal.metadata.value[metadata_type.name] = values
+                                        })
+                                    }}
+                                />
+                            </Grid>
+                        )
+                    })}
                 </ActionDialog>
                 <ActionDialog
                     title={"Edit content item"}
@@ -814,7 +825,9 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     formData.append('description', data.description.value)
                                     formData.append('published_date', `${data.year.value}-01-01`)
                                     formData.append('active', "true")
-                                    data.metadata.value.forEach(metadata => formData.append('metadata', `${metadata}`))
+                                    this.props.all_metadata_types.map(type => data.metadata.value[type.name].map(metadata => {
+                                        formData.append("metadata", `${metadata.id}`)
+                                    }))
 
                                     Axios.patch(APP_URLS.CONTENT_ITEM(data.row.id), formData, {
                                         headers: {
@@ -910,36 +923,33 @@ export default class Content extends Component<ContentProps, ContentState> {
                     />
                     <br />
                     <br />
-                    <Autocomplete
-                        multiple
-                        options={this.props.all_metadata}
-                        getOptionLabel={(option: SerializedMetadata) => `${option.type_name}: ${option.name}`}
-                        renderInput={(params) => (
-                            <TextField
-                                error={this.state.edit_modal.metadata.reason !== ""}
-                                helperText={this.state.edit_modal.metadata.reason}
-                                {...params}
-                                variant={"standard"}
-                                label={"Metadata"}
-                                placeholder={"Metadata"}
-                            />
-                        )}
-                        onChange={(_evt, values) => {
-                            this.update_state(draft => {
-                                draft.edit_modal.metadata.value = values.map(metadata => metadata.id)
-                            })
-                        }}
-                        defaultValue={this.state.edit_modal.metadata.value.map(id => {
-                                const result = get_metadata(this.props.all_metadata, id)
-                                return result === null ? {
-                                    id: 0,
-                                    type_name: "Error",
-                                    name: "Metadata Not Found",
-                                    type: 0
-                                } : result
-                            })
-                        }
-                    />
+                    {this.props.all_metadata_types.map((metadata_type: SerializedMetadataType) => {
+                        return (
+                            <Grid item xs={4} key={metadata_type.id}>
+                                <Autocomplete
+                                    multiple
+                                    options={this.props.metadata_type_dict[metadata_type.name]}
+                                    getOptionLabel={option => option.name}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            error={this.state.edit_modal.metadata.reason !== ""}
+                                            helperText={this.state.edit_modal.metadata.reason}
+                                            {...params}
+                                            variant={"standard"}
+                                            label={metadata_type.name}
+                                            placeholder={metadata_type.name}
+                                        />
+                                    )}
+                                    onChange={(_evt, values) => {
+                                        this.update_state(draft => {
+                                            draft.edit_modal.metadata.value[metadata_type.name] = values
+                                        })
+                                    }}
+                                    defaultValue={this.state.edit_modal.metadata.value[metadata_type.name]}
+                                />
+                            </Grid>
+                        )
+                    })}
                 </ActionDialog>
                 <ActionDialog
                     title={"View Content Item"}
@@ -973,18 +983,24 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     </Container>
                                 )
                             })}
-                            <Container key={"meta"}>
-                                <Typography variant={"h6"}>Metadata</Typography>
-                                <Paper>
-                                    {view_row.metadata_info?.map((metadata_info_obj: any, idx: number) => (
-                                        <li key={idx} style={{listStyle: "none"}}>
-                                            <Chip
-                                                label={`${metadata_info_obj.type}: ${metadata_info_obj.name}`}
-                                            />
-                                        </li>
-                                    ))}
-                                </Paper>
-                            </Container>
+                            {this.props.all_metadata_types.map((metadata_type: SerializedMetadataType) => {
+                                return (
+                                    <Container key={metadata_type.id} style={{marginBottom: "1em"}}>
+                                        <Typography variant={"h6"}>{metadata_type.name}</Typography>
+                                        <Paper>
+                                            {view_row.metadata_info?.filter(value => value.type_name == metadata_type.name).map((metadata, idx) => (
+                                                    <li key={idx} style={{listStyle: "none"}}>
+                                                        <Chip
+                                                            label={metadata.name}
+                                                        />
+                                                    </li>
+                                                ))
+                                            }
+                                        </Paper>
+                                    </Container>
+                                )
+                            })}
+                            
                         </Grid>
                         <Grid item xs={8}>
                             {this.state.view_modal.is_open ? (
