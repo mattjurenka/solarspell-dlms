@@ -1,7 +1,5 @@
-import { isString } from 'lodash'
-
 export default class VALIDATORS {
-    static YEAR(year_str: any): string {
+    static YEAR(year_str: string): string {
         const year_num = parseInt(year_str)
         if (isNaN(year_num)) {
             return "Invalid Year"
@@ -11,10 +9,10 @@ export default class VALIDATORS {
         }
         return ""
     }
-    static METADATA(_metadata_arr: metadata_dict): string {
+    static METADATA(_metadata_arr: number[]): string {
         return ""
     }
-    static TITLE(title_str: any): string {
+    static TITLE(title_str: string): string {
         if (title_str === "") {
             return "Field Required"
         }
@@ -23,10 +21,13 @@ export default class VALIDATORS {
         }
         return ""
     }
-    static DESCRIPTION(_description_str: any): string {
+    static DESCRIPTION(description_str: string): string {
+        if (description_str === "") {
+            return "Field Required"
+        }
         return ""
     }
-    static ADD_FILE(file_input: any): string {
+    static FILE(file_input: File|null): string {
         if (file_input === null) {
             return "Field Required"
         }
@@ -35,15 +36,7 @@ export default class VALIDATORS {
         }
         return ""
     }
-    static EDIT_FILE(file_input: any): string {
-        if (file_input === null) return ""
-        if (file_input.name.length > 300) {
-            return "Filename must be less than 300 characters"
-        }
-        return ""
-    }
-    static COPYRIGHT(copyright_str: any): string {
-        if (!isString(copyright_str)) return ""
+    static COPYRIGHT(copyright_str: string): string {
         if (copyright_str.length >= 500) {
             return "Copyright must be less than 500 characters"
         }

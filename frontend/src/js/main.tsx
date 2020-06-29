@@ -17,17 +17,16 @@ import library_versions from "../images/home_icons/library_versions.png"
 import metadata from "../images/home_icons/metadata.png"
 import solarspell_images from "../images/home_icons/solarspell_images.png"
 import { get_data, APP_URLS } from './urls';
-import { set } from 'lodash';
 
 interface MainScreenProps {}
-
 
 interface MainScreenState {
     url: URL,
     current_tab: string
     all_metadata: SerializedMetadata[]
-    all_metadata_types: SerializedMetadataType[]
-    metadata_type_dict: metadata_dict
+    defined_metadata: {
+        [metadata_type: string]: SerializedMetadata[]
+    }
 }
 
 class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
@@ -50,13 +49,7 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
             },
             "contents": {
                 display_label: "Contents",
-                component: () => (
-                        <Content 
-                            all_metadata={this.state.all_metadata}
-                            all_metadata_types={this.state.all_metadata_types}
-                            metadata_type_dict={this.state.metadata_type_dict}
-                        />
-                    ),
+                component: () => <Content all_metadata={this.state.all_metadata}/>,
                 icon: contents
             },
             "libraries": {
@@ -89,11 +82,11 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                 default_tab :
                 (tab_value in this.tabs ? tab_value : default_tab),
             all_metadata: [],
-            all_metadata_types: [],
-            metadata_type_dict: {}
+            defined_metadata: {}
         }
 
-        this.loadMetadataDict = this.loadMetadataDict.bind(this)   
+        this.loadMetadataDict = this.loadMetadataDict.bind(this)
+        
     }
 
     //gets the list of all metadata from the server and stores it in the state
@@ -101,16 +94,6 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
         get_data(APP_URLS.METADATA).then((metadata: SerializedMetadata[]) => {
             this.setState({
                 all_metadata: metadata
-            }, () => {
-                get_data(APP_URLS.METADATA_TYPES).then((metadata_types: SerializedMetadataType[]) => {
-                    this.setState({
-                        all_metadata_types: metadata_types,
-                        //Turns SerializedMetadataType[] into object with type names as keys and SerializedMetadata[] of that type as a value
-                        metadata_type_dict: metadata_types.reduce((prev, current) => {
-                            return set(prev, [current.name], this.state.all_metadata.filter(metadata => metadata.type_name == current.name))
-                        }, {}),
-                    })
-                })
             })
         })
     }
@@ -149,7 +132,7 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                         {tabs_jsx}
                     </Tabs>
                 </Grid>
-                <Grid style={{marginTop: '20px'}}>
+                <Grid container style={{marginTop: '20px'}}>
                     {this.tabs[this.state.current_tab].component(this.tabs)}
                 </Grid>
             </React.Fragment>
