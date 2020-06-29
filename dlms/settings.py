@@ -135,6 +135,3 @@ BUILDS_URL = '/builds/'
 REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
 }
-
-# Needed so the frontend can properly display images
-X_FRAME_OPTIONS = 'SAMEORIGIN'

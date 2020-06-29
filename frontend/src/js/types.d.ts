@@ -24,27 +24,3 @@ type content_filters = {
     metadata?: number[]
     sort?: string
 }
-
-interface SerializedContent {
-    id: number
-    file_name: string
-    content_file: string
-    title: string
-    description: string|null
-    modified_on: string
-    copyright: string|null
-    rights_statement: string|null
-    active: boolean
-    metadata: number[]
-    metadata_info: SerializedMetadata[]
-    published_year: string|null
-}
-
-interface SerializedMetadataType {
-    id: number
-    name: string
-}
-
-interface metadata_dict {
-    [metadata_type: string]: SerializedMetadata[]
-}

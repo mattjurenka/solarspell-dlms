@@ -209,10 +209,12 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
 
     render() {
         if (this.state.loaded) {
+            console.log(this.state)
             const panels = Object.keys(this.state.panel_data).map(type => {
                 const {
                     items,
                     expanded,
+                    count
                 } = this.state.panel_data[type]
                 return (
                     <React.Fragment key={type}>
@@ -280,9 +282,6 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         }}
                     >New Metadata Type</Button>
                     {panels}
-                    {panels.length === 0 ?
-                        <Typography variant="h6" style={{marginLeft: "3em"}}>No Metadata Types Found</Typography>
-                    : null}
                     <ActionDialog
                         title={`Delete Metadata item ${this.state.delete.metadata_name} of type ${this.state.delete.metadata_type}?`}
                         open={this.state.delete.is_open}

@@ -62,22 +62,17 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
         if metadata_raw is not None:
             try:
                 metadata = [int(x) for x in metadata_raw.split(",")]
-                for meta_id in metadata:
-                    print(queryset)
-                    queryset = queryset.filter(metadata__in=[meta_id])
-                    print(queryset)
-            except Exception as e:
-                print(e)
+                for id in metadata:
+                    print(id)
+                    queryset = queryset.filter(metadata__contains=id)
+            except:
+                pass
 
-        year_raw = self.request.GET.get("published_year", None)
+        year_raw = self.request.GET.get("published_date", None)
         if year_raw is not None:
             try:
-                years_range = year_raw.split(",")
-                print(years_range[0]+"-01-01", years_range[1]+"-12-31")
-                queryset = queryset.filter(
-                    published_date__gte=(years_range[0]+"-01-01"),
-                    published_date__lte=(years_range[1]+"-12-31")
-                    )
+                years_range = [year+"-01-01" for year in year_raw.split(",")[0:2]]
+                queryset = queryset.filter(published_date__range=years_range)
             except:
                 pass
 
