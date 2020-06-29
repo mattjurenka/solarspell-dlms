@@ -9,7 +9,7 @@ from content_management.utils import ContentSheetUtil, LibraryBuildUtil
 from content_management.serializers import ContentSerializer, MetadataSerializer, MetadataTypeSerializer, \
     LibLayoutImageSerializer, LibraryVersionSerializer, LibraryFolderSerializer
 
-from content_management.utils import build_response
+from content_management.standardize_format import build_response
 from content_management.paginators import PageNumberSizePagination
 
 

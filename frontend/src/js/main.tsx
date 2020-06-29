@@ -18,6 +18,9 @@ import metadata from "../images/home_icons/metadata.png"
 import solarspell_images from "../images/home_icons/solarspell_images.png"
 import { get_data, APP_URLS } from './urls';
 import { set } from 'lodash';
+import { produce } from 'immer';
+import { Snackbar } from '@material-ui/core';
+import { Alert } from '@material-ui/lab';
 
 interface MainScreenProps {}
 
@@ -28,6 +31,10 @@ interface MainScreenState {
     all_metadata: SerializedMetadata[]
     all_metadata_types: SerializedMetadataType[]
     metadata_type_dict: metadata_dict
+    toast_state: {
+        message: string
+        is_open: boolean
+    }
 }
 
 class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
@@ -55,6 +62,8 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                             all_metadata={this.state.all_metadata}
                             all_metadata_types={this.state.all_metadata_types}
                             metadata_type_dict={this.state.metadata_type_dict}
+                            show_toast_message={this.show_toast_message}
+                            close_toast={this.close_toast}
                         />
                     ),
                 icon: contents
@@ -90,10 +99,42 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                 (tab_value in this.tabs ? tab_value : default_tab),
             all_metadata: [],
             all_metadata_types: [],
-            metadata_type_dict: {}
+            metadata_type_dict: {},
+            toast_state: {
+                message: "",
+                is_open: false
+            }
         }
 
         this.loadMetadataDict = this.loadMetadataDict.bind(this)   
+        this.close_toast = this.close_toast.bind(this)
+        this.show_toast_message = this.show_toast_message.bind(this)
+    }
+
+    // Custom implementation of setState, just abstracts away boilerplate so we can save lines when using immer functions
+    // Also allows us to use promises instead of a callback
+    async update_state(update_func: (draft: MainScreenState) => void): Promise<void> {
+        return new Promise(resolve => {
+            this.setState(prevState => {
+                return produce(prevState, update_func)
+            }, resolve)
+        })
+    }
+
+    //Closes the toast message window
+    close_toast() {
+        this.update_state(draft => {
+            draft.toast_state.is_open = false
+            draft.toast_state.message = ""
+        })
+    }
+
+    //Opens the toast message and shows the window
+    show_toast_message(message: string) {
+        this.update_state(draft => {
+            draft.toast_state.is_open = true
+            draft.toast_state.message = message
+        })
     }
 
     //gets the list of all metadata from the server and stores it in the state
@@ -152,6 +193,20 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                 <Grid style={{marginTop: '20px'}}>
                     {this.tabs[this.state.current_tab].component(this.tabs)}
                 </Grid>
+                <Snackbar
+                    anchorOrigin={{
+                        vertical: 'bottom',
+                        horizontal: 'left'
+                    }}
+                    
+                    open={this.state.toast_state.is_open}
+                    onClose={this.close_toast}
+                    autoHideDuration={6000}
+                >
+                    <Alert severity="error">
+                        {this.state.toast_state.message}
+                    </Alert>
+                </Snackbar>
             </React.Fragment>
         )
     }

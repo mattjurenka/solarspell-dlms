@@ -3,14 +3,14 @@ import os
 from typing import Dict, Union
 
 from django.utils import timezone
-from rest_framework import status
-from rest_framework.response import Response
 
 from dlms import settings
 from content_management.library_db_utils import LibraryDbUtil
 from content_management.models import (
     Content,
     Metadata, MetadataType, LibraryFolder)
+
+import hashlib
 
 
 class ContentSheetUtil:
@@ -80,9 +80,8 @@ class LibraryBuildUtil:
         return 'success'
 
 
-def build_response(data, status=status.HTTP_200_OK, success=True, error=""):
-    return Response({
-        "success": success,
-        "data": data,
-        "error": error
-    }, status)
+def sha256(bytestream):
+    hash_sha256 = hashlib.sha256()
+    for chunk in iter(lambda: bytestream.read(4096), b""):
+        hash_sha256.update(chunk)
+    return hash_sha256.hexdigest()

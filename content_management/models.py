@@ -2,7 +2,7 @@ import os
 from _datetime import datetime
 
 from django.db import models
-
+from content_management.validators import validate_unique_filename, validate_unique_file
 
 class MetadataType(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -27,8 +27,15 @@ class Content(models.Model):
     def set_file_name(self, file_name):
         return os.path.join("contents", file_name)
 
-    content_file = models.FileField("File", upload_to="contents/", max_length=300)
-    title = models.CharField(max_length=300)
+    content_file = models.FileField(
+        "File",
+        upload_to="contents/",
+        max_length=300,
+        validators=[
+            validate_unique_filename,
+            validate_unique_file
+        ])
+    title = models.CharField(max_length=300, unique=True)
     description = models.TextField(null=True)
     modified_on = models.DateTimeField(default=datetime.now)
     metadata = models.ManyToManyField(Metadata, blank=True)
