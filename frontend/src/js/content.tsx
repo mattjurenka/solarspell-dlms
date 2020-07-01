@@ -18,7 +18,7 @@ import {
 import ActionPanel from './action_panel';
 import { APP_URLS, get_data } from './urls';
 import { content_display, content_folder_url } from './settings';
-import { get, set, cloneDeep, debounce } from 'lodash';
+import { get, set, cloneDeep, debounce, isString } from 'lodash';
 import ActionDialog from './action_dialog';
 import { Button, Typography, TextField, Paper, Chip, ExpansionPanelSummary, ExpansionPanelDetails, ExpansionPanel, Grid, Select, MenuItem, Container } from '@material-ui/core';
 import { Autocomplete } from "@material-ui/lab"
@@ -30,6 +30,8 @@ interface ContentProps {
     all_metadata: SerializedMetadata[]
     all_metadata_types: SerializedMetadataType[]
     metadata_type_dict: metadata_dict
+    show_toast_message: (message: string) => void
+    close_toast: () => void
 }
 
 interface ContentState {
@@ -661,18 +663,47 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     formData.append('description', data.description.value)
                                     formData.append('published_date', `${data.year.value}-01-01`)
                                     formData.append('active', "true")
-                                    this.props.all_metadata_types.map(type => data.metadata.value[type.name].map(metadata => {
-                                        formData.append("metadata", `${metadata.id}`)
-                                    }))
+                                    
+                                    this.props.all_metadata_types.map(type => {
+                                        if (type.name in data.metadata.value) {
+                                            data.metadata.value[type.name].map(metadata => {
+                                                formData.append("metadata", `${metadata.id}`)
+                                            })
+                                        }
+                                    })
 
                                     Axios.post(APP_URLS.CONTENT, formData, {
                                         headers: {
                                             'Content-Type': 'multipart/form-data'
                                         }
                                     })
-
-                                    this.load_content_rows()
-                                    this.closeDialog("add_modal")
+                                    .then((_res) => {
+                                        //Runs if success
+                                        this.props.show_toast_message("Added content successfully")
+                                        this.load_content_rows()
+                                        this.closeDialog("add_modal")
+                                    }, (err) => {
+                                        //Runs if failed validation or other error
+                                        const default_error = "Error while adding content"
+                                        try {
+                                            console.log(err.response)
+                                            const err_obj = err.response.data.error
+                                            console.log(Object.keys(err_obj))
+                                            this.props.show_toast_message(
+                                                //This returns the error object if its a string or looks for an error string as the value
+                                                //to the first object key's first member (in case of validation error)
+                                                //Javascript will choose which key is first randomly
+                                                //The syntax looks weird but this just creates an anonymous function and immediately calls it
+                                                //so we can define variables for use in inline if expressions
+                                                isString(err_obj) ? err_obj : (() => {
+                                                    const first_msg = err_obj[Object.keys(err_obj)[0]][0]
+                                                    return isString(first_msg) ? first_msg : default_error
+                                                })()
+                                            )
+                                        } catch {
+                                            this.props.show_toast_message(default_error)
+                                        }
+                                    })
                                 })
                             }}
                             color="primary"
@@ -825,18 +856,46 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     formData.append('description', data.description.value)
                                     formData.append('published_date', `${data.year.value}-01-01`)
                                     formData.append('active', "true")
-                                    this.props.all_metadata_types.map(type => data.metadata.value[type.name].map(metadata => {
-                                        formData.append("metadata", `${metadata.id}`)
-                                    }))
+                                    this.props.all_metadata_types.map(type => {
+                                        if (type.name in data.metadata.value) {
+                                            data.metadata.value[type.name].map(metadata => {
+                                                formData.append("metadata", `${metadata.id}`)
+                                            })
+                                        }
+                                    })
 
                                     Axios.patch(APP_URLS.CONTENT_ITEM(data.row.id), formData, {
                                         headers: {
                                             'Content-Type': 'multipart/form-data'
                                         }
                                     })
-
-                                    this.load_content_rows()
-                                    this.closeDialog("edit_modal")
+                                    .then((_res) => {
+                                        //Runs if success
+                                        this.props.show_toast_message("Edited content successfully")
+                                        this.load_content_rows()
+                                        this.closeDialog("edit_modal")
+                                    }, (err) => {
+                                        //Runs if failed validation or other error
+                                        const default_error = "Error while editing content"
+                                        try {
+                                            console.log(err.response)
+                                            const err_obj = err.response.data.error
+                                            console.log(Object.keys(err_obj))
+                                            this.props.show_toast_message(
+                                                //This returns the error object if its a string or looks for an error string as the value
+                                                //to the first object key's first member (in case of validation error)
+                                                //Javascript will choose which key is first randomly
+                                                //The syntax looks weird but this just creates an anonymous function and immediately calls it
+                                                //so we can define variables for use in inline if expressions
+                                                isString(err_obj) ? err_obj : (() => {
+                                                    const first_msg = err_obj[Object.keys(err_obj)[0]][0]
+                                                    return isString(first_msg) ? first_msg : default_error
+                                                })()
+                                            )
+                                        } catch {
+                                            this.props.show_toast_message(default_error)
+                                        }
+                                    })
                                 })
                             }}
                             color="primary"

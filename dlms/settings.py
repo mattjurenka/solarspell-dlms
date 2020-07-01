@@ -133,7 +133,9 @@ BUILDS_URL = '/builds/'
 
 # Settings for rest_framework library
 REST_FRAMEWORK = {
-    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+    #'DEFAULT_RENDERER_CLASSES': ['content_management.standardize_format.StandardJSONRenderer'],
+    'EXCEPTION_HANDLER': 'content_management.standardize_format.standard_exception_handler'
 }
 
 # Needed so the frontend can properly display images

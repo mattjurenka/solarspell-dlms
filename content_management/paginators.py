@@ -1,5 +1,5 @@
 from rest_framework.pagination import PageNumberPagination
-from content_management.utils import build_response
+from content_management.standardize_format import build_response
 
 class PageNumberSizePagination(PageNumberPagination):
     page_size = "10"
