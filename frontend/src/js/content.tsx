@@ -17,7 +17,7 @@ import {
 
 import ActionPanel from './action_panel';
 import { APP_URLS, get_data } from './urls';
-import { content_display, content_folder_url } from './settings';
+import { content_display } from './settings';
 import { get, set, cloneDeep, debounce, isString } from 'lodash';
 import ActionDialog from './action_dialog';
 import { Button, Typography, TextField, Paper, Chip, ExpansionPanelSummary, ExpansionPanelDetails, ExpansionPanel, Grid, Select, MenuItem, Container } from '@material-ui/core';
@@ -593,7 +593,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                     <CustomPaging totalCount={this.state.total_count}/>
                     <Table />
                     <TableHeaderRow showSortingControls />
-                    <PagingPanel pageSizes={this.page_sizes}/>
+                    <PagingPanel pageSizes={this.page_sizes} />
                 </DataGrid>
                 {/* Most of the code in these ActionDialogs is still boilerplate, we should revisit how to make this more concise. */}
                 <ActionDialog
@@ -1065,7 +1065,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                             {this.state.view_modal.is_open ? (
                                 <object
                                     style={{maxWidth: "100%"}}
-                                    data={new URL(view_row.file_name, content_folder_url).href}
+                                    data={new URL(view_row.file_name, APP_URLS.CONTENT_FOLDER).href}
                                 />
                             ) : null}
                         </Grid>

@@ -27,6 +27,7 @@ import {
 import ActionPanel from "./action_panel"
 import Axios from "axios"
 import ActionDialog from './action_dialog'
+import excel_icon from '../images/excel_icon.png'; 
 
 interface MetadataProps {}
 
@@ -227,6 +228,9 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                                     <Grid item xs={6} style={{
                                         textAlign: "right"
                                     }}>
+                                        <a href={APP_URLS.METADATA_SHEET(type)} target="_blank">
+                                            <img src={excel_icon} style={{maxWidth: "40px", maxHeight: "40px", marginRight: "10px"}}/>
+                                        </a>
                                         <Button
                                             onClick={_ => {
                                                 this.setState(prevState => {
@@ -236,7 +240,8 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                                             }}
                                             style={{
                                                 backgroundColor: "#75b2dd",
-                                                color: "#FFFFFF"
+                                                color: "#FFFFFF",
+                                                marginTop: "0px"
                                             }}
                                         >New Metadata</Button>
                                     </Grid>
@@ -249,9 +254,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                                 >
                                     <FilteringState columnExtensions={this.columnExtensions}/>
                                     <IntegratedFiltering />
-                                    <PagingState
-                                        defaultPageSize={this.default_page_size}
-                                    />
+                                    <PagingState defaultPageSize={this.default_page_size} />
                                     <IntegratedPaging />
                                     <Table />
                                     <TableHeaderRow />
@@ -260,7 +263,6 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                                 </DataGrid>
                             </ExpansionPanelDetails>
                         </ExpansionPanel>
-                        <br />
                     </React.Fragment>
                 )
             })

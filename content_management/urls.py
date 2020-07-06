@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 from dlms import settings
 from .views import (
     ContentViewSet, MetadataViewSet, MetadataTypeViewSet, ContentSheetView,
-    LibraryFolderViewSet, LibraryVersionViewSet, LibLayoutImageViewSet, LibraryBuildView)
+    LibraryFolderViewSet, LibraryVersionViewSet, LibLayoutImageViewSet, LibraryBuildView, metadata_sheet)
 
 router = routers.DefaultRouter()
 router.register(r'contents', ContentViewSet)
@@ -20,4 +20,5 @@ urlpatterns = [
     path('api/', include(router.urls)),
     path('api/contents_upload/', ContentSheetView.as_view(), name="contents-upload"),
     path('api/create_build/<int:version_id>/', LibraryBuildView.as_view(), name="create-build"),
+    path('api/spreadsheet/metadata/<str:metadata_type>', metadata_sheet)
     ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
