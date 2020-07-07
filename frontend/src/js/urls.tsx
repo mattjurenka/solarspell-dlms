@@ -34,6 +34,7 @@ const APP_URLS = {
     CONTENT_FOLDER: url_with_params("media/contents"),
     METADATA: url_with_params(`${api_path}/metadata/`),
     METADATA_ITEM: (id: number) => url_with_params(`${api_path}/metadata/${id}/`),
+    METADATA_TYPE: (id: number) => url_with_params(`${api_path}/metadata_types/${id}/`),
     METADATA_TYPES: url_with_params(`${api_path}/metadata_types/`),
     METADATA_BY_TYPE: (type: string) => url_with_params(`${api_path}/metadata/${type}/get/`),
     METADATA_SHEET: (metadata_type: string) => url_with_params(`${api_path}/spreadsheet/metadata/${metadata_type}`)

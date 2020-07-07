@@ -107,6 +107,8 @@ export default class Content extends Component<ContentProps, ContentState> {
     columns: Column[]
     page_sizes: number[]
 
+    update_state: (update_func: (draft: ContentState) => void) => Promise<void>
+
     delete_modal_defaults: Readonly<delete_modal_state>
     content_modal_defaults: Readonly<content_modal_state>
     view_modal_defaults: Readonly<view_modal_state>
@@ -296,16 +298,7 @@ export default class Content extends Component<ContentProps, ContentState> {
         this.deleteItem = this.deleteItem.bind(this)
         this.closeDialog = this.closeDialog.bind(this)
         this.add_file = this.add_file.bind(this)
-    }
-
-    // Custom implementation of setState, just abstracts away boilerplate so we can save lines when using immer functions
-    // Also allows us to use promises instead of a callback
-    async update_state(update_func: (draft: ContentState) => void): Promise<void> {
-        return new Promise(resolve => {
-            this.setState(prevState => {
-                return produce(prevState, update_func)
-            }, resolve)
-        })
+        this.update_state = this.update_state.bind(this)
     }
 
     //Loads rows into state from database
@@ -1030,7 +1023,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                             {[
                                 ["Title", view_row.title],
                                 ["Description", view_row.description],
-                                ["Filename", <a href={new URL(view_row.file_name, content_folder_url).href}>{view_row.file_name}</a>],
+                                ["Filename", <a href={new URL(view_row.file_name, APP_URLS.CONTENT_FOLDER).href}>{view_row.file_name}</a>],
                                 ["Year Published", view_row.published_year],
                                 ["Copyright", view_row.copyright],
                                 ["Rights Statement", view_row.rights_statement]

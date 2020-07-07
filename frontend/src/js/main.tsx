@@ -24,7 +24,6 @@ import { Alert } from '@material-ui/lab';
 
 interface MainScreenProps {}
 
-
 interface MainScreenState {
     url: URL,
     current_tab: string
