@@ -25,6 +25,7 @@ import { Autocomplete } from "@material-ui/lab"
 import Axios from 'axios';
 import VALIDATORS from './validators';
 import { produce } from "immer"
+import { update_state } from './utils';
 
 interface ContentProps {
     all_metadata: SerializedMetadata[]
@@ -122,7 +123,7 @@ export default class Content extends Component<ContentProps, ContentState> {
     constructor(props: ContentProps) {
         super(props)
 
-        this.update_state = this.update_state.bind(this)
+        this.update_state = update_state.bind(this)
 
         this.columns = [
             {name: "actions", title: "Actions", getCellValue: (row: SerializedContent) => {

@@ -17,7 +17,7 @@ import library_versions from "../images/home_icons/library_versions.png"
 import metadata from "../images/home_icons/metadata.png"
 import solarspell_images from "../images/home_icons/solarspell_images.png"
 import { get_data, APP_URLS } from './urls';
-import { set, cloneDeep, cloneDeep } from 'lodash';
+import { set, cloneDeep } from 'lodash';
 import { Snackbar } from '@material-ui/core';
 import { Alert } from '@material-ui/lab';
 import { update_state } from './utils';
@@ -131,14 +131,16 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
     //gets the list of all metadata from the server and stores it in the state
     loadMetadataDict() {
         get_data(APP_URLS.METADATA).then((metadata: SerializedMetadata[]) => {
-            this.update_state(draft => draft.all_metadata = metadata)
+            this.update_state(draft => {
+                draft.all_metadata = metadata
+            })
             .then(() => {
                 get_data(APP_URLS.METADATA_TYPES).then((metadata_types: SerializedMetadataType[]) => {
                     this.update_state(draft => {
                         draft.all_metadata_types = metadata_types
                         //Turns SerializedMetadataType[] into object with type names as keys and SerializedMetadata[] of that type as a value
                         draft.metadata_type_dict = metadata_types.reduce((prev, current) => {
-                            return set(prev, [current.name], draft.all_metadata.filter(metadata => metadata.type_name == current.name))
+                            return set(prev, [current.name], this.state.all_metadata.filter(metadata => metadata.type_name == current.name))
                         }, {} as metadata_dict)
                     })
                 })
@@ -152,7 +154,7 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
 
     change_tab(new_tab: string) {
         this.update_state(draft => {
-            const new_url = cloneDeep(draft.url)
+            const new_url = new URL(draft.url.toString())
             new_url.searchParams.set("tab", new_tab)
             draft.url = new_url
             draft.current_tab = new_tab

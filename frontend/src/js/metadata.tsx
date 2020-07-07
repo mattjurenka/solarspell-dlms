@@ -8,7 +8,7 @@ import Grid from "@material-ui/core/Grid"
 import { get_data, APP_URLS } from "./urls"
 import { Typography, TextField } from "@material-ui/core"
 
-import { fromPairs, set, cloneDeep } from "lodash"
+import { fromPairs, cloneDeep } from "lodash"
 
 import {
     FilteringState,
@@ -312,7 +312,9 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                 <React.Fragment>
                     <Button
                         onClick={_ => {
-                            this.update_state(draft => draft.create_type.is_open = true)
+                            this.update_state(draft => {
+                                draft.create_type.is_open = true
+                            })
                         }}
                         style={{
                             marginLeft: "1em",
@@ -379,7 +381,9 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                             value={this.state.create_type.type_name}
                             onChange={(evt) => {
                                 evt.persist()
-                                this.update_state(draft => draft.create_type.type_name = evt.target.value)
+                                this.update_state(draft => {
+                                    draft.create_type.type_name = evt.target.value
+                                })
                             }}
                         />
                     </ActionDialog>
@@ -415,7 +419,9 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                             value={this.state.create_meta.meta_name}
                             onChange={(evt) => {
                                 evt.persist()
-                                this.update_state(draft => draft.create_meta.meta_name = evt.target.value)
+                                this.update_state(draft => {
+                                    draft.create_meta.meta_name = evt.target.value
+                                })
                             }}
                         />
                     </ActionDialog>
@@ -449,7 +455,9 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                             value={this.state.edit_meta.meta_name}
                             onChange={(evt) => {
                                 evt.persist()
-                                this.update_state(draft => draft.edit_meta.meta_name = evt.target.value)
+                                this.update_state(draft => {
+                                    draft.edit_meta.meta_name = evt.target.value
+                                })
                             }}
                         />
                     </ActionDialog>
@@ -483,7 +491,9 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                             value={this.state.edit_type.new_name}
                             onChange={(evt) => {
                                 evt.persist()
-                                this.update_state(draft => draft.edit_type.new_name = evt.target.value)
+                                this.update_state(draft => {
+                                    draft.edit_type.new_name = evt.target.value
+                                })
                             }}
                         />
                     </ActionDialog>
