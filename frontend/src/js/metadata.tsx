@@ -450,9 +450,6 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                             onChange={(evt) => {
                                 evt.persist()
                                 this.update_state(draft => draft.edit_meta.meta_name = evt.target.value)
-                                this.setState((prevState) => {
-                                    return set(prevState, ["edit_meta", "meta_name"], evt.target.value)
-                                })
                             }}
                         />
                     </ActionDialog>

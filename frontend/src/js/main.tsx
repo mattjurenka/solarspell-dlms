@@ -17,10 +17,10 @@ import library_versions from "../images/home_icons/library_versions.png"
 import metadata from "../images/home_icons/metadata.png"
 import solarspell_images from "../images/home_icons/solarspell_images.png"
 import { get_data, APP_URLS } from './urls';
-import { set } from 'lodash';
-import { produce } from 'immer';
+import { set, cloneDeep, cloneDeep } from 'lodash';
 import { Snackbar } from '@material-ui/core';
 import { Alert } from '@material-ui/lab';
+import { update_state } from './utils';
 
 interface MainScreenProps {}
 
@@ -38,6 +38,7 @@ interface MainScreenState {
 
 class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
     tabs: TabDict
+    update_state: (update_func: (draft: MainScreenState) => void) => Promise<void>
     constructor(props: MainScreenState) {
         super(props)
         
@@ -108,16 +109,7 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
         this.loadMetadataDict = this.loadMetadataDict.bind(this)   
         this.close_toast = this.close_toast.bind(this)
         this.show_toast_message = this.show_toast_message.bind(this)
-    }
-
-    // Custom implementation of setState, just abstracts away boilerplate so we can save lines when using immer functions
-    // Also allows us to use promises instead of a callback
-    async update_state(update_func: (draft: MainScreenState) => void): Promise<void> {
-        return new Promise(resolve => {
-            this.setState(prevState => {
-                return produce(prevState, update_func)
-            }, resolve)
-        })
+        this.update_state = update_state.bind(this)
     }
 
     //Closes the toast message window
@@ -139,16 +131,15 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
     //gets the list of all metadata from the server and stores it in the state
     loadMetadataDict() {
         get_data(APP_URLS.METADATA).then((metadata: SerializedMetadata[]) => {
-            this.setState({
-                all_metadata: metadata
-            }, () => {
+            this.update_state(draft => draft.all_metadata = metadata)
+            .then(() => {
                 get_data(APP_URLS.METADATA_TYPES).then((metadata_types: SerializedMetadataType[]) => {
-                    this.setState({
-                        all_metadata_types: metadata_types,
+                    this.update_state(draft => {
+                        draft.all_metadata_types = metadata_types
                         //Turns SerializedMetadataType[] into object with type names as keys and SerializedMetadata[] of that type as a value
-                        metadata_type_dict: metadata_types.reduce((prev, current) => {
-                            return set(prev, [current.name], this.state.all_metadata.filter(metadata => metadata.type_name == current.name))
-                        }, {}),
+                        draft.metadata_type_dict = metadata_types.reduce((prev, current) => {
+                            return set(prev, [current.name], draft.all_metadata.filter(metadata => metadata.type_name == current.name))
+                        }, {} as metadata_dict)
                     })
                 })
             })
@@ -160,14 +151,12 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
     }
 
     change_tab(new_tab: string) {
-        this.setState(prevState => {
-            const new_url = new URL(prevState.url.toString())
+        this.update_state(draft => {
+            const new_url = cloneDeep(draft.url)
             new_url.searchParams.set("tab", new_tab)
-            return {
-                url: new_url,
-                current_tab: new_tab
-            }
-        }, () => {
+            draft.url = new_url
+            draft.current_tab = new_tab
+        }).then(() => {
             history.replaceState({}, "DLMS", this.state.url.toString())
         })
     }
