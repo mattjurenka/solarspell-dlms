@@ -12,6 +12,9 @@ from content_management.serializers import ContentSerializer, MetadataSerializer
 from content_management.standardize_format import build_response
 from content_management.paginators import PageNumberSizePagination
 
+from django.http import HttpResponse
+
+import csv
 
 class StandardDataView:
 
@@ -128,7 +131,6 @@ class LibraryFolderViewSet(StandardDataView, viewsets.ModelViewSet):
     queryset = LibraryFolder.objects.all()
     serializer_class = LibraryFolderSerializer
 
-
 class ContentSheetView(views.APIView):
 
     def post(self, request):
@@ -147,3 +149,15 @@ class LibraryBuildView(views.APIView):
         result = build_util.build_library(version_id)
         response = build_response(result)
         return response
+
+def metadata_sheet(request, metadata_type):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="{}.csv"'.format(metadata_type)
+    
+    writer = csv.writer(response)
+    writer.writerow([metadata_type])
+
+    for metadata in Metadata.objects.all().filter(type__name=metadata_type):
+        writer.writerow([metadata.name])
+    
+    return response
