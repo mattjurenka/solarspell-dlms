@@ -24,7 +24,6 @@ import { Button, Typography, TextField, Paper, Chip, ExpansionPanelSummary, Expa
 import { Autocomplete } from "@material-ui/lab"
 import Axios from 'axios';
 import VALIDATORS from './validators';
-import { produce } from "immer"
 import { update_state } from './utils';
 
 interface ContentProps {
@@ -43,15 +42,22 @@ interface ContentState {
     page_size: number
     current_page: number
     sorting: Sorting[]
-    delete_modal: delete_modal_state
-    add_modal: content_modal_state
-    edit_modal: content_modal_state
-    view_modal: view_modal_state
+    modals: ContentModals
     search: search_state
 }
 
-//modal_state contains keys in the state that represent data used for modals
-type modal_state = "delete_modal" | "add_modal" | "view_modal" | "edit_modal"
+interface ContentModals {
+    add: content_modal_state
+    view: {
+        is_open: boolean
+        row: SerializedContent
+    }
+    edit: content_modal_state
+    delete_content: {
+        is_open: boolean
+        row: SerializedContent
+    }   
+}
 
 //Add and edit modal use the same type because they use the same data
 type content_modal_state = {
@@ -79,18 +85,6 @@ type field_info<T> = {
     reason: string
 }
 
-
-type view_modal_state = {
-    is_open: boolean
-    row: SerializedContent
-}
-
-type delete_modal_state = {
-    is_open: boolean
-    row: SerializedContent
-}
-
-
 type active_search_option = "active" | "inactive" | "all"
 type search_state = {
     is_open: boolean
@@ -110,10 +104,9 @@ export default class Content extends Component<ContentProps, ContentState> {
 
     update_state: (update_func: (draft: ContentState) => void) => Promise<void>
 
-    delete_modal_defaults: Readonly<delete_modal_state>
-    content_modal_defaults: Readonly<content_modal_state>
-    view_modal_defaults: Readonly<view_modal_state>
-    row_defaults: Readonly<SerializedContent>
+    modal_defaults: ContentModals
+    content_modal_defaults: content_modal_state
+    content_defaults: SerializedContent
 
     add_modal_ref: React.RefObject<HTMLInputElement>
     edit_modal_ref: React.RefObject<HTMLInputElement>
@@ -132,24 +125,24 @@ export default class Content extends Component<ContentProps, ContentState> {
                         row={row}
                         editFn={() => {
                             this.update_state(draft => {
-                                const edit_modal = draft.edit_modal
-                                edit_modal.row = row
+                                const edit = draft.modals.edit
+                                edit.row = row
 
-                                edit_modal.copyright.value = row.copyright === null ? "" : row.copyright
-                                edit_modal.rights_statement.value = row.rights_statement === null ? "" : row.rights_statement
-                                edit_modal.title.value = row.title
-                                edit_modal.description.value = row.description === null ? "" : row.description
-                                edit_modal.year.value = row.published_year === null ? "" : row.published_year
-                                edit_modal.metadata.value = this.props.all_metadata_types.reduce((prev, current) => {
+                                edit.copyright.value = row.copyright === null ? "" : row.copyright
+                                edit.rights_statement.value = row.rights_statement === null ? "" : row.rights_statement
+                                edit.title.value = row.title
+                                edit.description.value = row.description === null ? "" : row.description
+                                edit.year.value = row.published_year === null ? "" : row.published_year
+                                edit.metadata.value = this.props.all_metadata_types.reduce((prev, current) => {
                                     return set(prev, [current.name], row.metadata_info.filter(metadata => metadata.type_name == current.name))
                                 }, {} as metadata_dict)
                                 
-                                edit_modal.is_open = true
+                                edit.is_open = true
                             })
                         }}
                         deleteFn={() => {
                             this.update_state(draft => {
-                                draft.delete_modal = {
+                                draft.modals.delete_content = {
                                     is_open: true,
                                     row
                                 }
@@ -164,7 +157,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                         }}
                         viewFn={() => {
                             this.update_state(draft => {
-                                draft.view_modal = {
+                                draft.modals.view = {
                                     is_open: true,
                                     row
                                 }
@@ -190,7 +183,7 @@ export default class Content extends Component<ContentProps, ContentState> {
         this.edit_modal_ref = React.createRef()
         this.add_modal_ref = React.createRef()
 
-        this.row_defaults = {
+        this.content_defaults = {
             id: 0,
             file_name: "",
             content_file: "",
@@ -205,13 +198,9 @@ export default class Content extends Component<ContentProps, ContentState> {
             published_year: ""
         }
 
-        this.delete_modal_defaults = {
-            is_open: false,
-            row: cloneDeep(this.row_defaults)
-        }
         this.content_modal_defaults = {
             is_open: false,
-            row: cloneDeep(this.row_defaults),
+            row: this.content_defaults,
             content_file: {
                 value: null,
                 reason: ""
@@ -243,9 +232,17 @@ export default class Content extends Component<ContentProps, ContentState> {
                 reason: ""
             }
         }
-        this.view_modal_defaults = {
-            is_open: false,
-            row: cloneDeep(this.row_defaults)
+        this.modal_defaults = {
+            add: this.content_modal_defaults,
+            view: {
+                is_open: false,
+                row: this.content_defaults
+            },
+            edit: this.content_modal_defaults,
+            delete_content: {
+                is_open: false,
+                row: this.content_defaults
+            }
         }
 
         this.state = {
@@ -256,10 +253,7 @@ export default class Content extends Component<ContentProps, ContentState> {
             current_page: 0,
             page_size: this.page_sizes[0],
             sorting: [],
-            delete_modal: cloneDeep(this.delete_modal_defaults),
-            add_modal: cloneDeep(this.content_modal_defaults),
-            edit_modal: cloneDeep(this.content_modal_defaults),
-            view_modal: cloneDeep(this.view_modal_defaults),
+            modals: cloneDeep(this.modal_defaults),
             search: {
                 is_open: false,
                 title: "",
@@ -296,8 +290,7 @@ export default class Content extends Component<ContentProps, ContentState> {
 
         this.load_content_rows = this.load_content_rows.bind(this)
         this.debounce_load_rows = this.debounce_load_rows.bind(this)
-        this.deleteItem = this.deleteItem.bind(this)
-        this.closeDialog = this.closeDialog.bind(this)
+        this.close_modals = this.close_modals.bind(this)
         this.add_file = this.add_file.bind(this)
         this.update_state = this.update_state.bind(this)
     }
@@ -368,59 +361,50 @@ export default class Content extends Component<ContentProps, ContentState> {
     //Delays the function call to load_content_rows to whenev
     debounce_load_rows = debounce(this.load_content_rows, 200)
 
-    //Make a simple delete request given the DB id of a row
-    deleteItem(id: number) {
-        Axios.delete(APP_URLS.CONTENT_ITEM(id))
-    }
-
     //Initially load content roads
     componentDidMount() {
         this.load_content_rows()
     }
 
     //Resets the state of a given modal. Use this to close the modal.
-    closeDialog(dialog: modal_state) {
-        const default_dict = {
-            add_modal: this.content_modal_defaults,
-            delete_modal: this.delete_modal_defaults,
-            view_modal: this.view_modal_defaults,
-            edit_modal: this.content_modal_defaults
-        }
-        // This is correct but I don't know how to get ts-lint to recognize it
-        // Maybe someone better at TypeScript can fix it
+    close_modals() {
         this.update_state(draft => {
-            draft[dialog] = cloneDeep(default_dict[dialog])
+            draft.modals = cloneDeep(this.modal_defaults)
         }).then(this.load_content_rows)
     }
 
     //Runs validation on all state_fields
-    async run_validators(modal: "add_modal" | "edit_modal") {
+    async run_validators(modal: "add" | "edit") {
         return this.update_state(draft => {
-            const validators = modal === "add_modal" ? this.add_content_validators : this.edit_content_validators
+            const validators = modal === "add" ? this.add_content_validators : this.edit_content_validators
             validators.map((validator_entry) => {
                 const [state_field, validator_fn] = validator_entry
-                draft[modal][state_field].reason = validator_fn(this.state[modal][state_field].value)
+                draft.modals[modal][state_field].reason = validator_fn(draft.modals[modal][state_field].value)
             })
         })
     }
     
     //Sets the file object in state to point to the file attached to the input in DOM
-    async add_file(modal: "add_modal" | "edit_modal") {
+    async add_file(modal: "add" | "edit") {
         return this.update_state(draft => {
             const file_raw = this.add_modal_ref.current?.files?.item(0)
-            draft[modal].content_file.value = typeof(file_raw) === "undefined" ? null : file_raw
+            draft.modals[modal].content_file.value = typeof(file_raw) === "undefined" ? null : file_raw
         })
     }
 
     render() {
-        const view_row = this.state.view_modal.row
-
+        const {
+            add,
+            view,
+            edit,
+            delete_content
+        } = this.state.modals
         return (
             <React.Fragment>
                 <Button
                     onClick={_ => {
                         this.update_state(draft => {
-                            draft.add_modal.is_open = true
+                            draft.modals.add.is_open = true
                         })
                     }}
                     style={{
@@ -591,15 +575,15 @@ export default class Content extends Component<ContentProps, ContentState> {
                 </DataGrid>
                 {/* Most of the code in these ActionDialogs is still boilerplate, we should revisit how to make this more concise. */}
                 <ActionDialog
-                    title={`Delete Content item ${this.state.delete_modal.row.title}?`}
-                    open={this.state.delete_modal.is_open}
+                    title={`Delete Content item ${delete_content.row.title}?`}
+                    open={delete_content.is_open}
                     actions={[(
                         <Button
                             key={1}
                             onClick={()=> {
-                                this.deleteItem(this.state.delete_modal.row.id)
+                                Axios.delete(APP_URLS.CONTENT_ITEM(delete_content.row.id))
                                 this.load_content_rows()
-                                this.closeDialog("delete_modal")
+                                this.close_modals()
                             }}
                             color="secondary"
                         >
@@ -608,9 +592,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                     ), (
                         <Button
                             key={2}
-                            onClick={() => {
-                                this.closeDialog("delete_modal")
-                            }}
+                            onClick={this.close_modals}
                             color="primary"
                         >
                             Cancel
@@ -621,13 +603,11 @@ export default class Content extends Component<ContentProps, ContentState> {
                 </ActionDialog>
                 <ActionDialog
                     title={`Add new content item`}
-                    open={this.state.add_modal.is_open}
+                    open={add.is_open}
                     actions={[(
                         <Button
                             key={1}
-                            onClick={() => {
-                                this.closeDialog("add_modal")
-                            }}
+                            onClick={this.close_modals}
                             color="secondary"
                         >
                             Cancel
@@ -636,31 +616,29 @@ export default class Content extends Component<ContentProps, ContentState> {
                         <Button
                             key={2}
                             onClick={()=> {
-                                this.add_file("add_modal")
-                                .then(() => this.run_validators("add_modal"))
+                                this.add_file("add")
+                                .then(() => this.run_validators("add"))
                                 .then(() => {
                                     //If theres is invalid user input exit upload logic without closing the modal
                                     for (const validator_entry of this.add_content_validators) {
                                         const [state_field] = validator_entry
-                                        if (this.state.add_modal[state_field].reason !== "") return
+                                        if (add[state_field].reason !== "") return
                                     }
-
-                                    const data = this.state.add_modal
                                     
                                     //Form data instead of js object needed so the file upload works as multipart
                                     //There might be a better way to do this with Axios
-                                    const file = data.content_file.value
+                                    const file = add.content_file.value
                                     if (file === null) return
                                     const formData = new FormData()
                                     formData.append('content_file', file)
-                                    formData.append('title', data.title.value)
-                                    formData.append('description', data.description.value)
-                                    formData.append('published_date', `${data.year.value}-01-01`)
+                                    formData.append('title', add.title.value)
+                                    formData.append('description', add.description.value)
+                                    formData.append('published_date', `${add.year.value}-01-01`)
                                     formData.append('active', "true")
                                     
                                     this.props.all_metadata_types.map(type => {
-                                        if (type.name in data.metadata.value) {
-                                            data.metadata.value[type.name].map(metadata => {
+                                        if (type.name in add.metadata.value) {
+                                            add.metadata.value[type.name].map(metadata => {
                                                 formData.append("metadata", `${metadata.id}`)
                                             })
                                         }
@@ -675,14 +653,12 @@ export default class Content extends Component<ContentProps, ContentState> {
                                         //Runs if success
                                         this.props.show_toast_message("Added content successfully")
                                         this.load_content_rows()
-                                        this.closeDialog("add_modal")
+                                        this.close_modals()
                                     }, (err) => {
                                         //Runs if failed validation or other error
                                         const default_error = "Error while adding content"
                                         try {
-                                            console.log(err.response)
                                             const err_obj = err.response.data.error
-                                            console.log(Object.keys(err_obj))
                                             this.props.show_toast_message(
                                                 //This returns the error object if its a string or looks for an error string as the value
                                                 //to the first object key's first member (in case of validation error)
@@ -707,28 +683,28 @@ export default class Content extends Component<ContentProps, ContentState> {
                     )]}
                 >
                     <TextField
-                        error={this.state.add_modal.title.reason !== ""}
-                        helperText={this.state.add_modal.title.reason}
+                        error={add.title.reason !== ""}
+                        helperText={add.title.reason}
                         label={"Title"}
-                        value={this.state.add_modal.title.value}
+                        value={add.title.value}
                         onChange={(evt) => {
                             evt.persist()
                             this.update_state(draft => {
-                                draft.add_modal.title.value = evt.target.value
+                                draft.modals.add.title.value = evt.target.value
                             })
                         }}
                     />
                     <br />
                     <br />
                     <TextField
-                        error={this.state.add_modal.description.reason !== ""}
-                        helperText={this.state.add_modal.description.reason}
+                        error={add.description.reason !== ""}
+                        helperText={add.description.reason}
                         label={"Description"}
-                        value={this.state.add_modal.description.value}
+                        value={add.description.value}
                         onChange={(evt) => {
                             evt.persist()
                             this.update_state(draft => {
-                                draft.add_modal.description.value = evt.target.value
+                                draft.modals.add.description.value = evt.target.value
                             })
                         }}
                     />
@@ -743,42 +719,42 @@ export default class Content extends Component<ContentProps, ContentState> {
                     <br />
                     <br />
                     <TextField
-                        error={this.state.add_modal.year.reason !== ""}
-                        helperText={this.state.add_modal.year.reason}
+                        error={add.year.reason !== ""}
+                        helperText={add.year.reason}
                         label={"Year Published"}
-                        value={this.state.add_modal.year.value}
+                        value={add.year.value}
                         onChange={(evt) => {
                             evt.persist()
                             this.update_state(draft => {
-                                draft.add_modal.year.value = evt.target.value
+                                draft.modals.add.year.value = evt.target.value
                             })
                         }}
                     />
                     <br />
                     <br />
                     <TextField
-                        error={this.state.add_modal.copyright.reason !== ""}
-                        helperText={this.state.add_modal.copyright.reason}
+                        error={add.copyright.reason !== ""}
+                        helperText={add.copyright.reason}
                         label={"Copyright"}
-                        value={this.state.add_modal.copyright.value}
+                        value={add.copyright.value}
                         onChange={(evt) => {
                             evt.persist()
                             this.update_state(draft => {
-                                draft.add_modal.copyright.value = evt.target.value
+                                draft.modals.add.copyright.value = evt.target.value
                             })
                         }}
                     />
                     <br />
                     <br />
                     <TextField
-                        error={this.state.add_modal.rights_statement.reason !== ""}
-                        helperText={this.state.add_modal.rights_statement.reason}
+                        error={add.rights_statement.reason !== ""}
+                        helperText={add.rights_statement.reason}
                         label={"Rights Statement"}
-                        value={this.state.add_modal.rights_statement.value}
+                        value={add.rights_statement.value}
                         onChange={(evt) => {
                             evt.persist()
                             this.update_state(draft => {
-                                draft.add_modal.rights_statement.value = evt.target.value
+                                draft.modals.add.rights_statement.value = evt.target.value
                             })
                         }}
                     />
@@ -793,8 +769,8 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     getOptionLabel={option => option.name}
                                     renderInput={(params) => (
                                         <TextField
-                                            error={this.state.add_modal.metadata.reason !== ""}
-                                            helperText={this.state.add_modal.metadata.reason}
+                                            error={add.metadata.reason !== ""}
+                                            helperText={add.metadata.reason}
                                             {...params}
                                             variant={"standard"}
                                             label={metadata_type.name}
@@ -803,7 +779,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     )}
                                     onChange={(_evt, values) => {
                                         this.update_state(draft => {
-                                            draft.add_modal.metadata.value[metadata_type.name] = values
+                                            draft.modals.add.metadata.value[metadata_type.name] = values
                                         })
                                     }}
                                 />
@@ -813,13 +789,11 @@ export default class Content extends Component<ContentProps, ContentState> {
                 </ActionDialog>
                 <ActionDialog
                     title={"Edit content item"}
-                    open={this.state.edit_modal.is_open}
+                    open={edit.is_open}
                     actions={[(
                         <Button
                             key={1}
-                            onClick={() => {
-                                this.closeDialog("edit_modal")
-                            }}
+                            onClick={this.close_modals}
                             color="secondary"
                         >
                             Cancel
@@ -828,37 +802,34 @@ export default class Content extends Component<ContentProps, ContentState> {
                         <Button
                             key={2}
                             onClick={()=> {
-                                this.add_file("edit_modal")
-                                .then(() => this.run_validators("edit_modal"))
+                                this.add_file("edit")
+                                .then(() => this.run_validators("edit"))
                                 .then(() => {
                                     //If theres is invalid user input exit upload logic without closing the modal
                                     for (const validator_entry of this.edit_content_validators) {
                                         const [state_field] = validator_entry
-                                        if (this.state.edit_modal[state_field].reason !== "") return
-                                    }
-
-                                    const data = this.state.edit_modal
-                                    
+                                        if (edit[state_field].reason !== "") return
+                                    }                                    
                                     //Form data instead of js object needed so the file upload works as multipart
                                     //There might be a better way to do this with Axios
-                                    const file: File | null = data.content_file.value
+                                    const file: File | null = edit.content_file.value
                                     const formData = new FormData()
                                     if (file !== null) {
                                         formData.append('content_file', file)
                                     }
-                                    formData.append('title', data.title.value)
-                                    formData.append('description', data.description.value)
-                                    formData.append('published_date', `${data.year.value}-01-01`)
+                                    formData.append('title', edit.title.value)
+                                    formData.append('description', edit.description.value)
+                                    formData.append('published_date', `${edit.year.value}-01-01`)
                                     formData.append('active', "true")
                                     this.props.all_metadata_types.map(type => {
-                                        if (type.name in data.metadata.value) {
-                                            data.metadata.value[type.name].map(metadata => {
+                                        if (type.name in edit.metadata.value) {
+                                            edit.metadata.value[type.name].map(metadata => {
                                                 formData.append("metadata", `${metadata.id}`)
                                             })
                                         }
                                     })
 
-                                    Axios.patch(APP_URLS.CONTENT_ITEM(data.row.id), formData, {
+                                    Axios.patch(APP_URLS.CONTENT_ITEM(edit.row.id), formData, {
                                         headers: {
                                             'Content-Type': 'multipart/form-data'
                                         }
@@ -867,14 +838,12 @@ export default class Content extends Component<ContentProps, ContentState> {
                                         //Runs if success
                                         this.props.show_toast_message("Edited content successfully")
                                         this.load_content_rows()
-                                        this.closeDialog("edit_modal")
+                                        this.close_modals()
                                     }, (err) => {
                                         //Runs if failed validation or other error
                                         const default_error = "Error while editing content"
                                         try {
-                                            console.log(err.response)
                                             const err_obj = err.response.data.error
-                                            console.log(Object.keys(err_obj))
                                             this.props.show_toast_message(
                                                 //This returns the error object if its a string or looks for an error string as the value
                                                 //to the first object key's first member (in case of validation error)
@@ -899,28 +868,28 @@ export default class Content extends Component<ContentProps, ContentState> {
                     )]}
                 >
                     <TextField
-                        error={this.state.edit_modal.title.reason !== ""}
-                        helperText={this.state.edit_modal.title.reason}
+                        error={edit.title.reason !== ""}
+                        helperText={edit.title.reason}
                         label={"Title"}
-                        value={this.state.edit_modal.title.value}
+                        value={edit.title.value}
                         onChange={(evt) => {
                             evt.persist()
                             this.update_state(draft => {
-                                draft.edit_modal.title.value = evt.target.value
+                                draft.modals.edit.title.value = evt.target.value
                             })
                         }}
                     />
                     <br />
                     <br />
                     <TextField
-                        error={this.state.edit_modal.description.reason !== ""}
-                        helperText={this.state.edit_modal.description.reason}
+                        error={edit.description.reason !== ""}
+                        helperText={edit.description.reason}
                         label={"Description"}
-                        value={this.state.edit_modal.description.value}
+                        value={edit.description.value}
                         onChange={(evt) => {
                             evt.persist()
                             this.update_state(draft => {
-                                draft.edit_modal.description.value = evt.target.value
+                                draft.modals.edit.description.value = evt.target.value
                             })
                         }}
                     />
@@ -935,42 +904,42 @@ export default class Content extends Component<ContentProps, ContentState> {
                     <br />
                     <br />
                     <TextField
-                        error={this.state.edit_modal.year.reason !== ""}
-                        helperText={this.state.edit_modal.year.reason}
+                        error={edit.year.reason !== ""}
+                        helperText={edit.year.reason}
                         label={"Year Published"}
-                        value={this.state.edit_modal.year.value}
+                        value={edit.year.value}
                         onChange={(evt) => {
                             evt.persist()
                             this.update_state(draft => {
-                                draft.edit_modal.year.value = evt.target.value
+                                draft.modals.edit.year.value = evt.target.value
                             })
                         }}
                     />
                     <br />
                     <br />
                     <TextField
-                        error={this.state.edit_modal.copyright.reason !== ""}
-                        helperText={this.state.edit_modal.copyright.reason}
+                        error={edit.copyright.reason !== ""}
+                        helperText={edit.copyright.reason}
                         label={"Copyright"}
-                        value={this.state.edit_modal.copyright.value}
+                        value={edit.copyright.value}
                         onChange={(evt) => {
                             evt.persist()
                             this.update_state(draft => {
-                                draft.edit_modal.copyright.value = evt.target.value
+                                draft.modals.edit.copyright.value = evt.target.value
                             })
                         }}
                     />
                     <br />
                     <br />
                     <TextField
-                        error={this.state.edit_modal.rights_statement.reason !== ""}
-                        helperText={this.state.edit_modal.rights_statement.reason}
+                        error={edit.rights_statement.reason !== ""}
+                        helperText={edit.rights_statement.reason}
                         label={"Rights Statement"}
-                        value={this.state.edit_modal.rights_statement.value}
+                        value={edit.rights_statement.value}
                         onChange={(evt) => {
                             evt.persist()
                             this.update_state(draft => {
-                                draft.edit_modal.rights_statement.value = evt.target.value
+                                draft.modals.edit.rights_statement.value = evt.target.value
                             })
                         }}
                     />
@@ -985,8 +954,8 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     getOptionLabel={option => option.name}
                                     renderInput={(params) => (
                                         <TextField
-                                            error={this.state.edit_modal.metadata.reason !== ""}
-                                            helperText={this.state.edit_modal.metadata.reason}
+                                            error={edit.metadata.reason !== ""}
+                                            helperText={edit.metadata.reason}
                                             {...params}
                                             variant={"standard"}
                                             label={metadata_type.name}
@@ -995,10 +964,10 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     )}
                                     onChange={(_evt, values) => {
                                         this.update_state(draft => {
-                                            draft.edit_modal.metadata.value[metadata_type.name] = values
+                                            draft.modals.edit.metadata.value[metadata_type.name] = values
                                         })
                                     }}
-                                    defaultValue={this.state.edit_modal.metadata.value[metadata_type.name]}
+                                    defaultValue={edit.metadata.value[metadata_type.name]}
                                 />
                             </Grid>
                         )
@@ -1006,13 +975,11 @@ export default class Content extends Component<ContentProps, ContentState> {
                 </ActionDialog>
                 <ActionDialog
                     title={"View Content Item"}
-                    open={this.state.view_modal.is_open}
+                    open={view.is_open}
                     actions={[(
                         <Button
                             key={1}
-                            onClick={() => {
-                                this.closeDialog("view_modal")
-                            }}
+                            onClick={this.close_modals}
                             color="secondary"
                         >
                             Close
@@ -1022,12 +989,12 @@ export default class Content extends Component<ContentProps, ContentState> {
                     <Grid container>
                         <Grid item xs={4}>
                             {[
-                                ["Title", view_row.title],
-                                ["Description", view_row.description],
-                                ["Filename", <a href={new URL(view_row.file_name, APP_URLS.CONTENT_FOLDER).href}>{view_row.file_name}</a>],
-                                ["Year Published", view_row.published_year],
-                                ["Copyright", view_row.copyright],
-                                ["Rights Statement", view_row.rights_statement]
+                                ["Title", view.row.title],
+                                ["Description", view.row.description],
+                                ["Filename", <a href={new URL(view.row.file_name, APP_URLS.CONTENT_FOLDER).href}>{view.row.file_name}</a>],
+                                ["Year Published", view.row.published_year],
+                                ["Copyright", view.row.copyright],
+                                ["Rights Statement", view.row.rights_statement]
                             ].map(([title, value], idx) => {
                                 return (
                                     <Container style={{marginBottom: "1em"}} key={idx}>
@@ -1041,7 +1008,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     <Container key={metadata_type.id} style={{marginBottom: "1em"}}>
                                         <Typography variant={"h6"}>{metadata_type.name}</Typography>
                                         <Paper>
-                                            {view_row.metadata_info?.filter(value => value.type_name == metadata_type.name).map((metadata, idx) => (
+                                            {view.row.metadata_info?.filter(value => value.type_name == metadata_type.name).map((metadata, idx) => (
                                                     <li key={idx} style={{listStyle: "none"}}>
                                                         <Chip
                                                             label={metadata.name}
@@ -1056,10 +1023,10 @@ export default class Content extends Component<ContentProps, ContentState> {
                             
                         </Grid>
                         <Grid item xs={8}>
-                            {this.state.view_modal.is_open ? (
+                            {view.is_open ? (
                                 <object
                                     style={{maxWidth: "100%"}}
-                                    data={new URL(view_row.file_name, APP_URLS.CONTENT_FOLDER).href}
+                                    data={new URL(view.row.file_name, APP_URLS.CONTENT_FOLDER).href}
                                 />
                             ) : null}
                         </Grid>
