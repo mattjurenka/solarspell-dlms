@@ -31,7 +31,9 @@ import excel_icon from '../images/excel_icon.png';
 import { Edit } from '@material-ui/icons'
 import { update_state } from './utils'
 
-interface MetadataProps {}
+interface MetadataProps {
+    refresh_metadata?: () => void
+}
 
 interface MetadataState {
     panel_data: {
@@ -43,25 +45,29 @@ interface MetadataState {
         }
     },
     loaded: boolean,
-    delete: {
-        is_open: boolean,
-        metadata_name: string,
-        metadata_type: string,
-        id: number
-    },
+    modals: MetadataModals
+}
+
+interface MetadataModals {
     create_type: {
-        is_open: boolean,
+        is_open: boolean
         type_name: string
-    },
+    }
     edit_type: {
         is_open: boolean,
-        old_type: SerializedMetadataType,
+        old_type: SerializedMetadataType
         new_name: string
     }
     create_meta: {
         is_open: boolean,
         type_name: string,
         meta_name: string
+    }
+    delete_meta: {
+        is_open: boolean
+        metadata_name: string
+        metadata_type: string
+        id: number
     }
     edit_meta: {
         is_open: boolean,
@@ -71,11 +77,7 @@ interface MetadataState {
 }
 
 export default class Metadata extends Component<MetadataProps, MetadataState> {
-    delete_default: any
-    create_type_default: any
-    create_meta_default: any
-    edit_meta_default: any
-    edit_type_default: any
+    modal_defaults: MetadataModals
     page_sizes: number[]
     default_page_size: number
     columnExtensions: any
@@ -84,58 +86,47 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
     constructor(props: MetadataProps) {
         super(props)
 
-        this.delete_default = {
-            is_open: false,
-            metadata_name: "",
-            metadata_type: "",
-            id: 0
-        }
-
-        this.create_type_default = {
-            is_open: false,
-            type_name: ""
-        }
-
-        this.edit_type_default = {
-            is_open: false,
-            old_type: {
-                id: 0,
-                name: ""
+        this.modal_defaults = {
+            delete_meta: {
+                is_open: false,
+                metadata_name: "",
+                metadata_type: "",
+                id: 0
             },
-            new_name: ""
+            create_type: {
+                is_open: false,
+                type_name: ""
+            },
+            edit_type: {
+                is_open: false,
+                old_type: {
+                    id: 0,
+                    name: ""
+                },
+                new_name: ""
+            },
+            create_meta: {
+                is_open: false,
+                type_name: "",
+                meta_name: ""
+            },
+            edit_meta: {
+                is_open: false,
+                meta_name: "",
+                id: 0
+            }
         }
-        
-        this.create_meta_default = {
-            is_open: false,
-            type_name: "",
-            meta_name: ""
-        }
-
-        this.edit_meta_default = {
-            is_open: false,
-            meta_name: "",
-            id: 0
-        }
-
         this.state = {
             panel_data: {},
             loaded: false,
-            delete: cloneDeep(this.delete_default),
-            create_type: cloneDeep(this.create_type_default),
-            edit_type: cloneDeep(this.edit_type_default),
-            create_meta: cloneDeep(this.create_meta_default),
-            edit_meta: cloneDeep(this.edit_meta_default)
+            modals: cloneDeep(this.modal_defaults)
         }
 
         this.page_sizes = [10, 25, 50]
         this.default_page_size = this.page_sizes[0]
 
         this.getLoadMetadataFunction = this.getLoadMetadataFunction.bind(this)
-        this.createSetTypeAttribute = this.createSetTypeAttribute.bind(this)
-        this.createHandleChange = this.createHandleChange.bind(this)
-        this.deleteItem = this.deleteItem.bind(this)
-        this.getColumn = this.getColumn.bind(this)
-        this.closeDialog = this.closeDialog.bind(this)
+        this.close_modals = this.close_modals.bind(this)
         this.loadMetadataTypes = this.loadMetadataTypes.bind(this)
         this.update_state = update_state.bind(this)
 
@@ -146,52 +137,6 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
         ]
     }
 
-
-    getColumn(type: string) {
-        return [
-            { name: 'actions', title: 'Actions', getCellValue: (row:any) => {
-                return (
-                    <ActionPanel
-                        editFn={() => {
-                            this.update_state(draft => {
-                                draft.edit_meta.is_open = true
-                                draft.edit_meta.meta_name = row.name
-                                draft.edit_meta.id = row.id
-                            })
-                        }}
-                        deleteFn={() => {
-                            this.update_state(draft => {
-                                draft.delete.is_open = true
-                                draft.delete.metadata_name = row.name
-                                draft.delete.metadata_type = type
-                                draft.delete.id = row.id
-                            })
-                        }}
-                    />
-                )
-            }},
-            { name: 'name', title: "Metadata Name" }
-        ]
-    }
-
-    createSetTypeAttribute(type: string, attribute: "expanded" | "items" | "count" | "id", cb=() => {}) {
-        return (value: any) => {
-            this.update_state(draft => {
-                // @ts-ignore
-                draft.panel_data[type][attribute] = value
-            }).then(cb)
-        }
-    }
-
-    createHandleChange(type: string) {
-        return (_:any, expanded: boolean) => {
-            this.update_state(draft => {
-                draft.panel_data[type].expanded = expanded
-            }).then(() => {
-                if (expanded) this.getLoadMetadataFunction(type)()
-            })
-        }
-    }
 
     getLoadMetadataFunction(type: string) {
         return () => {
@@ -226,20 +171,20 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
         this.loadMetadataTypes()
     }
 
-    deleteItem(item: number) {
-        Axios.delete(APP_URLS.METADATA_ITEM(item)).then((res) => {
-            console.log(res)
-        })
-    }
-
-    closeDialog(name: string, defaults: any) {
+    close_modals() {
         this.update_state(draft => {
-            // @ts-ignore
-            draft[name] = cloneDeep(defaults)
+            draft.modals = cloneDeep(this.modal_defaults)
         })
     }
 
     render() {
+        const {
+            create_type,
+            create_meta,
+            edit_meta,
+            edit_type,
+            delete_meta
+        } = this.state.modals
         if (this.state.loaded) {
             const panels = Object.keys(this.state.panel_data).map(type => {
                 const {
@@ -248,7 +193,11 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     id
                 } = this.state.panel_data[type]
                 return (
-                    <ExpansionPanel expanded={expanded} onChange={this.createHandleChange(type)} key={type}>
+                    <ExpansionPanel expanded={expanded} onChange={(_:any, expanded: boolean) => {
+                        this.update_state(draft => {
+                            draft.panel_data[type].expanded = expanded
+                        })
+                    }} key={type}>
                         <ExpansionPanelSummary>
                             <Grid container>
                                 <Grid item xs={6} style={{textAlign: "left"}}>
@@ -259,11 +208,11 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                                         style={{cursor: "pointer"}}
                                         onClick={() => {
                                             this.update_state(draft => {
-                                                draft.edit_type.old_type = {
+                                                draft.modals.edit_type.old_type = {
                                                     id,
                                                     name: type
                                                 }
-                                                draft.edit_type.is_open = true
+                                                draft.modals.edit_type.is_open = true
                                             })
                                         }}
                                     />
@@ -277,8 +226,8 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                                     <Button
                                         onClick={_ => {
                                             this.update_state(draft => {
-                                                draft.create_meta.type_name = type
-                                                draft.create_meta.is_open = true
+                                                draft.modals.create_meta.type_name = type
+                                                draft.modals.create_meta.is_open = true
                                             })
                                         }}
                                         style={{
@@ -293,7 +242,30 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         <ExpansionPanelDetails>
                             <DataGrid
                                 rows={items}
-                                columns={this.getColumn(type)}
+                                columns={[
+                                    { name: 'actions', title: 'Actions', getCellValue: (row: SerializedMetadata) => {
+                                        return (
+                                            <ActionPanel
+                                                editFn={() => {
+                                                    this.update_state(draft => {
+                                                        draft.modals.edit_meta.is_open = true
+                                                        draft.modals.edit_meta.meta_name = row.name
+                                                        draft.modals.edit_meta.id = row.id
+                                                    })
+                                                }}
+                                                deleteFn={() => {
+                                                    this.update_state(draft => {
+                                                        draft.modals.delete_meta.is_open = true
+                                                        draft.modals.delete_meta.metadata_name = row.name
+                                                        draft.modals.delete_meta.metadata_type = type
+                                                        draft.modals.delete_meta.id = row.id
+                                                    })
+                                                }}
+                                            />
+                                        )
+                                    }},
+                                    { name: 'name', title: "Metadata Name" }
+                                ]}
                             >
                                 <FilteringState columnExtensions={this.columnExtensions}/>
                                 <IntegratedFiltering />
@@ -313,7 +285,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     <Button
                         onClick={_ => {
                             this.update_state(draft => {
-                                draft.create_type.is_open = true
+                                draft.modals.create_type.is_open = true
                             })
                         }}
                         style={{
@@ -328,13 +300,15 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         <Typography variant="h6" style={{marginLeft: "3em"}}>No Metadata Types Found</Typography>
                     : null}
                     <ActionDialog
-                        title={`Delete Metadata item ${this.state.delete.metadata_name} of type ${this.state.delete.metadata_type}?`}
-                        open={this.state.delete.is_open}
+                        title={`Delete Metadata item ${delete_meta.metadata_name} of type ${delete_meta.metadata_type}?`}
+                        open={delete_meta.is_open}
                         actions={[(
                             <Button
                                 onClick={()=> {
-                                    this.deleteItem(this.state.delete.id)
-                                    this.closeDialog("delete", this.delete_default)
+                                    Axios.delete(APP_URLS.METADATA_ITEM(delete_meta.id)).then((res) => {
+                                        console.log(res)
+                                    })
+                                    this.close_modals()
                                 }}
                                 color="secondary"
                             >
@@ -342,7 +316,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                             </Button>
                         ), (
                             <Button
-                                onClick={() => this.closeDialog("delete", this.delete_default)}
+                                onClick={this.close_modals}
                                 color="primary"
                             >
                                 Cancel
@@ -353,11 +327,11 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     </ActionDialog>
                     <ActionDialog
                         title={"Create New Metadata Type"}
-                        open={this.state.create_type.is_open}
-                        on_close={() => this.closeDialog("create_type", this.create_type_default)}
+                        open={create_type.is_open}
+                        on_close={this.close_modals}
                         actions={[(
                             <Button
-                                onClick={() => this.closeDialog("create_type", this.create_type_default)}
+                                onClick={this.close_modals}
                                 color="secondary"
                             >
                                 Cancel
@@ -366,9 +340,9 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                             <Button
                                 onClick={()=> {
                                     Axios.post(APP_URLS.METADATA_TYPES, {
-                                        name: this.state.create_type.type_name
+                                        name: create_type.type_name
                                     })
-                                    this.closeDialog("create_type", this.create_type_default)
+                                    this.close_modals()
                                 }}
                                 color="primary"
                             >
@@ -378,22 +352,22 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     >
                         <TextField
                             label={"Metadata Type"}
-                            value={this.state.create_type.type_name}
+                            value={create_type.type_name}
                             onChange={(evt) => {
                                 evt.persist()
                                 this.update_state(draft => {
-                                    draft.create_type.type_name = evt.target.value
+                                    draft.modals.create_type.type_name = evt.target.value
                                 })
                             }}
                         />
                     </ActionDialog>
                     <ActionDialog
-                        title={`Create a new Metadata of Type ${this.state.create_meta.type_name}`}
-                        open={this.state.create_meta.is_open}
-                        on_close={() => this.closeDialog("create_meta", this.create_meta_default)}
+                        title={`Create a new Metadata of Type ${create_meta.type_name}`}
+                        open={create_meta.is_open}
+                        on_close={this.close_modals}
                         actions={[(
                             <Button
-                                onClick={() => this.closeDialog("create_meta", this.create_meta_default)}
+                                onClick={this.close_modals}
                                 color="secondary"
                             >
                                 Cancel
@@ -402,10 +376,10 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                             <Button
                                 onClick={()=> {
                                     Axios.post(APP_URLS.METADATA, {
-                                        name: this.state.create_meta.meta_name,
-                                        type: this.state.panel_data[this.state.create_meta.type_name].id
+                                        name: create_meta.meta_name,
+                                        type: this.state.panel_data[create_meta.type_name].id
                                     })
-                                    this.closeDialog("create_meta", this.create_meta_default)
+                                    this.close_modals()
                                     this.loadMetadataTypes()
                                 }}
                                 color="primary"
@@ -416,22 +390,22 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     >
                         <TextField
                             label={"Metadata"}
-                            value={this.state.create_meta.meta_name}
+                            value={create_meta.meta_name}
                             onChange={(evt) => {
                                 evt.persist()
                                 this.update_state(draft => {
-                                    draft.create_meta.meta_name = evt.target.value
+                                    draft.modals.create_meta.meta_name = evt.target.value
                                 })
                             }}
                         />
                     </ActionDialog>
                     <ActionDialog
-                        title={`Edit Metadata ${this.state.edit_meta.meta_name}`}
-                        open={this.state.edit_meta.is_open}
-                        on_close={() => this.closeDialog("edit_meta", this.edit_meta_default)}
+                        title={`Edit Metadata ${edit_meta.meta_name}`}
+                        open={edit_meta.is_open}
+                        on_close={this.close_modals}
                         actions={[(
                             <Button
-                                onClick={() => this.closeDialog("edit_meta", this.edit_meta_default)}
+                                onClick={this.close_modals}
                                 color="secondary"
                             >
                                 Cancel
@@ -439,10 +413,10 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         ), (
                             <Button
                                 onClick={()=> {
-                                    Axios.patch(APP_URLS.METADATA_ITEM(this.state.edit_meta.id), {
-                                        name: this.state.edit_meta.meta_name
+                                    Axios.patch(APP_URLS.METADATA_ITEM(edit_meta.id), {
+                                        name: edit_meta.meta_name
                                     })
-                                    this.closeDialog("edit_meta", this.edit_meta_default)
+                                    this.close_modals()
                                 }}
                                 color="primary"
                             >
@@ -452,22 +426,22 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     >
                         <TextField
                             label={"Metadata Name"}
-                            value={this.state.edit_meta.meta_name}
+                            value={edit_meta.meta_name}
                             onChange={(evt) => {
                                 evt.persist()
                                 this.update_state(draft => {
-                                    draft.edit_meta.meta_name = evt.target.value
+                                    draft.modals.edit_meta.meta_name = evt.target.value
                                 })
                             }}
                         />
                     </ActionDialog>
                     <ActionDialog
-                        title={`Edit Metadata Type ${this.state.edit_type.old_type.name}`}
-                        open={this.state.edit_type.is_open}
-                        on_close={() => this.closeDialog("edit_type", this.edit_type_default)}
+                        title={`Edit Metadata Type ${edit_type.old_type.name}`}
+                        open={edit_type.is_open}
+                        on_close={this.close_modals}
                         actions={[(
                             <Button
-                                onClick={() => this.closeDialog("edit_type", this.edit_type_default)}
+                                onClick={this.close_modals}
                                 color="secondary"
                             >
                                 Cancel
@@ -475,10 +449,10 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         ), (
                             <Button
                                 onClick={()=> {
-                                    Axios.patch(APP_URLS.METADATA_TYPE(this.state.edit_type.old_type.id), {
-                                        name: this.state.edit_type.new_name
+                                    Axios.patch(APP_URLS.METADATA_TYPE(edit_type.old_type.id), {
+                                        name: edit_type.new_name
                                     })
-                                    this.closeDialog("edit_type", this.edit_type_default)
+                                    this.close_modals()
                                 }}
                                 color="primary"
                             >
@@ -488,11 +462,11 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     >
                         <TextField
                             label={"Metadata Type Name"}
-                            value={this.state.edit_type.new_name}
+                            value={edit_type.new_name}
                             onChange={(evt) => {
                                 evt.persist()
                                 this.update_state(draft => {
-                                    draft.edit_type.new_name = evt.target.value
+                                    draft.modals.edit_type.new_name = evt.target.value
                                 })
                             }}
                         />

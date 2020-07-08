@@ -17,7 +17,7 @@ import library_versions from "../images/home_icons/library_versions.png"
 import metadata from "../images/home_icons/metadata.png"
 import solarspell_images from "../images/home_icons/solarspell_images.png"
 import { get_data, APP_URLS } from './urls';
-import { set, cloneDeep } from 'lodash';
+import { set } from 'lodash';
 import { Snackbar } from '@material-ui/core';
 import { Alert } from '@material-ui/lab';
 import { update_state } from './utils';
