@@ -52,7 +52,11 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
             },
             "metadata": {
                 display_label: "Metadata",
-                component: () => <Metadata />,
+                component: () => (
+                        <Metadata
+                            show_toast_message={this.show_toast_message}
+                        />
+                    ),
                 icon: metadata
             },
             "contents": {

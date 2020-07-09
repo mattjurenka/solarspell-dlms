@@ -52,4 +52,7 @@ export default class VALIDATORS {
     static RIGHTS_STATEMENT(_rights_statement_str: string): string {
         return ""
     }
+    static DELETE_IF_EQUALS<T>(input_str: T, to_delete: T) {
+        return input_str === to_delete ? "" : `Input must equal ${to_delete}`
+    }
 }

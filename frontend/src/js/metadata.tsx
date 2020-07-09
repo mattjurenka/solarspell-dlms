@@ -8,7 +8,7 @@ import Grid from "@material-ui/core/Grid"
 import { get_data, APP_URLS } from "./urls"
 import { Typography, TextField } from "@material-ui/core"
 
-import { fromPairs, cloneDeep } from "lodash"
+import { fromPairs, cloneDeep, isString } from "lodash"
 
 import {
     FilteringState,
@@ -30,9 +30,11 @@ import ActionDialog from './action_dialog'
 import excel_icon from '../images/excel_icon.png'; 
 import { Edit } from '@material-ui/icons'
 import { update_state } from './utils'
+import VALIDATORS from './validators'
 
 interface MetadataProps {
     refresh_metadata?: () => void
+    show_toast_message: (message: string) => void
 }
 
 interface MetadataState {
@@ -65,14 +67,16 @@ interface MetadataModals {
     }
     delete_meta: {
         is_open: boolean
-        metadata_name: string
-        metadata_type: string
-        id: number
+        metadata: SerializedMetadata
     }
     edit_meta: {
         is_open: boolean,
-        meta_name: string,
-        id: number
+        metadata: SerializedMetadataType
+    }
+    delete_type: {
+        is_open: boolean
+        meta_type: SerializedMetadataType
+        confirm_text: field_info<string>
     }
 }
 
@@ -81,17 +85,30 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
     page_sizes: number[]
     default_page_size: number
     columnExtensions: any
+
+    meta_type_defaults: SerializedMetadataType
+    metadata_defaults: SerializedMetadata
+    
     update_state: (update_func: (draft: MetadataState) => void) => Promise<void>
 
     constructor(props: MetadataProps) {
         super(props)
 
+        this.metadata_defaults = {
+            name: "",
+            id: 0,
+            type_name: "",
+            type: 0
+        }
+        this.meta_type_defaults = {
+            id: 0,
+            name: ""
+        }
+
         this.modal_defaults = {
             delete_meta: {
                 is_open: false,
-                metadata_name: "",
-                metadata_type: "",
-                id: 0
+                metadata: this.metadata_defaults
             },
             create_type: {
                 is_open: false,
@@ -112,8 +129,15 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
             },
             edit_meta: {
                 is_open: false,
-                meta_name: "",
-                id: 0
+                metadata: this.metadata_defaults
+            },
+            delete_type: {
+                is_open: false,
+                meta_type: this.meta_type_defaults,
+                confirm_text: {
+                    value: "",
+                    reason: ""
+                }
             }
         }
         this.state = {
@@ -183,7 +207,8 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
             create_meta,
             edit_meta,
             edit_type,
-            delete_meta
+            delete_meta,
+            delete_type
         } = this.state.modals
         if (this.state.loaded) {
             const panels = Object.keys(this.state.panel_data).map(type => {
@@ -249,16 +274,13 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                                                 editFn={() => {
                                                     this.update_state(draft => {
                                                         draft.modals.edit_meta.is_open = true
-                                                        draft.modals.edit_meta.meta_name = row.name
-                                                        draft.modals.edit_meta.id = row.id
+                                                        draft.modals.edit_meta.metadata = row
                                                     })
                                                 }}
                                                 deleteFn={() => {
                                                     this.update_state(draft => {
                                                         draft.modals.delete_meta.is_open = true
-                                                        draft.modals.delete_meta.metadata_name = row.name
-                                                        draft.modals.delete_meta.metadata_type = type
-                                                        draft.modals.delete_meta.id = row.id
+                                                        draft.modals.delete_meta.metadata = row
                                                     })
                                                 }}
                                             />
@@ -300,12 +322,12 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         <Typography variant="h6" style={{marginLeft: "3em"}}>No Metadata Types Found</Typography>
                     : null}
                     <ActionDialog
-                        title={`Delete Metadata item ${delete_meta.metadata_name} of type ${delete_meta.metadata_type}?`}
+                        title={`Delete Metadata item ${delete_meta.metadata.name} of type ${delete_meta.metadata.type_name}?`}
                         open={delete_meta.is_open}
                         actions={[(
                             <Button
                                 onClick={()=> {
-                                    Axios.delete(APP_URLS.METADATA_ITEM(delete_meta.id)).then((res) => {
+                                    Axios.delete(APP_URLS.METADATA_ITEM(delete_meta.metadata.id)).then((res) => {
                                         console.log(res)
                                     })
                                     this.close_modals()
@@ -400,7 +422,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         />
                     </ActionDialog>
                     <ActionDialog
-                        title={`Edit Metadata ${edit_meta.meta_name}`}
+                        title={`Edit Metadata ${edit_meta.metadata.name}`}
                         open={edit_meta.is_open}
                         on_close={this.close_modals}
                         actions={[(
@@ -413,8 +435,8 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         ), (
                             <Button
                                 onClick={()=> {
-                                    Axios.patch(APP_URLS.METADATA_ITEM(edit_meta.id), {
-                                        name: edit_meta.meta_name
+                                    Axios.patch(APP_URLS.METADATA_ITEM(edit_meta.metadata.id), {
+                                        name: edit_meta.metadata.name
                                     })
                                     this.close_modals()
                                 }}
@@ -426,11 +448,11 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     >
                         <TextField
                             label={"Metadata Name"}
-                            value={edit_meta.meta_name}
+                            value={edit_meta.metadata.name}
                             onChange={(evt) => {
                                 evt.persist()
                                 this.update_state(draft => {
-                                    draft.modals.edit_meta.meta_name = evt.target.value
+                                    draft.modals.edit_meta.metadata.name = evt.target.value
                                 })
                             }}
                         />
@@ -467,6 +489,80 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                                 evt.persist()
                                 this.update_state(draft => {
                                     draft.modals.edit_type.new_name = evt.target.value
+                                })
+                            }}
+                        />
+                    </ActionDialog>
+                    <ActionDialog
+                        title={`Delete Metadata Type ${delete_type.meta_type.name}`}
+                        open={delete_type.is_open}
+                        on_close={this.close_modals}
+                        actions={[(
+                            <Button
+                                onClick={this.close_modals}
+                                color="primary"
+                            >
+                                Cancel
+                            </Button>
+                        ), (
+                            <Button
+                                onClick={()=> {
+                                    this.update_state(draft => {
+                                        draft.modals.delete_type.confirm_text.reason = VALIDATORS.DELETE_IF_EQUALS(
+                                            draft.modals.delete_type.confirm_text.value, delete_type.meta_type.name
+                                        )
+                                    }).then(() => {
+                                        if (delete_type.confirm_text.reason === "") {
+                                            Axios.delete(APP_URLS.METADATA_TYPE(delete_type.meta_type.id))
+                                            .then((_res) => {
+                                                //Runs if success
+                                                this.props.show_toast_message("Deleted Metadata Type successfully")
+                                                this.close_modals()
+                                            }, (err) => {
+                                                //Runs if failed validation or other error
+                                                const default_error = "Error while editing content"
+                                                try {
+                                                    const err_obj = err.response.data.error
+                                                    this.props.show_toast_message(
+                                                        //This returns the error object if its a string or looks for an error string as the value
+                                                        //to the first object key's first member (in case of validation error)
+                                                        //Javascript will choose which key is first randomly
+                                                        //The syntax looks weird but this just creates an anonymous function and immediately calls it
+                                                        //so we can define variables for use in inline if expressions
+                                                        isString(err_obj) ? err_obj : (() => {
+                                                            const first_msg = err_obj[Object.keys(err_obj)[0]][0]
+                                                            return isString(first_msg) ? first_msg : default_error
+                                                        })()
+                                                    )
+                                                } catch {
+                                                    this.props.show_toast_message(default_error)
+                                                }
+                                            })
+                                        }
+                                    })
+                                    Axios.patch(APP_URLS.METADATA_TYPE(edit_type.old_type.id), {
+                                        name: edit_type.new_name
+                                    })
+                                    this.close_modals()
+                                }}
+                                color="secondary"
+                            >
+                                Confirm
+                            </Button>
+                        )]}
+                    >
+                        <Typography color={"secondary"}>
+                            WARNING: Deleting a metadata type will also delete all metadata of that type and is irreversible.
+                        </Typography>
+                        <TextField
+                            label={`Re-enter ${delete_type.meta_type.name} to confirm deletion.`}
+                            error={delete_type.confirm_text.reason === ""}
+                            helperText={delete_type.confirm_text.reason}
+                            value={delete_type.confirm_text.value}
+                            onChange={(evt) => {
+                                evt.persist()
+                                this.update_state(draft => {
+                                    draft.modals.delete_type.confirm_text.value = evt.target.value
                                 })
                             }}
                         />

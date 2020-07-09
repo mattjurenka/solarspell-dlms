@@ -77,14 +77,6 @@ type content_modal_state = {
 type content_modal_state_fields = "content_file" | "title" | "description" | "year" | "metadata" |
 "copyright" | "rights_statement"
 
-//field_info contains data of a field and information about whether that data is valid.
-//reason should default to the empty string "" and any other value will contain a human-readable string
-//saying why the data in value is invalid
-type field_info<T> = {
-    value: T
-    reason: string
-}
-
 type active_search_option = "active" | "inactive" | "all"
 type search_state = {
     is_open: boolean

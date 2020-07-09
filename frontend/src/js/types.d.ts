@@ -48,3 +48,11 @@ interface SerializedMetadataType {
 interface metadata_dict {
     [metadata_type: string]: SerializedMetadata[]
 }
+
+//field_info contains data of a field and information about whether that data is valid.
+//reason should default to the empty string "" and any other value will contain a human-readable string
+//saying why the data in value is invalid
+type field_info<T> = {
+    value: T
+    reason: string
+}
