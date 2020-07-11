@@ -45,8 +45,29 @@ interface SerializedMetadataType {
     name: string
 }
 
-interface metadata_dict {
+type MetadataAPI = {
+    state: MetadataProviderState
+    refresh_metadata: () => void
+}
+
+type MetadataProviderState = {
+    loaded: boolean
+    error: {
+        is_error: boolean
+        message: string
+    }
+    metadata: SerializedMetadata[]
+    metadata_by_type: metadata_dict
+    metadata_types: SerializedMetadataType[]
+}
+
+type metadata_dict = {
     [metadata_type: string]: SerializedMetadata[]
+}
+
+// Takes a type and wraps all members of that type with the field_info type constructor
+type WrappedFieldInfo<T> = {
+    [P in keyof T]: field_info<T[P]>
 }
 
 //field_info contains data of a field and information about whether that data is valid.

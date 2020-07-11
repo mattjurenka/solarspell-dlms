@@ -190,39 +190,27 @@ export default class Content extends Component<ContentProps, ContentState> {
             published_year: ""
         }
 
+        //helper function to get default value for field_info
+        function get_field_info_default<T>(value: T): field_info<T> {
+            return {
+                value,
+                reason: ""
+            }
+        }
         this.content_modal_defaults = {
             is_open: false,
             row: this.content_defaults,
-            content_file: {
-                value: null,
-                reason: ""
-            },
-            title: {
-                value: "",
-                reason: ""
-            },
-            description: {
-                value: "",
-                reason: ""
-            },
-            year: {
-                value: "",
-                reason: ""
-            },
-            metadata: {
-                value: this.props.all_metadata_types.reduce((prev, current) => {
-                    return set(prev, [current.name], [])
-                }, {}),
-                reason: ""
-            },
-            rights_statement: {
-                value: "",
-                reason: ""
-            },
-            copyright: {
-                value: "",
-                reason: ""
-            }
+            content_file: get_field_info_default<File|null>(null),
+            title: get_field_info_default(""),
+            description: get_field_info_default(""),
+            year: get_field_info_default(""),
+            metadata: get_field_info_default(
+                this.props.all_metadata_types.reduce((prev, current) => {
+                   return set(prev, [current.name], [])
+                }, {} as metadata_dict)
+            ),
+            rights_statement: get_field_info_default(""),
+            copyright: get_field_info_default("")
         }
         this.modal_defaults = {
             add: this.content_modal_defaults,
@@ -565,7 +553,6 @@ export default class Content extends Component<ContentProps, ContentState> {
                     <TableHeaderRow showSortingControls />
                     <PagingPanel pageSizes={this.page_sizes} />
                 </DataGrid>
-                {/* Most of the code in these ActionDialogs is still boilerplate, we should revisit how to make this more concise. */}
                 <ActionDialog
                     title={`Delete Content item ${delete_content.row.title}?`}
                     open={delete_content.is_open}
