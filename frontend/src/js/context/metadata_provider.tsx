@@ -1,7 +1,7 @@
 import { MetadataContext } from "./contexts"
 import React, { Component } from 'react';
-import { update_state } from 'js/utils';
-import { get_data, APP_URLS } from 'js/urls';
+import { update_state } from '../utils';
+import { get_data, APP_URLS } from '../urls';
 import { isString, set } from 'lodash';
 
 
@@ -26,6 +26,10 @@ export default class MetadataProvider extends Component<{}, MetadataProviderStat
         this.update_state = update_state.bind(this)
     }
 
+    componentDidMount() {
+        this.refresh_metadata()
+    }
+
     // Updates the metadata held in state to reflect what is returned by the server
     // Returns a promise to reflect when the metadata is fully refreshed
     async refresh_metadata() {
@@ -43,6 +47,7 @@ export default class MetadataProvider extends Component<{}, MetadataProviderStat
             .then(() => get_data(APP_URLS.METADATA))
             .then((metadata: SerializedMetadata[]) => {
                 this.update_state(draft => {
+                    draft.loaded = true
                     draft.metadata = metadata
                     draft.metadata_by_type = draft.metadata_types.reduce((prev, current) => {
                         return set(prev, [current.name], draft.metadata.filter(metadata => metadata.type_name == current.name))
@@ -50,6 +55,7 @@ export default class MetadataProvider extends Component<{}, MetadataProviderStat
                 })
             }, (err: any) => {
                 this.update_state(draft => {
+                    draft.loaded = true
                     draft.error = {
                         is_error: true,
                         message: isString(err) ? err : "Unknown Error"

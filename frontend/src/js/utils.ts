@@ -1,4 +1,4 @@
-import { get } from 'lodash'
+import { get, isString } from 'lodash'
 import { produce } from 'immer'
 
 // Gets a SerlializedMetadata given an array of SerializedMetadata and an id to look for
@@ -18,7 +18,7 @@ export const get_metadata = (metadata: SerializedMetadata[], id: number): Serial
 // Make sure the type of this.update_state is
 //   (update_func: (draft: COMPONENT_STATE_TYPE) => void) => Promise<void>
 //
-// In code usage:
+// Usage example:
 // this.update_state(draft => {
 //   draft.create_meta.type_name = "string value"
 //   draft.create_meta.is_open = true
@@ -31,4 +31,33 @@ export async function update_state<T>(this: any, update_func: (draft: T) => void
             return produce(prevState, update_func)
         }, resolve)
     })
+}
+
+
+// Given a standard api error response this will look for a string in the object and if it cant find it
+// will return a default error message.
+// This was written to be used to find an error string that could be passed to an error toast when
+// a call to axios failed.
+//
+// Usage example: 
+// this.props.show_toast_message(get_string_from_error(
+//   reason.response.data.error, "Error while adding content"
+// ))
+// 
+// where reason is the object passed as an argument to the catch function when the piped axios call fails,
+// not the actual error object from the database 
+export const get_string_from_error = (err_obj: any, default_err: string): string => {
+    try {
+        //This returns the error object if its a string or looks for an error string as the value
+        //to the first object key's first member (in case of validation error)
+        //Javascript will choose which key is first randomly
+        //The syntax looks weird but this just creates an anonymous function and immediately calls it
+        //so we can define variables for use in inline if expressions
+        return isString(err_obj) ? err_obj : (() => {
+            const first_msg = err_obj[Object.keys(err_obj)[0]][0]
+            return isString(first_msg) ? first_msg : default_err
+        })()
+    } catch {
+        return default_err
+    }
 }

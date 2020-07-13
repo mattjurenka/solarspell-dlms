@@ -18,18 +18,17 @@ import {
 import ActionPanel from './action_panel';
 import { APP_URLS, get_data } from './urls';
 import { content_display } from './settings';
-import { get, set, cloneDeep, debounce, isString } from 'lodash';
+import { get, set, cloneDeep, debounce } from 'lodash';
 import ActionDialog from './action_dialog';
 import { Button, Typography, TextField, Paper, Chip, ExpansionPanelSummary, ExpansionPanelDetails, ExpansionPanel, Grid, Select, MenuItem, Container } from '@material-ui/core';
 import { Autocomplete } from "@material-ui/lab"
 import Axios from 'axios';
 import VALIDATORS from './validators';
 import { update_state } from './utils';
+import ContentModal from './content_modal';
 
 interface ContentProps {
-    all_metadata: SerializedMetadata[]
-    all_metadata_types: SerializedMetadataType[]
-    metadata_type_dict: metadata_dict
+    metadata_api: MetadataAPI
     show_toast_message: (message: string) => void
     close_toast: () => void
 }
@@ -47,35 +46,23 @@ interface ContentState {
 }
 
 interface ContentModals {
-    add: content_modal_state
+    add: {
+        is_open: boolean
+    }
     view: {
         is_open: boolean
         row: SerializedContent
     }
-    edit: content_modal_state
+    edit: {
+        is_open: boolean
+        row: SerializedContent
+    }
     delete_content: {
         is_open: boolean
         row: SerializedContent
     }   
 }
 
-//Add and edit modal use the same type because they use the same data
-type content_modal_state = {
-    is_open:            boolean
-    row:                SerializedContent //Includes Row to know which content item to patch if an edit modal
-    content_file:       field_info<File|null>
-    title:              field_info<string>
-    description:        field_info<string>
-    year:               field_info<string>
-    metadata:           field_info<metadata_dict>
-    copyright:          field_info<string>
-    rights_statement:   field_info<string>
-}
-
-
-//content_modal_state_fields are the keys in the content_modal_state actually uploaded as part of the content data
-type content_modal_state_fields = "content_file" | "title" | "description" | "year" | "metadata" |
-"copyright" | "rights_statement"
 
 type active_search_option = "active" | "inactive" | "all"
 type search_state = {
@@ -97,14 +84,11 @@ export default class Content extends Component<ContentProps, ContentState> {
     update_state: (update_func: (draft: ContentState) => void) => Promise<void>
 
     modal_defaults: ContentModals
-    content_modal_defaults: content_modal_state
     content_defaults: SerializedContent
 
     add_modal_ref: React.RefObject<HTMLInputElement>
     edit_modal_ref: React.RefObject<HTMLInputElement>
 
-    add_content_validators: [content_modal_state_fields, (raw: any) => string][]
-    edit_content_validators: [content_modal_state_fields, (raw: any) => string][]
     constructor(props: ContentProps) {
         super(props)
 
@@ -119,16 +103,6 @@ export default class Content extends Component<ContentProps, ContentState> {
                             this.update_state(draft => {
                                 const edit = draft.modals.edit
                                 edit.row = row
-
-                                edit.copyright.value = row.copyright === null ? "" : row.copyright
-                                edit.rights_statement.value = row.rights_statement === null ? "" : row.rights_statement
-                                edit.title.value = row.title
-                                edit.description.value = row.description === null ? "" : row.description
-                                edit.year.value = row.published_year === null ? "" : row.published_year
-                                edit.metadata.value = this.props.all_metadata_types.reduce((prev, current) => {
-                                    return set(prev, [current.name], row.metadata_info.filter(metadata => metadata.type_name == current.name))
-                                }, {} as metadata_dict)
-                                
                                 edit.is_open = true
                             })
                         }}
@@ -190,35 +164,18 @@ export default class Content extends Component<ContentProps, ContentState> {
             published_year: ""
         }
 
-        //helper function to get default value for field_info
-        function get_field_info_default<T>(value: T): field_info<T> {
-            return {
-                value,
-                reason: ""
-            }
-        }
-        this.content_modal_defaults = {
-            is_open: false,
-            row: this.content_defaults,
-            content_file: get_field_info_default<File|null>(null),
-            title: get_field_info_default(""),
-            description: get_field_info_default(""),
-            year: get_field_info_default(""),
-            metadata: get_field_info_default(
-                this.props.all_metadata_types.reduce((prev, current) => {
-                   return set(prev, [current.name], [])
-                }, {} as metadata_dict)
-            ),
-            rights_statement: get_field_info_default(""),
-            copyright: get_field_info_default("")
-        }
         this.modal_defaults = {
-            add: this.content_modal_defaults,
+            add: {
+                is_open: false
+            },
             view: {
                 is_open: false,
                 row: this.content_defaults
             },
-            edit: this.content_modal_defaults,
+            edit: {
+                is_open: false,
+                row: this.content_defaults
+            },
             delete_content: {
                 is_open: false,
                 row: this.content_defaults
@@ -246,32 +203,9 @@ export default class Content extends Component<ContentProps, ContentState> {
             }
         }
 
-        //Array that specifies which state fields to validate and with what functions for the add_modal
-        this.add_content_validators = [
-            ["content_file", VALIDATORS.ADD_FILE],
-            ["title", VALIDATORS.TITLE],
-            ["description", VALIDATORS.DESCRIPTION],
-            ["year", VALIDATORS.YEAR],
-            ["metadata", VALIDATORS.METADATA],
-            ["copyright", VALIDATORS.COPYRIGHT],
-            ["rights_statement", VALIDATORS.RIGHTS_STATEMENT]
-        ]
-
-        //The same for the edit_modal
-        this.edit_content_validators = [
-            ["content_file", VALIDATORS.EDIT_FILE],
-            ["title", VALIDATORS.TITLE],
-            ["description", VALIDATORS.DESCRIPTION],
-            ["year", VALIDATORS.YEAR],
-            ["metadata", VALIDATORS.METADATA],
-            ["copyright", VALIDATORS.COPYRIGHT],
-            ["rights_statement", VALIDATORS.RIGHTS_STATEMENT]
-        ]
-
         this.load_content_rows = this.load_content_rows.bind(this)
         this.debounce_load_rows = this.debounce_load_rows.bind(this)
         this.close_modals = this.close_modals.bind(this)
-        this.add_file = this.add_file.bind(this)
         this.update_state = this.update_state.bind(this)
     }
 
@@ -353,25 +287,6 @@ export default class Content extends Component<ContentProps, ContentState> {
         }).then(this.load_content_rows)
     }
 
-    //Runs validation on all state_fields
-    async run_validators(modal: "add" | "edit") {
-        return this.update_state(draft => {
-            const validators = modal === "add" ? this.add_content_validators : this.edit_content_validators
-            validators.map((validator_entry) => {
-                const [state_field, validator_fn] = validator_entry
-                draft.modals[modal][state_field].reason = validator_fn(draft.modals[modal][state_field].value)
-            })
-        })
-    }
-    
-    //Sets the file object in state to point to the file attached to the input in DOM
-    async add_file(modal: "add" | "edit") {
-        return this.update_state(draft => {
-            const file_raw = this.add_modal_ref.current?.files?.item(0)
-            draft.modals[modal].content_file.value = typeof(file_raw) === "undefined" ? null : file_raw
-        })
-    }
-
     render() {
         const {
             add,
@@ -379,6 +294,7 @@ export default class Content extends Component<ContentProps, ContentState> {
             edit,
             delete_content
         } = this.state.modals
+        const metadata_api = this.props.metadata_api
         return (
             <React.Fragment>
                 <Button
@@ -488,24 +404,25 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 </Container>
                             </Grid>
                             <Grid item xs={4} />
-                            {this.props.all_metadata_types.map((metadata_type: SerializedMetadataType) => {
+                            {Object.entries(metadata_api.state.metadata_by_type).map((entry: [string, SerializedMetadata[]], idx) => {
+                                const [metadata_type, metadata] = entry
                                 return (
-                                    <Grid item xs={4} key={metadata_type.id}>
+                                    <Grid item xs={4} key={idx}>
                                         <Autocomplete
                                             multiple
-                                            options={this.props.metadata_type_dict[metadata_type.name]}
+                                            options={metadata}
                                             getOptionLabel={option => option.name}
                                             renderInput={(params) => (
                                                 <TextField
                                                     {...params}
                                                     variant={"standard"}
-                                                    label={metadata_type.name}
-                                                    placeholder={metadata_type.name}
+                                                    label={metadata_type}
+                                                    placeholder={metadata_type}
                                                 />
                                             )}
                                             onChange={(_evt, values) => {
                                                 this.update_state(draft => {
-                                                    draft.search.metadata[metadata_type.name] = values
+                                                    draft.search.metadata[metadata_type] = values
                                                 }).then(this.debounce_load_rows)
                                             }}
                                         />
@@ -580,378 +497,47 @@ export default class Content extends Component<ContentProps, ContentState> {
                 >
                     <Typography>This action is irreversible</Typography>
                 </ActionDialog>
-                <ActionDialog
-                    title={`Add new content item`}
-                    open={add.is_open}
-                    actions={[(
-                        <Button
-                            key={1}
-                            onClick={this.close_modals}
-                            color="secondary"
-                        >
-                            Cancel
-                        </Button>
-                    ), (
-                        <Button
-                            key={2}
-                            onClick={()=> {
-                                this.add_file("add")
-                                .then(() => this.run_validators("add"))
-                                .then(() => {
-                                    //If theres is invalid user input exit upload logic without closing the modal
-                                    for (const validator_entry of this.add_content_validators) {
-                                        const [state_field] = validator_entry
-                                        if (add[state_field].reason !== "") return
-                                    }
-                                    
-                                    //Form data instead of js object needed so the file upload works as multipart
-                                    //There might be a better way to do this with Axios
-                                    const file = add.content_file.value
-                                    if (file === null) return
-                                    const formData = new FormData()
-                                    formData.append('content_file', file)
-                                    formData.append('title', add.title.value)
-                                    formData.append('description', add.description.value)
-                                    formData.append('published_date', `${add.year.value}-01-01`)
-                                    formData.append('active', "true")
-                                    
-                                    this.props.all_metadata_types.map(type => {
-                                        if (type.name in add.metadata.value) {
-                                            add.metadata.value[type.name].map(metadata => {
-                                                formData.append("metadata", `${metadata.id}`)
-                                            })
-                                        }
-                                    })
-
-                                    Axios.post(APP_URLS.CONTENT, formData, {
-                                        headers: {
-                                            'Content-Type': 'multipart/form-data'
-                                        }
-                                    })
-                                    .then((_res) => {
-                                        //Runs if success
-                                        this.props.show_toast_message("Added content successfully")
-                                        this.load_content_rows()
-                                        this.close_modals()
-                                    }, (err) => {
-                                        //Runs if failed validation or other error
-                                        const default_error = "Error while adding content"
-                                        try {
-                                            const err_obj = err.response.data.error
-                                            this.props.show_toast_message(
-                                                //This returns the error object if its a string or looks for an error string as the value
-                                                //to the first object key's first member (in case of validation error)
-                                                //Javascript will choose which key is first randomly
-                                                //The syntax looks weird but this just creates an anonymous function and immediately calls it
-                                                //so we can define variables for use in inline if expressions
-                                                isString(err_obj) ? err_obj : (() => {
-                                                    const first_msg = err_obj[Object.keys(err_obj)[0]][0]
-                                                    return isString(first_msg) ? first_msg : default_error
-                                                })()
-                                            )
-                                        } catch {
-                                            this.props.show_toast_message(default_error)
-                                        }
-                                    })
-                                })
-                            }}
-                            color="primary"
-                        >
-                            Add
-                        </Button>
-                    )]}
-                >
-                    <TextField
-                        error={add.title.reason !== ""}
-                        helperText={add.title.reason}
-                        label={"Title"}
-                        value={add.title.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.modals.add.title.value = evt.target.value
-                            })
-                        }}
-                    />
-                    <br />
-                    <br />
-                    <TextField
-                        error={add.description.reason !== ""}
-                        helperText={add.description.reason}
-                        label={"Description"}
-                        value={add.description.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.modals.add.description.value = evt.target.value
-                            })
-                        }}
-                    />
-                    <br />
-                    <br />
-                    <input
-                        accept="*"
-                        id="raised-button-file"
-                        type="file"
-                        ref={this.add_modal_ref}
-                    />
-                    <br />
-                    <br />
-                    <TextField
-                        error={add.year.reason !== ""}
-                        helperText={add.year.reason}
-                        label={"Year Published"}
-                        value={add.year.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.modals.add.year.value = evt.target.value
-                            })
-                        }}
-                    />
-                    <br />
-                    <br />
-                    <TextField
-                        error={add.copyright.reason !== ""}
-                        helperText={add.copyright.reason}
-                        label={"Copyright"}
-                        value={add.copyright.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.modals.add.copyright.value = evt.target.value
-                            })
-                        }}
-                    />
-                    <br />
-                    <br />
-                    <TextField
-                        error={add.rights_statement.reason !== ""}
-                        helperText={add.rights_statement.reason}
-                        label={"Rights Statement"}
-                        value={add.rights_statement.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.modals.add.rights_statement.value = evt.target.value
-                            })
-                        }}
-                    />
-                    <br />
-                    <br />
-                    {this.props.all_metadata_types.map((metadata_type: SerializedMetadataType) => {
-                        return (
-                            <Grid item xs={4} key={metadata_type.id}>
-                                <Autocomplete
-                                    multiple
-                                    options={this.props.metadata_type_dict[metadata_type.name]}
-                                    getOptionLabel={option => option.name}
-                                    renderInput={(params) => (
-                                        <TextField
-                                            error={add.metadata.reason !== ""}
-                                            helperText={add.metadata.reason}
-                                            {...params}
-                                            variant={"standard"}
-                                            label={metadata_type.name}
-                                            placeholder={metadata_type.name}
-                                        />
-                                    )}
-                                    onChange={(_evt, values) => {
-                                        this.update_state(draft => {
-                                            draft.modals.add.metadata.value[metadata_type.name] = values
-                                        })
-                                    }}
-                                />
-                            </Grid>
-                        )
-                    })}
-                </ActionDialog>
-                <ActionDialog
-                    title={"Edit content item"}
-                    open={edit.is_open}
-                    actions={[(
-                        <Button
-                            key={1}
-                            onClick={this.close_modals}
-                            color="secondary"
-                        >
-                            Cancel
-                        </Button>
-                    ), (
-                        <Button
-                            key={2}
-                            onClick={()=> {
-                                this.add_file("edit")
-                                .then(() => this.run_validators("edit"))
-                                .then(() => {
-                                    //If theres is invalid user input exit upload logic without closing the modal
-                                    for (const validator_entry of this.edit_content_validators) {
-                                        const [state_field] = validator_entry
-                                        if (edit[state_field].reason !== "") return
-                                    }                                    
-                                    //Form data instead of js object needed so the file upload works as multipart
-                                    //There might be a better way to do this with Axios
-                                    const file: File | null = edit.content_file.value
-                                    const formData = new FormData()
-                                    if (file !== null) {
-                                        formData.append('content_file', file)
-                                    }
-                                    formData.append('title', edit.title.value)
-                                    formData.append('description', edit.description.value)
-                                    formData.append('published_date', `${edit.year.value}-01-01`)
-                                    formData.append('active', "true")
-                                    this.props.all_metadata_types.map(type => {
-                                        if (type.name in edit.metadata.value) {
-                                            edit.metadata.value[type.name].map(metadata => {
-                                                formData.append("metadata", `${metadata.id}`)
-                                            })
-                                        }
-                                    })
-
-                                    Axios.patch(APP_URLS.CONTENT_ITEM(edit.row.id), formData, {
-                                        headers: {
-                                            'Content-Type': 'multipart/form-data'
-                                        }
-                                    })
-                                    .then((_res) => {
-                                        //Runs if success
-                                        this.props.show_toast_message("Edited content successfully")
-                                        this.load_content_rows()
-                                        this.close_modals()
-                                    }, (err) => {
-                                        //Runs if failed validation or other error
-                                        const default_error = "Error while editing content"
-                                        try {
-                                            const err_obj = err.response.data.error
-                                            this.props.show_toast_message(
-                                                //This returns the error object if its a string or looks for an error string as the value
-                                                //to the first object key's first member (in case of validation error)
-                                                //Javascript will choose which key is first randomly
-                                                //The syntax looks weird but this just creates an anonymous function and immediately calls it
-                                                //so we can define variables for use in inline if expressions
-                                                isString(err_obj) ? err_obj : (() => {
-                                                    const first_msg = err_obj[Object.keys(err_obj)[0]][0]
-                                                    return isString(first_msg) ? first_msg : default_error
-                                                })()
-                                            )
-                                        } catch {
-                                            this.props.show_toast_message(default_error)
-                                        }
-                                    })
-                                })
-                            }}
-                            color="primary"
-                        >
-                            Save
-                        </Button>
-                    )]}
-                >
-                    <TextField
-                        error={edit.title.reason !== ""}
-                        helperText={edit.title.reason}
-                        label={"Title"}
-                        value={edit.title.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.modals.edit.title.value = evt.target.value
-                            })
-                        }}
-                    />
-                    <br />
-                    <br />
-                    <TextField
-                        error={edit.description.reason !== ""}
-                        helperText={edit.description.reason}
-                        label={"Description"}
-                        value={edit.description.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.modals.edit.description.value = evt.target.value
-                            })
-                        }}
-                    />
-                    <br />
-                    <br />
-                    <input
-                        accept="*"
-                        id="raised-button-file"
-                        type="file"
-                        ref={this.edit_modal_ref}
-                    />
-                    <br />
-                    <br />
-                    <TextField
-                        error={edit.year.reason !== ""}
-                        helperText={edit.year.reason}
-                        label={"Year Published"}
-                        value={edit.year.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.modals.edit.year.value = evt.target.value
-                            })
-                        }}
-                    />
-                    <br />
-                    <br />
-                    <TextField
-                        error={edit.copyright.reason !== ""}
-                        helperText={edit.copyright.reason}
-                        label={"Copyright"}
-                        value={edit.copyright.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.modals.edit.copyright.value = evt.target.value
-                            })
-                        }}
-                    />
-                    <br />
-                    <br />
-                    <TextField
-                        error={edit.rights_statement.reason !== ""}
-                        helperText={edit.rights_statement.reason}
-                        label={"Rights Statement"}
-                        value={edit.rights_statement.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.modals.edit.rights_statement.value = evt.target.value
-                            })
-                        }}
-                    />
-                    <br />
-                    <br />
-                    {this.props.all_metadata_types.map((metadata_type: SerializedMetadataType) => {
-                        return (
-                            <Grid item xs={4} key={metadata_type.id}>
-                                <Autocomplete
-                                    multiple
-                                    options={this.props.metadata_type_dict[metadata_type.name]}
-                                    getOptionLabel={option => option.name}
-                                    renderInput={(params) => (
-                                        <TextField
-                                            error={edit.metadata.reason !== ""}
-                                            helperText={edit.metadata.reason}
-                                            {...params}
-                                            variant={"standard"}
-                                            label={metadata_type.name}
-                                            placeholder={metadata_type.name}
-                                        />
-                                    )}
-                                    onChange={(_evt, values) => {
-                                        this.update_state(draft => {
-                                            draft.modals.edit.metadata.value[metadata_type.name] = values
-                                        })
-                                    }}
-                                    defaultValue={edit.metadata.value[metadata_type.name]}
-                                />
-                            </Grid>
-                        )
-                    })}
-                </ActionDialog>
+                <ContentModal
+                    is_open={add.is_open}
+                    on_close={() => {
+                        this.update_state(draft => {
+                            draft.modals.add.is_open = false
+                        })
+                    }}
+                    metadata_api={metadata_api}
+                    modal_type={"add"}
+                    validators={{
+                        content_file: VALIDATORS.ADD_FILE,
+                        title: VALIDATORS.TITLE,
+                        description: VALIDATORS.DESCRIPTION,
+                        year: VALIDATORS.YEAR,
+                        metadata: VALIDATORS.METADATA,
+                        copyright: VALIDATORS.COPYRIGHT,
+                        rights_statement: VALIDATORS.RIGHTS_STATEMENT
+                    }}
+                    show_toast_message={this.props.show_toast_message}
+                />
+                <ContentModal
+                    is_open={edit.is_open}
+                    on_close={() => {
+                        this.update_state(draft => {
+                            draft.modals.add.is_open
+                        })
+                    }}
+                    metadata_api={metadata_api}
+                    modal_type={"edit"}
+                    row={edit.row}
+                    validators={{
+                        content_file: VALIDATORS.EDIT_FILE,
+                        title: VALIDATORS.TITLE,
+                        description: VALIDATORS.DESCRIPTION,
+                        year: VALIDATORS.YEAR,
+                        metadata: VALIDATORS.METADATA,
+                        copyright: VALIDATORS.COPYRIGHT,
+                        rights_statement: VALIDATORS.RIGHTS_STATEMENT
+                    }}
+                    show_toast_message={this.props.show_toast_message}
+                />
                 <ActionDialog
                     title={"View Content Item"}
                     open={view.is_open}
@@ -982,7 +568,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     </Container>
                                 )
                             })}
-                            {this.props.all_metadata_types.map((metadata_type: SerializedMetadataType) => {
+                            {this.props.metadata_api.state.metadata_types.map((metadata_type: SerializedMetadataType) => {
                                 return (
                                     <Container key={metadata_type.id} style={{marginBottom: "1em"}}>
                                         <Typography variant={"h6"}>{metadata_type.name}</Typography>
