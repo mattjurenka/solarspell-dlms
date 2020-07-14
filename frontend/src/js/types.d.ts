@@ -47,7 +47,13 @@ interface SerializedMetadataType {
 
 type MetadataAPI = {
     state: MetadataProviderState
-    refresh_metadata: () => void
+    refresh_metadata: () => Promise<void>
+    add_metadata_type: (type_name: string) => Promise<void>
+    edit_metadata_type: (old_type: SerializedMetadataType, new_name: string) => Promise<void>
+    delete_metadata_type: (meta_type: SerializedMetadataType) => Promise<void>
+    add_metadata: (meta_name: string, meta_type: SerializedMetadataType) => Promise<void>
+    edit_metadata: (old_meta: SerializedMetadata, new_name: string) => Promise<void>
+    delete_metadata: (meta_type: SerializedMetadata) => Promise<void>
 }
 
 type MetadataProviderState = {

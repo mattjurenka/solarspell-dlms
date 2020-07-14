@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 import { update_state } from '../utils';
 import { get_data, APP_URLS } from '../urls';
 import { isString, set } from 'lodash';
+import Axios from 'axios';
 
 
 export default class MetadataProvider extends Component<{}, MetadataProviderState> {
@@ -22,12 +23,33 @@ export default class MetadataProvider extends Component<{}, MetadataProviderStat
             metadata_types: []
         }
 
+        this._set_error_state = this._set_error_state.bind(this)
         this.refresh_metadata = this.refresh_metadata.bind(this)
         this.update_state = update_state.bind(this)
+
+        this.add_metadata_type = this.add_metadata_type.bind(this)
+        this.edit_metadata_type = this.edit_metadata_type.bind(this)
+        this.delete_metadata_type = this.delete_metadata_type.bind(this)
+        this.add_metadata = this.add_metadata.bind(this)
+        this.edit_metadata = this.edit_metadata.bind(this)
+        this.delete_metadata = this.delete_metadata.bind(this)
     }
 
     componentDidMount() {
         this.refresh_metadata()
+    }
+
+    async _set_error_state(err_msg:any) {
+        this.update_state(draft => {
+            draft.loaded = true
+            draft.error = {
+                is_error: true,
+                message: isString(err_msg) ? err_msg : "Unknown Error"
+            }
+            draft.metadata = []
+            draft.metadata_by_type = {}
+            draft.metadata_types = []
+        })
     }
 
     // Updates the metadata held in state to reflect what is returned by the server
@@ -53,30 +75,43 @@ export default class MetadataProvider extends Component<{}, MetadataProviderStat
                         return set(prev, [current.name], draft.metadata.filter(metadata => metadata.type_name == current.name))
                     }, {} as metadata_dict)
                 })
-            }, (err: any) => {
-                this.update_state(draft => {
-                    draft.loaded = true
-                    draft.error = {
-                        is_error: true,
-                        message: isString(err) ? err : "Unknown Error"
-                    }
-                    draft.metadata = []
-                    draft.metadata_by_type = {}
-                    draft.metadata_types = []
-                })
-            })
-        }, (err: any) => {
-            this.update_state(draft => {
-                draft.loaded = true
-                draft.error = {
-                    is_error: true,
-                    message: isString(err) ? err : "Unknown Error"
-                }
-                draft.metadata = []
-                draft.metadata_by_type = {}
-                draft.metadata_types = []
-            })
-        })
+            }, this._set_error_state)
+        }, this._set_error_state)
+    }
+
+    async add_metadata_type(type_name: string) {
+        Axios.post(APP_URLS.METADATA_TYPES, {
+            name: type_name
+        }).finally(this.refresh_metadata)
+    }
+
+    async edit_metadata_type(old_type: SerializedMetadataType, new_name: string) {
+        Axios.patch(APP_URLS.METADATA_TYPE(old_type.id), {
+            name: new_name
+        }).finally(this.refresh_metadata)
+    }
+
+    async delete_metadata_type(meta_type: SerializedMetadataType) {
+        Axios.delete(APP_URLS.METADATA_TYPE(meta_type.id))
+        .finally(this.refresh_metadata)
+    }
+    
+    async add_metadata(meta_name: string, meta_type: SerializedMetadataType) {
+        Axios.post(APP_URLS.METADATA, {
+            name: meta_name,
+            type: meta_type.id
+        }).finally(this.refresh_metadata)
+    }
+    
+    async edit_metadata(old_meta: SerializedMetadata, new_name: string) {
+        Axios.patch(APP_URLS.METADATA_ITEM(old_meta.id), {
+            name: new_name
+        }).finally(this.refresh_metadata)
+    }
+
+    async delete_metadata(meta_type: SerializedMetadata) {
+        Axios.delete(APP_URLS.METADATA_ITEM(meta_type.id))
+        .finally(this.refresh_metadata)
     }
 
     render() {
@@ -84,7 +119,13 @@ export default class MetadataProvider extends Component<{}, MetadataProviderStat
             <MetadataContext.Provider
                 value={{
                     state: this.state,
-                    refresh_metadata: this.refresh_metadata
+                    refresh_metadata: this.refresh_metadata,
+                    add_metadata_type: this.add_metadata_type,
+                    edit_metadata_type: this.edit_metadata_type,
+                    delete_metadata_type: this.delete_metadata_type,
+                    add_metadata: this.add_metadata,
+                    edit_metadata: this.edit_metadata,
+                    delete_metadata: this.delete_metadata
                 }}
             >
                 {this.props.children}

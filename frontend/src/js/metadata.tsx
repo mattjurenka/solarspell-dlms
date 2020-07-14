@@ -8,7 +8,7 @@ import Grid from "@material-ui/core/Grid"
 import { APP_URLS } from "./urls"
 import { Typography, TextField } from "@material-ui/core"
 
-import { cloneDeep, isString, isEqual, set } from "lodash"
+import { cloneDeep, isEqual, set } from "lodash"
 
 import {
     FilteringState,
@@ -25,7 +25,6 @@ import {
 } from "@devexpress/dx-react-grid-material-ui"
 
 import ActionPanel from "./action_panel"
-import Axios from "axios"
 import ActionDialog from './action_dialog'
 import excel_icon from '../images/excel_icon.png'; 
 import { Edit } from '@material-ui/icons'
@@ -42,7 +41,7 @@ type panel_data = {
 }
 
 interface MetadataState {
-    panel_data: panel_data,
+    panel_data: panel_data
     modals: MetadataModals
 }
 
@@ -52,13 +51,13 @@ interface MetadataModals {
         type_name: string
     }
     edit_type: {
-        is_open: boolean,
+        is_open: boolean
         old_type: SerializedMetadataType
         new_name: string
     }
     create_meta: {
-        is_open: boolean,
-        meta_type: SerializedMetadataType,
+        is_open: boolean
+        meta_type: SerializedMetadataType
         meta_name: string
     }
     delete_meta: {
@@ -66,8 +65,9 @@ interface MetadataModals {
         metadata: SerializedMetadata
     }
     edit_meta: {
-        is_open: boolean,
-        metadata: SerializedMetadataType
+        is_open: boolean
+        metadata: SerializedMetadata
+        new_name: string
     }
     delete_type: {
         is_open: boolean
@@ -125,7 +125,8 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
             },
             edit_meta: {
                 is_open: false,
-                metadata: this.metadata_defaults
+                metadata: this.metadata_defaults,
+                new_name: ""
             },
             delete_type: {
                 is_open: false,
@@ -137,7 +138,9 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
             }
         }
         this.state = {
-            panel_data: {},
+            panel_data: this.props.metadata_api.state.metadata_types.reduce((panel_data, metadata_type) => {
+                return set(panel_data, [metadata_type.name], false) 
+            }, {} as panel_data),
             modals: cloneDeep(this.modal_defaults)
         }
 
@@ -175,7 +178,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
 
     render() {
         const metadata_api = this.props.metadata_api
-        if (metadata_api.state === undefined || metadata_api.state.loaded) {
+        if (metadata_api.state === undefined || !metadata_api.state.loaded) {
             return <Typography variant={"h3"}>Loading...</Typography>
         }
         if (metadata_api.state.error.is_error) {
@@ -304,11 +307,9 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     open={delete_meta.is_open}
                     actions={[(
                         <Button
+                            key={0}
                             onClick={()=> {
-                                Axios.delete(APP_URLS.METADATA_ITEM(delete_meta.metadata.id)).then((res) => {
-                                    console.log(res)
-                                })
-                                metadata_api.refresh_metadata()
+                                metadata_api.delete_metadata(delete_meta.metadata)
                                 this.close_modals()
                             }}
                             color="secondary"
@@ -317,6 +318,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         </Button>
                     ), (
                         <Button
+                            key={1}
                             onClick={this.close_modals}
                             color="primary"
                         >
@@ -332,6 +334,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     on_close={this.close_modals}
                     actions={[(
                         <Button
+                            key={0}
                             onClick={this.close_modals}
                             color="secondary"
                         >
@@ -339,12 +342,10 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         </Button>
                     ), (
                         <Button
+                            key={1}
                             onClick={()=> {
-                                Axios.post(APP_URLS.METADATA_TYPES, {
-                                    name: create_type.type_name
-                                })
+                                metadata_api.add_metadata_type(create_type.type_name)
                                 this.close_modals()
-                                metadata_api.refresh_metadata()
                             }}
                             color="primary"
                         >
@@ -369,6 +370,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     on_close={this.close_modals}
                     actions={[(
                         <Button
+                            key={0}
                             onClick={this.close_modals}
                             color="secondary"
                         >
@@ -376,13 +378,10 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         </Button>
                     ), (
                         <Button
+                            key={1}
                             onClick={()=> {
-                                Axios.post(APP_URLS.METADATA, {
-                                    name: create_meta.meta_name,
-                                    type: create_meta.meta_type.id
-                                })
+                                metadata_api.add_metadata(create_meta.meta_name, create_meta.meta_type)
                                 this.close_modals()
-                                metadata_api.refresh_metadata()
                             }}
                             color="primary"
                         >
@@ -407,6 +406,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     on_close={this.close_modals}
                     actions={[(
                         <Button
+                            key={0}
                             onClick={this.close_modals}
                             color="secondary"
                         >
@@ -414,11 +414,9 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         </Button>
                     ), (
                         <Button
+                            key={1}
                             onClick={()=> {
-                                Axios.patch(APP_URLS.METADATA_ITEM(edit_meta.metadata.id), {
-                                    name: edit_meta.metadata.name
-                                })
-                                metadata_api.refresh_metadata()
+                                metadata_api.edit_metadata(edit_meta.metadata, edit_meta.new_name)
                                 this.close_modals()
                             }}
                             color="primary"
@@ -433,7 +431,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         onChange={(evt) => {
                             evt.persist()
                             this.update_state(draft => {
-                                draft.modals.edit_meta.metadata.name = evt.target.value
+                                draft.modals.edit_meta.new_name = evt.target.value
                             })
                         }}
                     />
@@ -444,6 +442,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     on_close={this.close_modals}
                     actions={[(
                         <Button
+                            key={0}
                             onClick={this.close_modals}
                             color="secondary"
                         >
@@ -451,11 +450,9 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         </Button>
                     ), (
                         <Button
+                            key={1}
                             onClick={()=> {
-                                Axios.patch(APP_URLS.METADATA_TYPE(edit_type.old_type.id), {
-                                    name: edit_type.new_name
-                                })
-                                metadata_api.refresh_metadata()
+                                metadata_api.edit_metadata_type(edit_type.old_type, edit_type.new_name)
                                 this.close_modals()
                             }}
                             color="primary"
@@ -481,6 +478,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     on_close={this.close_modals}
                     actions={[(
                         <Button
+                            key={0}
                             onClick={this.close_modals}
                             color="primary"
                         >
@@ -488,6 +486,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         </Button>
                     ), (
                         <Button
+                            key={1}
                             onClick={()=> {
                                 this.update_state(draft => {
                                     draft.modals.delete_type.confirm_text.reason = VALIDATORS.DELETE_IF_EQUALS(
@@ -495,32 +494,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                                     )
                                 }).then(() => {
                                     if (delete_type.confirm_text.reason === "") {
-                                        Axios.delete(APP_URLS.METADATA_TYPE(delete_type.meta_type.id))
-                                        .then((_res) => {
-                                            //Runs if success
-                                            metadata_api.refresh_metadata()
-                                            this.props.show_toast_message("Deleted Metadata Type successfully")
-                                            this.close_modals()
-                                        }, (err) => {
-                                            //Runs if failed validation or other error
-                                            const default_error = "Error while editing content"
-                                            try {
-                                                const err_obj = err.response.data.error
-                                                this.props.show_toast_message(
-                                                    //This returns the error object if its a string or looks for an error string as the value
-                                                    //to the first object key's first member (in case of validation error)
-                                                    //Javascript will choose which key is first randomly
-                                                    //The syntax looks weird but this just creates an anonymous function and immediately calls it
-                                                    //so we can define variables for use in inline if expressions
-                                                    isString(err_obj) ? err_obj : (() => {
-                                                        const first_msg = err_obj[Object.keys(err_obj)[0]][0]
-                                                        return isString(first_msg) ? first_msg : default_error
-                                                    })()
-                                                )
-                                            } catch {
-                                                this.props.show_toast_message(default_error)
-                                            }
-                                        })
+                                        metadata_api.delete_metadata_type(delete_type.meta_type)
                                     }
                                 })
                                 this.close_modals()
