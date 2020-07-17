@@ -26,10 +26,14 @@ export const get_metadata = (metadata: SerializedMetadata[], id: number): Serial
 //
 // This would update this.state.create_meta.type_name to "string value" and this.state.create_meta.is_open to true
 export async function update_state<T>(this: any, update_func: (draft: T) => void): Promise<void> {
-    return new Promise(resolve => {
-        this.setState((prevState: T) => {
-            return produce(prevState, update_func)
-        }, resolve)
+    return new Promise((resolve, reject)=> {
+        try {
+            this.setState((prevState: T) => {
+                return produce(prevState, update_func)
+            }, resolve)
+        } catch(err) {
+            reject(err)
+        }
     })
 }
 
@@ -59,5 +63,13 @@ export const get_string_from_error = (err_obj: any, default_err: string): string
         })()
     } catch {
         return default_err
+    }
+}
+
+// Creates and returns a field_info object with no validation error from a default value
+export function get_field_info_default<T>(value: T): field_info<T> {
+    return {
+        value,
+        reason: ""
     }
 }

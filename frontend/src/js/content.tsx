@@ -95,7 +95,8 @@ export default class Content extends Component<ContentProps, ContentState> {
         this.update_state = update_state.bind(this)
 
         this.columns = [
-            {name: "actions", title: "Actions", getCellValue: (row: SerializedContent) => {
+            {name: "actions", title: "Actions", getCellValue: (display_row) => {
+                const row = get(this.state.loaded_content.filter(to_check => to_check.id === display_row.id), 0)
                 return (
                     <ActionPanel
                         row={row}
@@ -123,10 +124,8 @@ export default class Content extends Component<ContentProps, ContentState> {
                         }}
                         viewFn={() => {
                             this.update_state(draft => {
-                                draft.modals.view = {
-                                    is_open: true,
-                                    row
-                                }
+                                draft.modals.view.is_open = true
+                                draft.modals.view.row = row
                             })
                         }}
                     />
@@ -521,7 +520,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                     is_open={edit.is_open}
                     on_close={() => {
                         this.update_state(draft => {
-                            draft.modals.add.is_open
+                            draft.modals.edit.is_open = false
                         })
                     }}
                     metadata_api={metadata_api}

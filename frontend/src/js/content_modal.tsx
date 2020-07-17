@@ -1,12 +1,12 @@
 import ActionDialog from "./action_dialog"
-import { cloneDeep } from "lodash"
+import { cloneDeep, isEqual, set } from "lodash"
 import { Button, TextField, Grid } from "@material-ui/core"
 import Axios, { AxiosResponse } from "axios"
 import { APP_URLS } from "./urls"
-import { Autocomplete } from "@material-ui/lab"
+import { Autocomplete, createFilterOptions } from "@material-ui/lab"
 import { Component, RefObject } from 'react'
 import React from 'react'
-import { update_state, get_string_from_error } from './utils'
+import { update_state, get_string_from_error, get_field_info_default } from './utils'
 
 
 type content_fields = {
@@ -43,18 +43,12 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
     default_fields: WrappedFieldInfo<content_fields>
     file_input_ref: RefObject<HTMLInputElement>
 
+    auto_complete_filter: any
+
     constructor(props: ContentModalProps) {
         super(props)
         
         this.file_input_ref = React.createRef()
-
-        //helper function to get default value for field_info
-        function get_field_info_default<T>(value: T): field_info<T> {
-            return {
-                value,
-                reason: ""
-            }
-        }
 
         this.default_fields = {
             content_file: get_field_info_default<File|null>(null),
@@ -70,7 +64,32 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
             fields: cloneDeep(this.default_fields)
         }
 
+        this.auto_complete_filter = createFilterOptions<(string | SerializedMetadata)[]>({
+            ignoreCase: true
+        })
         this.update_state = update_state.bind(this)
+    }
+
+    componentDidUpdate(prevProps: ContentModalProps, _prevState: ContentModalState) {
+        if (this.props.modal_type === "edit"
+            && this.props.row !== undefined
+            && !isEqual(this.props.row, prevProps.row)) {
+            const row = this.props.row
+            const metadata = this.props.metadata_api.state.metadata_types.reduce((prev, metadata_type) => {
+                const filtered = row.metadata_info.filter(to_check => isEqual(to_check, metadata_type))
+                return set(prev, [metadata_type.name], filtered)
+            }, {} as metadata_dict)
+
+            this.update_state(draft => {
+                draft.fields.content_file = get_field_info_default(null)
+                draft.fields.copyright = get_field_info_default(row.copyright === null ? "" : row.copyright)
+                draft.fields.description = get_field_info_default(row.description === null ? "" : row.description)
+                draft.fields.metadata = get_field_info_default(metadata)
+                draft.fields.rights_statement = get_field_info_default(row.rights_statement === null? "" : row.rights_statement)
+                draft.fields.title = get_field_info_default(row.title === null ? "" : row.title)
+                draft.fields.year = get_field_info_default(row.published_year === null ? "" : row.published_year)
+            })
+        }
     }
 
     render() {
@@ -80,7 +99,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
         const metadata_api = this.props.metadata_api
         return (
             <ActionDialog
-                title={`Add new content item`}
+                title={this.props.modal_type === "add" ? "Add new content item" : `Edit content ${this.props.row?.title}`}
                 open={true}
                 actions={[(
                     <Button
@@ -170,110 +189,138 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                     </Button>
                 )]}
                 >
-                <TextField
-                    error={fields.title.reason !== ""}
-                    helperText={fields.title.reason}
-                    label={"Title"}
-                    value={fields.title.value}
-                    onChange={(evt) => {
-                        evt.persist()
-                        this.update_state(draft => {
-                            draft.fields.title.value = evt.target.value
-                        })
-                    }}
-                />
-                <br />
-                <br />
-                <TextField
-                    error={fields.description.reason !== ""}
-                    helperText={fields.description.reason}
-                    label={"Description"}
-                    value={fields.description.value}
-                    onChange={(evt) => {
-                        evt.persist()
-                        this.update_state(draft => {
-                            draft.fields.description.value = evt.target.value
-                        })
-                    }}
-                />
-                <br />
-                <br />
-                <input
-                    accept="*"
-                    id="raised-button-file"
-                    type="file"
-                    ref={this.file_input_ref}
-                />
-                <br />
-                <br />
-                <TextField
-                    error={fields.year.reason !== ""}
-                    helperText={fields.year.reason}
-                    label={"Year Published"}
-                    value={fields.year.value}
-                    onChange={(evt) => {
-                        evt.persist()
-                        this.update_state(draft => {
-                            draft.fields.year.value = evt.target.value
-                        })
-                    }}
-                />
-                <br />
-                <br />
-                <TextField
-                    error={fields.copyright.reason !== ""}
-                    helperText={fields.copyright.reason}
-                    label={"Copyright"}
-                    value={fields.copyright.value}
-                    onChange={(evt) => {
-                        evt.persist()
-                        this.update_state(draft => {
-                            draft.fields.copyright.value = evt.target.value
-                        })
-                    }}
-                />
-                <br />
-                <br />
-                <TextField
-                    error={fields.rights_statement.reason !== ""}
-                    helperText={fields.rights_statement.reason}
-                    label={"Rights Statement"}
-                    value={fields.rights_statement.value}
-                    onChange={(evt) => {
-                        evt.persist()
-                        this.update_state(draft => {
-                            draft.fields.rights_statement.value = evt.target.value
-                        })
-                    }}
-                />
-                <br />
-                <br />
-                {metadata_api.state.metadata_types.map((metadata_type: SerializedMetadataType) => {
-                    return (
-                        <Grid item xs={4} key={metadata_type.id}>
-                            <Autocomplete
-                                multiple
-                                options={metadata_api.state.metadata_by_type[metadata_type.name]}
-                                getOptionLabel={option => option.name}
-                                renderInput={(params) => (
-                                    <TextField
-                                        error={fields.metadata.reason !== ""}
-                                        helperText={fields.metadata.reason}
-                                        {...params}
-                                        variant={"standard"}
-                                        label={metadata_type.name}
-                                        placeholder={metadata_type.name}
+                <Grid container>
+                    {[
+                        <TextField
+                            fullWidth
+                            error={fields.title.reason !== ""}
+                            helperText={fields.title.reason}
+                            label={"Title"}
+                            value={fields.title.value}
+                            onChange={(evt) => {
+                                evt.persist()
+                                this.update_state(draft => {
+                                    draft.fields.title.value = evt.target.value
+                                })
+                            }}
+                        />,
+                        <TextField
+                            fullWidth
+                            error={fields.description.reason !== ""}
+                            helperText={fields.description.reason}
+                            label={"Description"}
+                            value={fields.description.value}
+                            onChange={(evt) => {
+                                evt.persist()
+                                this.update_state(draft => {
+                                    draft.fields.description.value = evt.target.value
+                                })
+                            }}
+                        />,
+                        <input
+                            accept="*"
+                            id="raised-button-file"
+                            type="file"
+                            ref={this.file_input_ref}
+                        />,
+                        <TextField
+                            fullWidth
+                            error={fields.year.reason !== ""}
+                            helperText={fields.year.reason}
+                            label={"Year Published"}
+                            value={fields.year.value}
+                            onChange={(evt) => {
+                                evt.persist()
+                                this.update_state(draft => {
+                                    draft.fields.year.value = evt.target.value
+                                })
+                            }}
+                        />,
+                        <TextField
+                            fullWidth
+                            error={fields.copyright.reason !== ""}
+                            helperText={fields.copyright.reason}
+                            label={"Copyright"}
+                            value={fields.copyright.value}
+                            onChange={(evt) => {
+                                evt.persist()
+                                this.update_state(draft => {
+                                    draft.fields.copyright.value = evt.target.value
+                                })
+                            }}
+                        />,
+                        <TextField
+                            fullWidth
+                            error={fields.rights_statement.reason !== ""}
+                            helperText={fields.rights_statement.reason}
+                            label={"Rights Statement"}
+                            value={fields.rights_statement.value}
+                            onChange={(evt) => {
+                                evt.persist()
+                                this.update_state(draft => {
+                                    draft.fields.rights_statement.value = evt.target.value
+                                })
+                            }}
+                        />,
+                        metadata_api.state.metadata_types.map((metadata_type: SerializedMetadataType) => {
+                            return (
+                                <Grid item key={metadata_type.id}>
+                                    <Autocomplete
+                                        multiple
+                                        value={fields.metadata.value[metadata_type.name]}
+                                        onChange={(_evt, value: SerializedMetadata[]) => {
+                                            //Determine which tokens are real or generated by the "Add new metadata ..." option
+                                            const valid_meta = value.filter(to_check => to_check.id !== 0)
+                                            const add_meta_tokens = value.filter(to_check => to_check.id === 0)
+                                            
+                                            if (add_meta_tokens.length > 0) {
+                                                const to_add = add_meta_tokens[0]
+                                                metadata_api.add_metadata(to_add.type_name, metadata_type)
+                                            }
+
+                                            this.update_state(draft => {
+                                                draft.fields.metadata.value[metadata_type.name] = valid_meta
+                                            })
+                                        }}
+                                        filterOptions={(options, params) => {
+                                            const filtered = this.auto_complete_filter(options, params)
+                                            if (params.inputValue !== '') {
+                                                filtered.push({
+                                                    id: 0,
+                                                    name: `Add new Metadata "${params.inputValue}"`,
+                                                    type: metadata_type.id,
+                                                    // Because this is isnt a real SerializedMetadata we can use this to store
+                                                    // the real metadata name
+                                                    type_name: params.inputValue
+                                                } as SerializedMetadata)
+                                            }
+                                            return filtered
+                                        }}
+                                        handleHomeEndKeys
+                                        options={metadata_api.state.metadata_by_type[metadata_type.name]}
+                                        getOptionLabel={option => {
+                                            return option.name
+                                        }}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                error={fields.metadata.reason !== ""}
+                                                helperText={fields.metadata.reason}
+                                                {...params}
+                                                variant={"standard"}
+                                                label={metadata_type.name}
+                                                placeholder={metadata_type.name}
+                                            />
+                                        )}
                                     />
-                                )}
-                                onChange={(_evt, values) => {
-                                    this.update_state(draft => {
-                                        draft.fields.metadata.value[metadata_type.name] = values
-                                    })
-                                }}
-                            />
+                                </Grid>
+                            )
+                        })
+                    ].map(element => (
+                        <Grid item xs={12} style={{marginBottom: "10px"}}>
+                            {element}
                         </Grid>
-                    )
-                })}
+                    ))}
+                </Grid> 
             </ActionDialog>
         )
     }

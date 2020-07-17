@@ -27,7 +27,7 @@ import {
 import ActionPanel from "./action_panel"
 import ActionDialog from './action_dialog'
 import excel_icon from '../images/excel_icon.png'; 
-import { Edit } from '@material-ui/icons'
+import { Edit, Delete } from '@material-ui/icons'
 import { update_state } from './utils'
 import VALIDATORS from './validators'
 
@@ -218,6 +218,15 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                                         this.update_state(draft => {
                                             draft.modals.edit_type.old_type = metadata_type
                                             draft.modals.edit_type.is_open = true
+                                        })
+                                    }}
+                                />
+                                <Delete
+                                    style={{cursor: "pointer"}}
+                                    onClick={() => {
+                                        this.update_state(draft => {
+                                            draft.modals.delete_type.meta_type = metadata_type
+                                            draft.modals.delete_type.is_open = true
                                         })
                                     }}
                                 />
