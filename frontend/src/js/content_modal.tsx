@@ -99,8 +99,6 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
 
     render() {
         if (!this.props.is_open) return <></>
-
-        const fields = this.state.fields
         const metadata_api = this.props.metadata_api
         return (
             <ActionDialog
@@ -118,8 +116,9 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                     <Button
                         key={2}
                         onClick={()=> {
+                            console.log("clicked")
                             this.update_state(draft => {
-                                Object.keys(fields).map((field) => {
+                                Object.keys(this.state.fields).map((field) => {
                                     const cast_field = field as keyof content_fields
                                     draft.fields[cast_field].reason = this.props.validators[cast_field](
                                         draft.fields[cast_field].value
@@ -131,8 +130,9 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 draft.fields.content_file.value = typeof(file_raw) === "undefined" ? null : file_raw
                             }))
                             .then(() => {
-                                for (const key in fields) {
-                                    if (fields[key as keyof content_fields].reason !== "") {
+                                for (const key in this.state.fields) {
+                                    console.log(key)
+                                    if (this.state.fields[key as keyof content_fields].reason !== "") {
                                         return 
                                     }
                                 }
@@ -141,32 +141,33 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 //There might be a better way to do this with Axios
                                 const formData = new FormData()
 
-                                const file = fields.content_file.value
+                                const file = this.state.fields.content_file.value
                                 if (file !== null) {
                                     formData.append('content_file', file)
                                 } else {
                                     if (this.props.modal_type === "add") return
                                 }
                                 
-                                formData.append('title', fields.title.value)
-                                formData.append('description', fields.description.value)
-                                formData.append('published_date', `${fields.year.value}-01-01`)
+                                formData.append('title', this.state.fields.title.value)
+                                formData.append('description', this.state.fields.description.value)
+                                formData.append('published_date', `${this.state.fields.year.value}-01-01`)
                                 if (this.props.modal_type === "add") {
                                     formData.append('active', "true")
                                 } else {
                                     formData.append('active', this.props.row?.active ? "true" : "false")
                                 }
-                                if (!isNull(fields.reviewed_on.value)) {
-                                    formData.append("reviewed_on", format(fields.reviewed_on.value, "yyyy-MM-dd"))
+                                if (!isNull(this.state.fields.reviewed_on.value)) {
+                                    formData.append("reviewed_on", format(this.state.fields.reviewed_on.value, "yyyy-MM-dd"))
                                 }
                                 metadata_api.state.metadata_types.map(type => {
-                                    if (type.name in fields.metadata.value) {
-                                        fields.metadata.value[type.name].map(metadata => {
+                                    if (type.name in this.state.fields.metadata.value) {
+                                        this.state.fields.metadata.value[type.name].map(metadata => {
                                             formData.append("metadata", `${metadata.id}`)
                                         })
                                     }
                                 })
 
+                                console.log("here")
                                 //We have to do this weird pattern so the only caught errors in this promise chain come from the axios call
                                 const axios_response = this.props.modal_type === "add" ?
                                     Axios.post(APP_URLS.CONTENT, formData, {
@@ -201,10 +202,10 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                     {[
                         <TextField
                             fullWidth
-                            error={fields.title.reason !== ""}
-                            helperText={fields.title.reason}
+                            error={this.state.fields.title.reason !== ""}
+                            helperText={this.state.fields.title.reason}
                             label={"Title"}
-                            value={fields.title.value}
+                            value={this.state.fields.title.value}
                             onChange={(evt) => {
                                 evt.persist()
                                 this.update_state(draft => {
@@ -214,10 +215,10 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                         />,
                         <TextField
                             fullWidth
-                            error={fields.description.reason !== ""}
-                            helperText={fields.description.reason}
+                            error={this.state.fields.description.reason !== ""}
+                            helperText={this.state.fields.description.reason}
                             label={"Description"}
-                            value={fields.description.value}
+                            value={this.state.fields.description.value}
                             onChange={(evt) => {
                                 evt.persist()
                                 this.update_state(draft => {
@@ -233,10 +234,10 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                         />,
                         <TextField
                             fullWidth
-                            error={fields.year.reason !== ""}
-                            helperText={fields.year.reason}
+                            error={this.state.fields.year.reason !== ""}
+                            helperText={this.state.fields.year.reason}
                             label={"Year Published"}
-                            value={fields.year.value}
+                            value={this.state.fields.year.value}
                             onChange={(evt) => {
                                 evt.persist()
                                 this.update_state(draft => {
@@ -248,7 +249,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                             disableToolbar
                             variant={"inline"}
                             format={"MM/dd/yyyy"}
-                            value={fields.reviewed_on.value}
+                            value={this.state.fields.reviewed_on.value}
                             label={"Reviewed Date"}
                             onChange={value => {
                                 this.update_state(draft => {
@@ -258,10 +259,10 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                         />,
                         <TextField
                             fullWidth
-                            error={fields.copyright.reason !== ""}
-                            helperText={fields.copyright.reason}
+                            error={this.state.fields.copyright.reason !== ""}
+                            helperText={this.state.fields.copyright.reason}
                             label={"Copyright"}
-                            value={fields.copyright.value}
+                            value={this.state.fields.copyright.value}
                             onChange={(evt) => {
                                 evt.persist()
                                 this.update_state(draft => {
@@ -271,10 +272,10 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                         />,
                         <TextField
                             fullWidth
-                            error={fields.rights_statement.reason !== ""}
-                            helperText={fields.rights_statement.reason}
+                            error={this.state.fields.rights_statement.reason !== ""}
+                            helperText={this.state.fields.rights_statement.reason}
                             label={"Rights Statement"}
-                            value={fields.rights_statement.value}
+                            value={this.state.fields.rights_statement.value}
                             onChange={(evt) => {
                                 evt.persist()
                                 this.update_state(draft => {
@@ -287,7 +288,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 <Grid item key={idx}>
                                     <Autocomplete
                                         multiple
-                                        value={fields.metadata.value[metadata_type.name]}
+                                        value={this.state.fields.metadata.value[metadata_type.name]}
                                         onChange={(_evt, value: SerializedMetadata[]) => {
                                             //Determine which tokens are real or generated by the "Add new metadata ..." option
                                             const valid_meta = value.filter(to_check => to_check.id !== 0)
@@ -307,11 +308,9 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                             if (params.inputValue !== '') {
                                                 filtered.push({
                                                     id: 0,
-                                                    name: `Add new Metadata "${params.inputValue}"`,
+                                                    name: params.inputValue,
                                                     type: metadata_type.id,
-                                                    // Because this is isnt a real SerializedMetadata we can use this to store
-                                                    // the real metadata name
-                                                    type_name: params.inputValue
+                                                    type_name: metadata_type.name
                                                 } as SerializedMetadata)
                                             }
                                             return filtered
@@ -319,12 +318,12 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                         handleHomeEndKeys
                                         options={metadata_api.state.metadata_by_type[metadata_type.name]}
                                         getOptionLabel={option => {
-                                            return option.name
+                                            return option.id === 0 ? `Add new Metadata "${option.name}"` : option.name
                                         }}
                                         renderInput={(params) => (
                                             <TextField
-                                                error={fields.metadata.reason !== ""}
-                                                helperText={fields.metadata.reason}
+                                                error={this.state.fields.metadata.reason !== ""}
+                                                helperText={this.state.fields.metadata.reason}
                                                 {...params}
                                                 variant={"standard"}
                                                 label={metadata_type.name}

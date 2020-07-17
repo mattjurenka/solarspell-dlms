@@ -1,4 +1,4 @@
-import { isString, isNull, isDate } from 'lodash'
+import { isString, isNull, isDate, isEqual } from 'lodash'
 
 export default class VALIDATORS {
     static YEAR(year_str: any): string {
@@ -59,6 +59,6 @@ export default class VALIDATORS {
         return ""
     }
     static DELETE_IF_EQUALS<T>(input_str: T, to_delete: T) {
-        return input_str === to_delete ? "" : `Input must equal ${to_delete}`
+        return isEqual(input_str, to_delete) ? "" : `Input must equal ${to_delete}`
     }
 }

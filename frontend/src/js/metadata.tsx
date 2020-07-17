@@ -28,7 +28,7 @@ import ActionPanel from "./action_panel"
 import ActionDialog from './action_dialog'
 import excel_icon from '../images/excel_icon.png'; 
 import { Edit, Delete } from '@material-ui/icons'
-import { update_state } from './utils'
+import { update_state, get_field_info_default } from './utils'
 import VALIDATORS from './validators'
 
 interface MetadataProps {
@@ -63,6 +63,7 @@ interface MetadataModals {
     delete_meta: {
         is_open: boolean
         metadata: SerializedMetadata
+        confirm_text: field_info<string>
     }
     edit_meta: {
         is_open: boolean
@@ -104,7 +105,8 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
         this.modal_defaults = {
             delete_meta: {
                 is_open: false,
-                metadata: this.metadata_defaults
+                metadata: this.metadata_defaults,
+                confirm_text: get_field_info_default("")
             },
             create_type: {
                 is_open: false,
@@ -131,10 +133,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
             delete_type: {
                 is_open: false,
                 meta_type: this.meta_type_defaults,
-                confirm_text: {
-                    value: "",
-                    reason: ""
-                }
+                confirm_text: get_field_info_default("")
             }
         }
         this.state = {
@@ -184,15 +183,6 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
         if (metadata_api.state.error.is_error) {
             return <Typography variant={"h3"}>Error: {metadata_api.state.error.message}</Typography>
         }
-        
-        const {
-            create_type,
-            create_meta,
-            edit_meta,
-            edit_type,
-            delete_meta,
-            delete_type
-        } = this.state.modals
 
         const panels = Object.keys(this.state.panel_data).map((type_name, idx) => {
             const expanded = this.state.panel_data[type_name]
@@ -264,6 +254,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                                                 this.update_state(draft => {
                                                     draft.modals.edit_meta.is_open = true
                                                     draft.modals.edit_meta.metadata = row
+                                                    draft.modals.edit_meta.new_name = row.name
                                                 })
                                             }}
                                             deleteFn={() => {
@@ -312,34 +303,57 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     <Typography variant="h6" style={{marginLeft: "3em"}}>No Metadata Types Found</Typography>
                 : null}
                 <ActionDialog
-                    title={`Delete Metadata item ${delete_meta.metadata.name} of type ${delete_meta.metadata.type_name}?`}
-                    open={delete_meta.is_open}
+                    title={`Delete Metadata item ${this.state.modals.delete_meta.metadata.name} of type ${this.state.modals.delete_meta.metadata.type_name}?`}
+                    open={this.state.modals.delete_meta.is_open}
                     actions={[(
                         <Button
                             key={0}
-                            onClick={()=> {
-                                metadata_api.delete_metadata(delete_meta.metadata)
-                                this.close_modals()
-                            }}
-                            color="secondary"
-                        >
-                            Delete
-                        </Button>
-                    ), (
-                        <Button
-                            key={1}
                             onClick={this.close_modals}
                             color="primary"
                         >
                             Cancel
                         </Button>
+                    ), (
+                        <Button
+                            key={1}
+                            onClick={()=> {
+                                this.update_state(draft => {
+                                    draft.modals.delete_meta.confirm_text.reason = VALIDATORS.DELETE_IF_EQUALS(
+                                        draft.modals.delete_meta.confirm_text.value, this.state.modals.delete_meta.metadata.name
+                                    )
+                                }).then(() => {
+                                    if (this.state.modals.delete_meta.confirm_text.reason === "") {
+                                        metadata_api.delete_metadata(this.state.modals.delete_meta.metadata)
+                                        this.close_modals()
+                                    }
+                                })
+                            }}
+                            color="secondary"
+                        >
+                            Confirm
+                        </Button>
                     )]}
                 >
-                    <Typography>This action is irreversible</Typography>
+                    <Typography>
+                        WARNING: Deleting a metadata will also delete each of that metadata on every content and is irreversible.
+                        Re-enter "{this.state.modals.delete_meta.metadata.name}"" to confirm deletion
+                    </Typography>
+                    <TextField
+                        fullWidth
+                        error={this.state.modals.delete_meta.confirm_text.reason === ""}
+                        helperText={this.state.modals.delete_meta.confirm_text.reason}
+                        value={this.state.modals.delete_meta.confirm_text.value}
+                        onChange={(evt) => {
+                            evt.persist()
+                            this.update_state(draft => {
+                                draft.modals.delete_meta.confirm_text.value = evt.target.value
+                            })
+                        }}
+                    />
                 </ActionDialog>
                 <ActionDialog
                     title={"Create New Metadata Type"}
-                    open={create_type.is_open}
+                    open={this.state.modals.create_type.is_open}
                     on_close={this.close_modals}
                     actions={[(
                         <Button
@@ -353,7 +367,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         <Button
                             key={1}
                             onClick={()=> {
-                                metadata_api.add_metadata_type(create_type.type_name)
+                                metadata_api.add_metadata_type(this.state.modals.create_type.type_name)
                                 this.close_modals()
                             }}
                             color="primary"
@@ -363,8 +377,9 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     )]}
                 >
                     <TextField
+                        fullWidth
                         label={"Metadata Type"}
-                        value={create_type.type_name}
+                        value={this.state.modals.create_type.type_name}
                         onChange={(evt) => {
                             evt.persist()
                             this.update_state(draft => {
@@ -374,8 +389,8 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     />
                 </ActionDialog>
                 <ActionDialog
-                    title={`Create a new Metadata of Type ${create_meta.meta_type.name}`}
-                    open={create_meta.is_open}
+                    title={`Create a new Metadata of Type ${this.state.modals.create_meta.meta_type.name}`}
+                    open={this.state.modals.create_meta.is_open}
                     on_close={this.close_modals}
                     actions={[(
                         <Button
@@ -389,7 +404,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         <Button
                             key={1}
                             onClick={()=> {
-                                metadata_api.add_metadata(create_meta.meta_name, create_meta.meta_type)
+                                metadata_api.add_metadata(this.state.modals.create_meta.meta_name, this.state.modals.create_meta.meta_type)
                                 this.close_modals()
                             }}
                             color="primary"
@@ -399,8 +414,9 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     )]}
                 >
                     <TextField
+                        fullWidth
                         label={"Metadata"}
-                        value={create_meta.meta_name}
+                        value={this.state.modals.create_meta.meta_name}
                         onChange={(evt) => {
                             evt.persist()
                             this.update_state(draft => {
@@ -410,8 +426,8 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     />
                 </ActionDialog>
                 <ActionDialog
-                    title={`Edit Metadata ${edit_meta.metadata.name}`}
-                    open={edit_meta.is_open}
+                    title={`Edit Metadata ${this.state.modals.edit_meta.metadata.name}`}
+                    open={this.state.modals.edit_meta.is_open}
                     on_close={this.close_modals}
                     actions={[(
                         <Button
@@ -425,7 +441,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         <Button
                             key={1}
                             onClick={()=> {
-                                metadata_api.edit_metadata(edit_meta.metadata, edit_meta.new_name)
+                                metadata_api.edit_metadata(this.state.modals.edit_meta.metadata, this.state.modals.edit_meta.new_name)
                                 this.close_modals()
                             }}
                             color="primary"
@@ -435,8 +451,9 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     )]}
                 >
                     <TextField
+                        fullWidth
                         label={"Metadata Name"}
-                        value={edit_meta.metadata.name}
+                        value={this.state.modals.edit_meta.new_name}
                         onChange={(evt) => {
                             evt.persist()
                             this.update_state(draft => {
@@ -446,8 +463,8 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     />
                 </ActionDialog>
                 <ActionDialog
-                    title={`Edit Metadata Type ${edit_type.old_type.name}`}
-                    open={edit_type.is_open}
+                    title={`Edit Metadata Type ${this.state.modals.edit_type.old_type.name}`}
+                    open={this.state.modals.edit_type.is_open}
                     on_close={this.close_modals}
                     actions={[(
                         <Button
@@ -461,7 +478,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         <Button
                             key={1}
                             onClick={()=> {
-                                metadata_api.edit_metadata_type(edit_type.old_type, edit_type.new_name)
+                                metadata_api.edit_metadata_type(this.state.modals.edit_type.old_type, this.state.modals.edit_type.new_name)
                                 this.close_modals()
                             }}
                             color="primary"
@@ -471,8 +488,9 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     )]}
                 >
                     <TextField
+                        fullWidth
                         label={"Metadata Type Name"}
-                        value={edit_type.new_name}
+                        value={this.state.modals.edit_type.new_name}
                         onChange={(evt) => {
                             evt.persist()
                             this.update_state(draft => {
@@ -482,8 +500,8 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     />
                 </ActionDialog>
                 <ActionDialog
-                    title={`Delete Metadata Type ${delete_type.meta_type.name}`}
-                    open={delete_type.is_open}
+                    title={`Delete Metadata Type ${this.state.modals.delete_type.meta_type.name}`}
+                    open={this.state.modals.delete_type.is_open}
                     on_close={this.close_modals}
                     actions={[(
                         <Button
@@ -499,14 +517,14 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                             onClick={()=> {
                                 this.update_state(draft => {
                                     draft.modals.delete_type.confirm_text.reason = VALIDATORS.DELETE_IF_EQUALS(
-                                        draft.modals.delete_type.confirm_text.value, delete_type.meta_type.name
+                                        draft.modals.delete_type.confirm_text.value, this.state.modals.delete_type.meta_type.name
                                     )
                                 }).then(() => {
-                                    if (delete_type.confirm_text.reason === "") {
-                                        metadata_api.delete_metadata_type(delete_type.meta_type)
+                                    if (this.state.modals.delete_type.confirm_text.reason === "") {
+                                        metadata_api.delete_metadata_type(this.state.modals.delete_type.meta_type)
+                                        this.close_modals()
                                     }
                                 })
-                                this.close_modals()
                             }}
                             color="secondary"
                         >
@@ -514,14 +532,15 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         </Button>
                     )]}
                 >
-                    <Typography color={"secondary"}>
+                    <Typography>
                         WARNING: Deleting a metadata type will also delete all metadata of that type and is irreversible.
+                        Re-enter "{this.state.modals.delete_type.meta_type.name}" to confirm deletion
                     </Typography>
                     <TextField
-                        label={`Re-enter ${delete_type.meta_type.name} to confirm deletion.`}
-                        error={delete_type.confirm_text.reason === ""}
-                        helperText={delete_type.confirm_text.reason}
-                        value={delete_type.confirm_text.value}
+                        fullWidth
+                        error={this.state.modals.delete_type.confirm_text.reason === ""}
+                        helperText={this.state.modals.delete_type.confirm_text.reason}
+                        value={this.state.modals.delete_type.confirm_text.value}
                         onChange={(evt) => {
                             evt.persist()
                             this.update_state(draft => {
