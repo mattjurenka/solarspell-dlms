@@ -18,7 +18,7 @@ import {
 import ActionPanel from './action_panel';
 import { APP_URLS, get_data } from './urls';
 import { content_display } from './settings';
-import { get, set, cloneDeep, debounce } from 'lodash';
+import { get, set, cloneDeep, debounce, isUndefined } from 'lodash';
 import ActionDialog from './action_dialog';
 import { Button, Typography, TextField, Paper, Chip, ExpansionPanelSummary, ExpansionPanelDetails, ExpansionPanel, Grid, Select, MenuItem, Container } from '@material-ui/core';
 import { Autocomplete } from "@material-ui/lab"
@@ -26,6 +26,9 @@ import Axios from 'axios';
 import VALIDATORS from './validators';
 import { update_state } from './utils';
 import ContentModal from './content_modal';
+
+import prettyBytes from "pretty-bytes"
+import { KeyboardDatePicker } from '@material-ui/pickers';
 
 interface ContentProps {
     metadata_api: MetadataAPI
@@ -69,11 +72,15 @@ type search_state = {
     is_open: boolean
     title: string
     copyright: string
-    years_from: string
-    years_to: string
+    years_from: number | null
+    years_to: number | null
     active: active_search_option
     filename: string
     metadata: metadata_dict
+    file_size_from: number | null
+    file_size_to: number | null
+    reviewed_from: Date | null
+    reviewed_to: Date | null
 }
 
 
@@ -151,10 +158,12 @@ export default class Content extends Component<ContentProps, ContentState> {
         this.content_defaults = {
             id: 0,
             file_name: "",
+            file_size: 0,
             content_file: "",
             title: "",
             description: null,
             modified_on: "",
+            reviewed_on: "",
             copyright: null,
             rights_statement: null,
             active: false,
@@ -194,11 +203,15 @@ export default class Content extends Component<ContentProps, ContentState> {
                 is_open: false,
                 title: "",
                 copyright: "",
-                years_from: "",
-                years_to: "",
+                years_from: 0,
+                years_to: 0,
                 active: "all",
                 metadata: {},
-                filename: ""
+                filename: "",
+                file_size_from: 0,
+                file_size_to: 0,
+                reviewed_from: null,
+                reviewed_to: null
             }
         }
 
@@ -220,13 +233,20 @@ export default class Content extends Component<ContentProps, ContentState> {
         //Converts years_from and years_to to a two array of the integers.
         //Validates that years_from and years_to are valid integers and years_from <= years_to
         //If invalid years will be undefined
-        const years_raw: [number, number] = [parseInt(search.years_from), parseInt(search.years_to)]
-        const years = (years_raw.filter(year_raw => !isNaN(year_raw)).length === 2) ? (
-            (years_raw[0] <= years_raw[1]) ? years_raw : undefined
-        ) : undefined
+        const years: content_filters["years"] = (
+            search.years_from !== null && search.years_to !== null && search.years_from >= search.years_to
+        ) ? undefined : [search.years_from, search.years_to]
+        const file_sizes: content_filters["file_sizes"] = (
+            search.file_size_from !== null && search.file_size_to !== null && search.file_size_from >= search.file_size_to
+        ) ? undefined : [search.file_size_from, search.file_size_to]
+        const reviewed_on: content_filters["reviewed_on"] = (
+            search.reviewed_from !== null && search.reviewed_to !== null && search.reviewed_from >= search.reviewed_to
+        ) ? undefined : [search.reviewed_from, search.reviewed_to]
 
         const filters: content_filters = {
             years,
+            file_sizes,
+            reviewed_on,
             title: search.title,
             copyright: search.copyright,
             //Turn metadata_dict back to array of integers for search
@@ -358,33 +378,97 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     }}
                                 />
                             </Grid>
-                            <Grid item xs={3}>
+                            <Grid item xs={2}>
                                 <TextField
                                     fullWidth
                                     label={"Years From"}
                                     value={this.state.search.years_from}
+                                    InputProps={{inputProps: {min: 0, max: 2100}}}
+                                    type={"number"}
                                     onChange={(evt) => {
                                         evt.persist()
+                                        const parsed = parseInt(evt.target.value)
                                         this.update_state(draft => {
-                                            draft.search.years_from = evt.target.value
-                                        }).then(this.debounce_load_rows)
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item xs={3}>
-                                <TextField
-                                    fullWidth
-                                    label={"Years To"}
-                                    value={this.state.search.years_to}
-                                    onChange={(evt) => {
-                                        evt.persist()
-                                        this.update_state(draft => {
-                                            draft.search.years_to = evt.target.value
+                                            draft.search.years_from = isNaN(parsed) ? null : parsed
                                         }).then(this.debounce_load_rows)
                                     }}
                                 />
                             </Grid>
                             <Grid item xs={2}>
+                                <TextField
+                                    fullWidth
+                                    label={"Years To"}
+                                    value={this.state.search.years_to}
+                                    InputProps={{inputProps: {min: 0, max: 2100}}}
+                                    type={"number"}
+                                    onChange={(evt) => {
+                                        evt.persist()
+                                        const parsed = parseInt(evt.target.value)
+                                        this.update_state(draft => {
+                                            draft.search.years_to = isNaN(parsed) ? null : parsed
+                                        }).then(this.debounce_load_rows)
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={2}>
+                                <TextField
+                                    fullWidth
+                                    label={"Filesize From"}
+                                    value={this.state.search.file_size_from}
+                                    InputProps={{inputProps: {min: 0, max: 1000000000000}}}
+                                    type={"number"}
+                                    onChange={(evt) => {
+                                        evt.persist()
+                                        const parsed = parseInt(evt.target.value)
+                                        this.update_state(draft => {
+                                            draft.search.file_size_from = isNaN(parsed) ? null : parsed
+                                        }).then(this.debounce_load_rows)
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={2}>
+                                <TextField
+                                    fullWidth
+                                    label={"Filesize To"}
+                                    value={this.state.search.file_size_to}
+                                    InputProps={{inputProps: {min: 0, max: 1000000000000}}}
+                                    type={"number"}
+                                    onChange={(evt) => {
+                                        evt.persist()
+                                        const parsed = parseInt(evt.target.value)
+                                        this.update_state(draft => {
+                                            draft.search.file_size_to = isNaN(parsed) ? null : parsed
+                                        }).then(this.debounce_load_rows)
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={2}>
+                                <KeyboardDatePicker
+                                    variant={"inline"}
+                                    format={"MM/dd/yyyy"}
+                                    value={this.state.search.reviewed_from}
+                                    label={"Reviewed From"}
+                                    onChange={value => {
+                                        this.update_state(draft => {
+                                            draft.search.reviewed_from = value
+                                        }).then(this.debounce_load_rows)
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={2}>
+                                <KeyboardDatePicker
+                                    variant={"inline"}
+                                    format={"MM/dd/yyyy"}
+                                    value={this.state.search.reviewed_to}
+                                    label={"Reviewed To"}
+                                    onChange={value => {
+                                        this.update_state(draft => {
+                                            draft.search.reviewed_to = value
+                                        }).then(this.debounce_load_rows)
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
                                 <Container disableGutters style={{display: "flex", height: "100%"}}>
                                     <Select
                                         style={{alignSelf: "bottom"}}
@@ -402,7 +486,6 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     </Select>
                                 </Container>
                             </Grid>
-                            <Grid item xs={4} />
                             {Object.entries(metadata_api.state.metadata_by_type).map((entry: [string, SerializedMetadata[]], idx) => {
                                 const [metadata_type, metadata] = entry
                                 return (
@@ -510,6 +593,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                         title: VALIDATORS.TITLE,
                         description: VALIDATORS.DESCRIPTION,
                         year: VALIDATORS.YEAR,
+                        reviewed_on: VALIDATORS.REVIEWED_ON,
                         metadata: VALIDATORS.METADATA,
                         copyright: VALIDATORS.COPYRIGHT,
                         rights_statement: VALIDATORS.RIGHTS_STATEMENT
@@ -531,6 +615,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                         title: VALIDATORS.TITLE,
                         description: VALIDATORS.DESCRIPTION,
                         year: VALIDATORS.YEAR,
+                        reviewed_on: VALIDATORS.REVIEWED_ON,
                         metadata: VALIDATORS.METADATA,
                         copyright: VALIDATORS.COPYRIGHT,
                         rights_statement: VALIDATORS.RIGHTS_STATEMENT
@@ -557,8 +642,10 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 ["Description", view.row.description],
                                 ["Filename", <a href={new URL(view.row.file_name, APP_URLS.CONTENT_FOLDER).href}>{view.row.file_name}</a>],
                                 ["Year Published", view.row.published_year],
+                                ["Reviewed On", view.row.reviewed_on],
                                 ["Copyright", view.row.copyright],
-                                ["Rights Statement", view.row.rights_statement]
+                                ["Rights Statement", view.row.rights_statement],
+                                ["File Size", isUndefined(view.row.file_size) ? 0 : prettyBytes(view.row.file_size)]
                             ].map(([title, value], idx) => {
                                 return (
                                     <Container style={{marginBottom: "1em"}} key={idx}>

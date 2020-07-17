@@ -1,4 +1,4 @@
-import { isString } from 'lodash'
+import { isString, isNull, isDate } from 'lodash'
 
 export default class VALIDATORS {
     static YEAR(year_str: any): string {
@@ -49,7 +49,13 @@ export default class VALIDATORS {
         }
         return ""
     }
-    static RIGHTS_STATEMENT(_rights_statement_str: string): string {
+    static RIGHTS_STATEMENT(_rights_statement_str: any): string {
+        return ""
+    }
+    static REVIEWED_ON(reviewed_on: any): string {
+        if (!isNull(reviewed_on) && !isDate(reviewed_on)) {
+            return "Must be a valid date or nothing"
+        }
         return ""
     }
     static DELETE_IF_EQUALS<T>(input_str: T, to_delete: T) {

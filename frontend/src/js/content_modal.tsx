@@ -1,5 +1,5 @@
 import ActionDialog from "./action_dialog"
-import { cloneDeep, isEqual, set } from "lodash"
+import { cloneDeep, isEqual, set, isNull, isUndefined } from "lodash"
 import { Button, TextField, Grid } from "@material-ui/core"
 import Axios, { AxiosResponse } from "axios"
 import { APP_URLS } from "./urls"
@@ -8,12 +8,16 @@ import { Component, RefObject } from 'react'
 import React from 'react'
 import { update_state, get_string_from_error, get_field_info_default } from './utils'
 
+import { KeyboardDatePicker }   from '@material-ui/pickers';
+import { format } from 'date-fns'
+
 
 type content_fields = {
     content_file:       File|null
     title:              string
     description:        string
     year:               string
+    reviewed_on:        Date|null
     metadata:           metadata_dict
     copyright:          string
     rights_statement:   string
@@ -55,6 +59,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
             title: get_field_info_default(""),
             description: get_field_info_default(""),
             year: get_field_info_default(""),
+            reviewed_on: get_field_info_default(null),
             metadata: get_field_info_default({} as metadata_dict),
             rights_statement: get_field_info_default(""),
             copyright: get_field_info_default("")
@@ -151,6 +156,9 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 } else {
                                     formData.append('active', this.props.row?.active ? "true" : "false")
                                 }
+                                if (!isNull(fields.reviewed_on.value)) {
+                                    formData.append("reviewed_on", format(fields.reviewed_on.value, "yyyy-MM-dd"))
+                                }
                                 metadata_api.state.metadata_types.map(type => {
                                     if (type.name in fields.metadata.value) {
                                         fields.metadata.value[type.name].map(metadata => {
@@ -159,33 +167,33 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                     }
                                 })
 
-                                if (this.props.modal_type === "add") {
-                                    return Axios.post(APP_URLS.CONTENT, formData, {
+                                //We have to do this weird pattern so the only caught errors in this promise chain come from the axios call
+                                const axios_response = this.props.modal_type === "add" ?
+                                    Axios.post(APP_URLS.CONTENT, formData, {
+                                        headers: {
+                                            'Content-Type': 'multipart/form-data'
+                                        }
+                                    }) : Axios.patch(APP_URLS.CONTENT_ITEM(this.props.row === undefined ? 0 : this.props.row.id), formData, {
                                         headers: {
                                             'Content-Type': 'multipart/form-data'
                                         }
                                     })
-                                } else {
-                                    const id = this.props.row === undefined ? 0 : this.props.row.id
-                                    return Axios.patch(APP_URLS.CONTENT_ITEM(id), formData, {
-                                        headers: {
-                                            'Content-Type': 'multipart/form-data'
-                                        }
-                                    })
-                                }
-                            }).then((_res?: AxiosResponse<any>) => {
-                                this.props.show_toast_message("Added content successfully")
-                                metadata_api.refresh_metadata()
-                                this.props.on_close()
-                            }, (reason: any) => {
-                                this.props.show_toast_message(get_string_from_error(
-                                    reason.response.data.error, "Error while adding content"
-                                ))
+                                axios_response.then((_res?: AxiosResponse<any>) => {
+                                    this.props.show_toast_message(this.props.modal_type === "add" ? "Added content successfully" : "Edited content successfully")
+                                    metadata_api.refresh_metadata()
+                                    this.props.on_close()
+                                }, (reason: any) => {
+                                    const unknown_err_str = this.props.modal_type === "add" ? "Error while adding content" : "Error while editing content"
+                                    this.props.show_toast_message(get_string_from_error(
+                                        isUndefined(reason?.response?.data?.error) ? reason?.response?.data?.error : unknown_err_str,
+                                        unknown_err_str
+                                    ))
+                                })
                             })
                         }}
                         color="primary"
                     >
-                        Add
+                        {this.props.modal_type === "add" ? "Add" : "Save"}
                     </Button>
                 )]}
                 >
@@ -236,6 +244,18 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 })
                             }}
                         />,
+                        <KeyboardDatePicker
+                            disableToolbar
+                            variant={"inline"}
+                            format={"MM/dd/yyyy"}
+                            value={fields.reviewed_on.value}
+                            label={"Reviewed Date"}
+                            onChange={value => {
+                                this.update_state(draft => {
+                                    draft.fields.reviewed_on.value = value
+                                })
+                            }}
+                        />,
                         <TextField
                             fullWidth
                             error={fields.copyright.reason !== ""}
@@ -262,9 +282,9 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 })
                             }}
                         />,
-                        metadata_api.state.metadata_types.map((metadata_type: SerializedMetadataType) => {
+                        metadata_api.state.metadata_types.map((metadata_type: SerializedMetadataType, idx) => {
                             return (
-                                <Grid item key={metadata_type.id}>
+                                <Grid item key={idx}>
                                     <Autocomplete
                                         multiple
                                         value={fields.metadata.value[metadata_type.name]}
@@ -315,8 +335,8 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 </Grid>
                             )
                         })
-                    ].map(element => (
-                        <Grid item xs={12} style={{marginBottom: "10px"}}>
+                    ].map((element, idx) => (
+                        <Grid item key={idx} xs={12} style={{marginBottom: "10px"}}>
                             {element}
                         </Grid>
                     ))}

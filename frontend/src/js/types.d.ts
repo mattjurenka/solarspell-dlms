@@ -17,7 +17,9 @@ interface SerializedMetadata {
 
 type content_filters = {
     title?: string
-    years?: [number, number]
+    years?: [number|null, number|null]
+    file_sizes?: [number|null, number|null]
+    reviewed_on?: [Date|null, Date|null]
     filename?: string
     copyright?: string
     active?: boolean
@@ -28,10 +30,12 @@ type content_filters = {
 interface SerializedContent {
     id: number
     file_name: string
+    file_size?: number
     content_file: string
     title: string
     description: string|null
     modified_on: string
+    reviewed_on: string
     copyright: string|null
     rights_statement: string|null
     active: boolean
