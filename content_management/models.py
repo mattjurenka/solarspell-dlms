@@ -25,7 +25,9 @@ class Metadata(models.Model):
 
 class Content(models.Model):
     def set_file_name(self, file_name):
-        return os.path.join("contents", file_name)
+        path = os.path.join("contents", file_name)
+        self.filesize = os.path.getsize(path)
+        return path
 
     content_file = models.FileField(
         "File",
@@ -35,6 +37,7 @@ class Content(models.Model):
             validate_unique_filename,
             validate_unique_file
         ])
+    filesize = models.IntegerField(null=True, editable=True)
     title = models.CharField(max_length=300, unique=True)
     description = models.TextField(null=True)
     modified_on = models.DateTimeField(default=datetime.now)
@@ -42,6 +45,7 @@ class Content(models.Model):
     copyright = models.CharField(max_length=500, null=True)
     rights_statement = models.TextField(null=True)
     published_date = models.DateField(null=True)
+    reviewed_on = models.DateField(null=True)
     active = models.BooleanField(default=1)
 
     def published_year(self):
@@ -49,7 +53,6 @@ class Content(models.Model):
 
     def file_name(self):
         return os.path.basename(self.content_file.name)
-
 
     def metadata_info(self):
         return [{

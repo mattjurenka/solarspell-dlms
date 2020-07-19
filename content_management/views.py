@@ -72,15 +72,49 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
             except Exception as e:
                 print(e)
 
-        year_raw = self.request.GET.get("published_year", None)
-        if year_raw is not None:
+        year_from_raw = self.request.GET.get("published_year_from", None)
+        if year_from_raw is not None:
             try:
-                years_range = year_raw.split(",")
-                print(years_range[0]+"-01-01", years_range[1]+"-12-31")
-                queryset = queryset.filter(
-                    published_date__gte=(years_range[0]+"-01-01"),
-                    published_date__lte=(years_range[1]+"-12-31")
-                    )
+                year = int(year_from_raw)
+                queryset = queryset.filter(published_date__year__gte=(year))
+            except:
+                pass
+
+        year_to_raw = self.request.GET.get("published_year_to", None)
+        if year_to_raw is not None:
+            try:
+                year = int(year_to_raw)
+                queryset = queryset.filter(published_date__year__lte=(year))
+            except:
+                pass
+        
+        filesize_from_raw = self.request.GET.get("filesize_from", None)
+        if filesize_from_raw is not None:
+            try:
+                filesize = int(filesize_from_raw)
+                queryset = queryset.filter(filesize__gte=(filesize))
+            except:
+                pass
+
+        filesize_to_raw = self.request.GET.get("filesize_to", None)
+        if filesize_to_raw is not None:
+            try:
+                filesize = int(filesize_to_raw)
+                queryset = queryset.filter(filesize__lte=(filesize))
+            except:
+                pass
+        
+        reviewed_from_raw = self.request.GET.get("reviewed_from", None)
+        if reviewed_from_raw is not None:
+            try:
+                queryset = queryset.filter(reviewed_on__gte=(reviewed_from_raw))
+            except:
+                pass
+
+        reviewed_to_raw = self.request.GET.get("reviewed_to", None)
+        if reviewed_to_raw is not None:
+            try:
+                queryset = queryset.filter(reviewed_on__lte=(reviewed_to_raw))
             except:
                 pass
 

@@ -17,7 +17,9 @@ interface SerializedMetadata {
 
 type content_filters = {
     title?: string
-    years?: [number, number]
+    years?: [number|null, number|null]
+    file_sizes?: [number|null, number|null]
+    reviewed_on?: [Date|null, Date|null]
     filename?: string
     copyright?: string
     active?: boolean
@@ -28,10 +30,12 @@ type content_filters = {
 interface SerializedContent {
     id: number
     file_name: string
+    file_size?: number
     content_file: string
     title: string
     description: string|null
     modified_on: string
+    reviewed_on: string
     copyright: string|null
     rights_statement: string|null
     active: boolean
@@ -45,6 +49,41 @@ interface SerializedMetadataType {
     name: string
 }
 
-interface metadata_dict {
+type MetadataAPI = {
+    state: MetadataProviderState
+    refresh_metadata: () => Promise<void>
+    add_metadata_type: (type_name: string) => Promise<void>
+    edit_metadata_type: (old_type: SerializedMetadataType, new_name: string) => Promise<void>
+    delete_metadata_type: (meta_type: SerializedMetadataType) => Promise<void>
+    add_metadata: (meta_name: string, meta_type: SerializedMetadataType) => Promise<void>
+    edit_metadata: (old_meta: SerializedMetadata, new_name: string) => Promise<void>
+    delete_metadata: (meta_type: SerializedMetadata) => Promise<void>
+}
+
+type MetadataProviderState = {
+    loaded: boolean
+    error: {
+        is_error: boolean
+        message: string
+    }
+    metadata: SerializedMetadata[]
+    metadata_by_type: metadata_dict
+    metadata_types: SerializedMetadataType[]
+}
+
+type metadata_dict = {
     [metadata_type: string]: SerializedMetadata[]
+}
+
+// Takes a type and wraps all members of that type with the field_info type constructor
+type WrappedFieldInfo<T> = {
+    [P in keyof T]: field_info<T[P]>
+}
+
+//field_info contains data of a field and information about whether that data is valid.
+//reason should default to the empty string "" and any other value will contain a human-readable string
+//saying why the data in value is invalid
+type field_info<T> = {
+    value: T
+    reason: string
 }

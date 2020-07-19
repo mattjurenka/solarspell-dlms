@@ -16,20 +16,16 @@ import system_info from "../images/home_icons/system_info.png"
 import library_versions from "../images/home_icons/library_versions.png"
 import metadata from "../images/home_icons/metadata.png"
 import solarspell_images from "../images/home_icons/solarspell_images.png"
-import { get_data, APP_URLS } from './urls';
-import { set, cloneDeep } from 'lodash';
 import { Snackbar } from '@material-ui/core';
 import { Alert } from '@material-ui/lab';
 import { update_state } from './utils';
+import { MetadataContext } from './context/contexts';
 
 interface MainScreenProps {}
 
 interface MainScreenState {
     url: URL,
     current_tab: string
-    all_metadata: SerializedMetadata[]
-    all_metadata_types: SerializedMetadataType[]
-    metadata_type_dict: metadata_dict
     toast_state: {
         message: string
         is_open: boolean
@@ -52,19 +48,32 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
             },
             "metadata": {
                 display_label: "Metadata",
-                component: () => <Metadata />,
+                component: () => (
+                    <MetadataContext.Consumer>
+                        {(value: MetadataAPI) => (
+                            <Metadata
+                                metadata_api={value}
+                                show_toast_message={this.show_toast_message}
+                            />
+                        )}
+                    </MetadataContext.Consumer>
+                ),
                 icon: metadata
             },
             "contents": {
                 display_label: "Contents",
                 component: () => (
-                        <Content 
-                            all_metadata={this.state.all_metadata}
-                            all_metadata_types={this.state.all_metadata_types}
-                            metadata_type_dict={this.state.metadata_type_dict}
-                            show_toast_message={this.show_toast_message}
-                            close_toast={this.close_toast}
-                        />
+                        <MetadataContext.Consumer>
+                            {(value: MetadataAPI) => {
+                                return(
+                                    <Content
+                                        metadata_api={value}
+                                        show_toast_message={this.show_toast_message}
+                                        close_toast={this.close_toast}
+                                    />
+                                )
+                            }}
+                        </MetadataContext.Consumer>
                     ),
                 icon: contents
             },
@@ -97,16 +106,12 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
             current_tab: tab_value === null ?
                 default_tab :
                 (tab_value in this.tabs ? tab_value : default_tab),
-            all_metadata: [],
-            all_metadata_types: [],
-            metadata_type_dict: {},
             toast_state: {
                 message: "",
                 is_open: false
             }
         }
 
-        this.loadMetadataDict = this.loadMetadataDict.bind(this)   
         this.close_toast = this.close_toast.bind(this)
         this.show_toast_message = this.show_toast_message.bind(this)
         this.update_state = update_state.bind(this)
@@ -126,30 +131,6 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
             draft.toast_state.is_open = true
             draft.toast_state.message = message
         })
-    }
-
-    //gets the list of all metadata from the server and stores it in the state
-    loadMetadataDict() {
-        get_data(APP_URLS.METADATA).then((metadata: SerializedMetadata[]) => {
-            this.update_state(draft => {
-                draft.all_metadata = metadata
-            })
-            .then(() => {
-                get_data(APP_URLS.METADATA_TYPES).then((metadata_types: SerializedMetadataType[]) => {
-                    this.update_state(draft => {
-                        draft.all_metadata_types = metadata_types
-                        //Turns SerializedMetadataType[] into object with type names as keys and SerializedMetadata[] of that type as a value
-                        draft.metadata_type_dict = metadata_types.reduce((prev, current) => {
-                            return set(prev, [current.name], this.state.all_metadata.filter(metadata => metadata.type_name == current.name))
-                        }, {} as metadata_dict)
-                    })
-                })
-            })
-        })
-    }
-
-    componentDidMount() {
-        this.loadMetadataDict()
     }
 
     change_tab(new_tab: string) {

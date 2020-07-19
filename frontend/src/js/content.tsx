@@ -18,19 +18,20 @@ import {
 import ActionPanel from './action_panel';
 import { APP_URLS, get_data } from './urls';
 import { content_display } from './settings';
-import { get, set, cloneDeep, debounce, isString } from 'lodash';
+import { get, set, cloneDeep, debounce, isUndefined } from 'lodash';
 import ActionDialog from './action_dialog';
 import { Button, Typography, TextField, Paper, Chip, ExpansionPanelSummary, ExpansionPanelDetails, ExpansionPanel, Grid, Select, MenuItem, Container } from '@material-ui/core';
 import { Autocomplete } from "@material-ui/lab"
 import Axios from 'axios';
 import VALIDATORS from './validators';
-import { produce } from "immer"
 import { update_state } from './utils';
+import ContentModal from './content_modal';
+
+import prettyBytes from "pretty-bytes"
+import { KeyboardDatePicker } from '@material-ui/pickers';
 
 interface ContentProps {
-    all_metadata: SerializedMetadata[]
-    all_metadata_types: SerializedMetadataType[]
-    metadata_type_dict: metadata_dict
+    metadata_api: MetadataAPI
     show_toast_message: (message: string) => void
     close_toast: () => void
 }
@@ -43,51 +44,26 @@ interface ContentState {
     page_size: number
     current_page: number
     sorting: Sorting[]
-    delete_modal: delete_modal_state
-    add_modal: content_modal_state
-    edit_modal: content_modal_state
-    view_modal: view_modal_state
+    modals: ContentModals
     search: search_state
 }
 
-//modal_state contains keys in the state that represent data used for modals
-type modal_state = "delete_modal" | "add_modal" | "view_modal" | "edit_modal"
-
-//Add and edit modal use the same type because they use the same data
-type content_modal_state = {
-    is_open:            boolean
-    row:                SerializedContent //Includes Row to know which content item to patch if an edit modal
-    content_file:       field_info<File|null>
-    title:              field_info<string>
-    description:        field_info<string>
-    year:               field_info<string>
-    metadata:           field_info<metadata_dict>
-    copyright:          field_info<string>
-    rights_statement:   field_info<string>
-}
-
-
-//content_modal_state_fields are the keys in the content_modal_state actually uploaded as part of the content data
-type content_modal_state_fields = "content_file" | "title" | "description" | "year" | "metadata" |
-"copyright" | "rights_statement"
-
-//field_info contains data of a field and information about whether that data is valid.
-//reason should default to the empty string "" and any other value will contain a human-readable string
-//saying why the data in value is invalid
-type field_info<T> = {
-    value: T
-    reason: string
-}
-
-
-type view_modal_state = {
-    is_open: boolean
-    row: SerializedContent
-}
-
-type delete_modal_state = {
-    is_open: boolean
-    row: SerializedContent
+interface ContentModals {
+    add: {
+        is_open: boolean
+    }
+    view: {
+        is_open: boolean
+        row: SerializedContent
+    }
+    edit: {
+        is_open: boolean
+        row: SerializedContent
+    }
+    delete_content: {
+        is_open: boolean
+        row: SerializedContent
+    }   
 }
 
 
@@ -96,11 +72,15 @@ type search_state = {
     is_open: boolean
     title: string
     copyright: string
-    years_from: string
-    years_to: string
+    years_from: number | null
+    years_to: number | null
     active: active_search_option
     filename: string
     metadata: metadata_dict
+    file_size_from: number | null
+    file_size_to: number | null
+    reviewed_from: Date | null
+    reviewed_to: Date | null
 }
 
 
@@ -110,46 +90,33 @@ export default class Content extends Component<ContentProps, ContentState> {
 
     update_state: (update_func: (draft: ContentState) => void) => Promise<void>
 
-    delete_modal_defaults: Readonly<delete_modal_state>
-    content_modal_defaults: Readonly<content_modal_state>
-    view_modal_defaults: Readonly<view_modal_state>
-    row_defaults: Readonly<SerializedContent>
+    modal_defaults: ContentModals
+    content_defaults: SerializedContent
 
     add_modal_ref: React.RefObject<HTMLInputElement>
     edit_modal_ref: React.RefObject<HTMLInputElement>
 
-    add_content_validators: [content_modal_state_fields, (raw: any) => string][]
-    edit_content_validators: [content_modal_state_fields, (raw: any) => string][]
     constructor(props: ContentProps) {
         super(props)
 
         this.update_state = update_state.bind(this)
 
         this.columns = [
-            {name: "actions", title: "Actions", getCellValue: (row: SerializedContent) => {
+            {name: "actions", title: "Actions", getCellValue: (display_row) => {
+                const row = get(this.state.loaded_content.filter(to_check => to_check.id === display_row.id), 0)
                 return (
                     <ActionPanel
                         row={row}
                         editFn={() => {
                             this.update_state(draft => {
-                                const edit_modal = draft.edit_modal
-                                edit_modal.row = row
-
-                                edit_modal.copyright.value = row.copyright === null ? "" : row.copyright
-                                edit_modal.rights_statement.value = row.rights_statement === null ? "" : row.rights_statement
-                                edit_modal.title.value = row.title
-                                edit_modal.description.value = row.description === null ? "" : row.description
-                                edit_modal.year.value = row.published_year === null ? "" : row.published_year
-                                edit_modal.metadata.value = this.props.all_metadata_types.reduce((prev, current) => {
-                                    return set(prev, [current.name], row.metadata_info.filter(metadata => metadata.type_name == current.name))
-                                }, {} as metadata_dict)
-                                
-                                edit_modal.is_open = true
+                                const edit = draft.modals.edit
+                                edit.row = row
+                                edit.is_open = true
                             })
                         }}
                         deleteFn={() => {
                             this.update_state(draft => {
-                                draft.delete_modal = {
+                                draft.modals.delete_content = {
                                     is_open: true,
                                     row
                                 }
@@ -164,10 +131,8 @@ export default class Content extends Component<ContentProps, ContentState> {
                         }}
                         viewFn={() => {
                             this.update_state(draft => {
-                                draft.view_modal = {
-                                    is_open: true,
-                                    row
-                                }
+                                draft.modals.view.is_open = true
+                                draft.modals.view.row = row
                             })
                         }}
                     />
@@ -190,13 +155,15 @@ export default class Content extends Component<ContentProps, ContentState> {
         this.edit_modal_ref = React.createRef()
         this.add_modal_ref = React.createRef()
 
-        this.row_defaults = {
+        this.content_defaults = {
             id: 0,
             file_name: "",
+            file_size: 0,
             content_file: "",
             title: "",
             description: null,
             modified_on: "",
+            reviewed_on: "",
             copyright: null,
             rights_statement: null,
             active: false,
@@ -205,47 +172,22 @@ export default class Content extends Component<ContentProps, ContentState> {
             published_year: ""
         }
 
-        this.delete_modal_defaults = {
-            is_open: false,
-            row: cloneDeep(this.row_defaults)
-        }
-        this.content_modal_defaults = {
-            is_open: false,
-            row: cloneDeep(this.row_defaults),
-            content_file: {
-                value: null,
-                reason: ""
+        this.modal_defaults = {
+            add: {
+                is_open: false
             },
-            title: {
-                value: "",
-                reason: ""
+            view: {
+                is_open: false,
+                row: this.content_defaults
             },
-            description: {
-                value: "",
-                reason: ""
+            edit: {
+                is_open: false,
+                row: this.content_defaults
             },
-            year: {
-                value: "",
-                reason: ""
-            },
-            metadata: {
-                value: this.props.all_metadata_types.reduce((prev, current) => {
-                    return set(prev, [current.name], [])
-                }, {}),
-                reason: ""
-            },
-            rights_statement: {
-                value: "",
-                reason: ""
-            },
-            copyright: {
-                value: "",
-                reason: ""
+            delete_content: {
+                is_open: false,
+                row: this.content_defaults
             }
-        }
-        this.view_modal_defaults = {
-            is_open: false,
-            row: cloneDeep(this.row_defaults)
         }
 
         this.state = {
@@ -256,49 +198,26 @@ export default class Content extends Component<ContentProps, ContentState> {
             current_page: 0,
             page_size: this.page_sizes[0],
             sorting: [],
-            delete_modal: cloneDeep(this.delete_modal_defaults),
-            add_modal: cloneDeep(this.content_modal_defaults),
-            edit_modal: cloneDeep(this.content_modal_defaults),
-            view_modal: cloneDeep(this.view_modal_defaults),
+            modals: cloneDeep(this.modal_defaults),
             search: {
                 is_open: false,
                 title: "",
                 copyright: "",
-                years_from: "",
-                years_to: "",
+                years_from: 0,
+                years_to: 0,
                 active: "all",
                 metadata: {},
-                filename: ""
+                filename: "",
+                file_size_from: 0,
+                file_size_to: 0,
+                reviewed_from: null,
+                reviewed_to: null
             }
         }
 
-        //Array that specifies which state fields to validate and with what functions for the add_modal
-        this.add_content_validators = [
-            ["content_file", VALIDATORS.ADD_FILE],
-            ["title", VALIDATORS.TITLE],
-            ["description", VALIDATORS.DESCRIPTION],
-            ["year", VALIDATORS.YEAR],
-            ["metadata", VALIDATORS.METADATA],
-            ["copyright", VALIDATORS.COPYRIGHT],
-            ["rights_statement", VALIDATORS.RIGHTS_STATEMENT]
-        ]
-
-        //The same for the edit_modal
-        this.edit_content_validators = [
-            ["content_file", VALIDATORS.EDIT_FILE],
-            ["title", VALIDATORS.TITLE],
-            ["description", VALIDATORS.DESCRIPTION],
-            ["year", VALIDATORS.YEAR],
-            ["metadata", VALIDATORS.METADATA],
-            ["copyright", VALIDATORS.COPYRIGHT],
-            ["rights_statement", VALIDATORS.RIGHTS_STATEMENT]
-        ]
-
         this.load_content_rows = this.load_content_rows.bind(this)
         this.debounce_load_rows = this.debounce_load_rows.bind(this)
-        this.deleteItem = this.deleteItem.bind(this)
-        this.closeDialog = this.closeDialog.bind(this)
-        this.add_file = this.add_file.bind(this)
+        this.close_modals = this.close_modals.bind(this)
         this.update_state = this.update_state.bind(this)
     }
 
@@ -314,13 +233,20 @@ export default class Content extends Component<ContentProps, ContentState> {
         //Converts years_from and years_to to a two array of the integers.
         //Validates that years_from and years_to are valid integers and years_from <= years_to
         //If invalid years will be undefined
-        const years_raw: [number, number] = [parseInt(search.years_from), parseInt(search.years_to)]
-        const years = (years_raw.filter(year_raw => !isNaN(year_raw)).length === 2) ? (
-            (years_raw[0] <= years_raw[1]) ? years_raw : undefined
-        ) : undefined
+        const years: content_filters["years"] = (
+            search.years_from !== null && search.years_to !== null && search.years_from >= search.years_to
+        ) ? undefined : [search.years_from, search.years_to]
+        const file_sizes: content_filters["file_sizes"] = (
+            search.file_size_from !== null && search.file_size_to !== null && search.file_size_from >= search.file_size_to
+        ) ? undefined : [search.file_size_from, search.file_size_to]
+        const reviewed_on: content_filters["reviewed_on"] = (
+            search.reviewed_from !== null && search.reviewed_to !== null && search.reviewed_from >= search.reviewed_to
+        ) ? undefined : [search.reviewed_from, search.reviewed_to]
 
         const filters: content_filters = {
             years,
+            file_sizes,
+            reviewed_on,
             title: search.title,
             copyright: search.copyright,
             //Turn metadata_dict back to array of integers for search
@@ -368,59 +294,32 @@ export default class Content extends Component<ContentProps, ContentState> {
     //Delays the function call to load_content_rows to whenev
     debounce_load_rows = debounce(this.load_content_rows, 200)
 
-    //Make a simple delete request given the DB id of a row
-    deleteItem(id: number) {
-        Axios.delete(APP_URLS.CONTENT_ITEM(id))
-    }
-
     //Initially load content roads
     componentDidMount() {
         this.load_content_rows()
     }
 
     //Resets the state of a given modal. Use this to close the modal.
-    closeDialog(dialog: modal_state) {
-        const default_dict = {
-            add_modal: this.content_modal_defaults,
-            delete_modal: this.delete_modal_defaults,
-            view_modal: this.view_modal_defaults,
-            edit_modal: this.content_modal_defaults
-        }
-        // This is correct but I don't know how to get ts-lint to recognize it
-        // Maybe someone better at TypeScript can fix it
+    close_modals() {
         this.update_state(draft => {
-            draft[dialog] = cloneDeep(default_dict[dialog])
+            draft.modals = cloneDeep(this.modal_defaults)
         }).then(this.load_content_rows)
     }
 
-    //Runs validation on all state_fields
-    async run_validators(modal: "add_modal" | "edit_modal") {
-        return this.update_state(draft => {
-            const validators = modal === "add_modal" ? this.add_content_validators : this.edit_content_validators
-            validators.map((validator_entry) => {
-                const [state_field, validator_fn] = validator_entry
-                draft[modal][state_field].reason = validator_fn(this.state[modal][state_field].value)
-            })
-        })
-    }
-    
-    //Sets the file object in state to point to the file attached to the input in DOM
-    async add_file(modal: "add_modal" | "edit_modal") {
-        return this.update_state(draft => {
-            const file_raw = this.add_modal_ref.current?.files?.item(0)
-            draft[modal].content_file.value = typeof(file_raw) === "undefined" ? null : file_raw
-        })
-    }
-
     render() {
-        const view_row = this.state.view_modal.row
-
+        const {
+            add,
+            view,
+            edit,
+            delete_content
+        } = this.state.modals
+        const metadata_api = this.props.metadata_api
         return (
             <React.Fragment>
                 <Button
                     onClick={_ => {
                         this.update_state(draft => {
-                            draft.add_modal.is_open = true
+                            draft.modals.add.is_open = true
                         })
                     }}
                     style={{
@@ -479,33 +378,97 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     }}
                                 />
                             </Grid>
-                            <Grid item xs={3}>
+                            <Grid item xs={2}>
                                 <TextField
                                     fullWidth
                                     label={"Years From"}
                                     value={this.state.search.years_from}
+                                    InputProps={{inputProps: {min: 0, max: 2100}}}
+                                    type={"number"}
                                     onChange={(evt) => {
                                         evt.persist()
+                                        const parsed = parseInt(evt.target.value)
                                         this.update_state(draft => {
-                                            draft.search.years_from = evt.target.value
-                                        }).then(this.debounce_load_rows)
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item xs={3}>
-                                <TextField
-                                    fullWidth
-                                    label={"Years To"}
-                                    value={this.state.search.years_to}
-                                    onChange={(evt) => {
-                                        evt.persist()
-                                        this.update_state(draft => {
-                                            draft.search.years_to = evt.target.value
+                                            draft.search.years_from = isNaN(parsed) ? null : parsed
                                         }).then(this.debounce_load_rows)
                                     }}
                                 />
                             </Grid>
                             <Grid item xs={2}>
+                                <TextField
+                                    fullWidth
+                                    label={"Years To"}
+                                    value={this.state.search.years_to}
+                                    InputProps={{inputProps: {min: 0, max: 2100}}}
+                                    type={"number"}
+                                    onChange={(evt) => {
+                                        evt.persist()
+                                        const parsed = parseInt(evt.target.value)
+                                        this.update_state(draft => {
+                                            draft.search.years_to = isNaN(parsed) ? null : parsed
+                                        }).then(this.debounce_load_rows)
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={2}>
+                                <TextField
+                                    fullWidth
+                                    label={"Filesize From"}
+                                    value={this.state.search.file_size_from}
+                                    InputProps={{inputProps: {min: 0, max: 1000000000000}}}
+                                    type={"number"}
+                                    onChange={(evt) => {
+                                        evt.persist()
+                                        const parsed = parseInt(evt.target.value)
+                                        this.update_state(draft => {
+                                            draft.search.file_size_from = isNaN(parsed) ? null : parsed
+                                        }).then(this.debounce_load_rows)
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={2}>
+                                <TextField
+                                    fullWidth
+                                    label={"Filesize To"}
+                                    value={this.state.search.file_size_to}
+                                    InputProps={{inputProps: {min: 0, max: 1000000000000}}}
+                                    type={"number"}
+                                    onChange={(evt) => {
+                                        evt.persist()
+                                        const parsed = parseInt(evt.target.value)
+                                        this.update_state(draft => {
+                                            draft.search.file_size_to = isNaN(parsed) ? null : parsed
+                                        }).then(this.debounce_load_rows)
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={2}>
+                                <KeyboardDatePicker
+                                    variant={"inline"}
+                                    format={"MM/dd/yyyy"}
+                                    value={this.state.search.reviewed_from}
+                                    label={"Reviewed From"}
+                                    onChange={value => {
+                                        this.update_state(draft => {
+                                            draft.search.reviewed_from = value
+                                        }).then(this.debounce_load_rows)
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={2}>
+                                <KeyboardDatePicker
+                                    variant={"inline"}
+                                    format={"MM/dd/yyyy"}
+                                    value={this.state.search.reviewed_to}
+                                    label={"Reviewed To"}
+                                    onChange={value => {
+                                        this.update_state(draft => {
+                                            draft.search.reviewed_to = value
+                                        }).then(this.debounce_load_rows)
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
                                 <Container disableGutters style={{display: "flex", height: "100%"}}>
                                     <Select
                                         style={{alignSelf: "bottom"}}
@@ -523,25 +486,25 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     </Select>
                                 </Container>
                             </Grid>
-                            <Grid item xs={4} />
-                            {this.props.all_metadata_types.map((metadata_type: SerializedMetadataType) => {
+                            {Object.entries(metadata_api.state.metadata_by_type).map((entry: [string, SerializedMetadata[]], idx) => {
+                                const [metadata_type, metadata] = entry
                                 return (
-                                    <Grid item xs={4} key={metadata_type.id}>
+                                    <Grid item xs={4} key={idx}>
                                         <Autocomplete
                                             multiple
-                                            options={this.props.metadata_type_dict[metadata_type.name]}
+                                            options={metadata}
                                             getOptionLabel={option => option.name}
                                             renderInput={(params) => (
                                                 <TextField
                                                     {...params}
                                                     variant={"standard"}
-                                                    label={metadata_type.name}
-                                                    placeholder={metadata_type.name}
+                                                    label={metadata_type}
+                                                    placeholder={metadata_type}
                                                 />
                                             )}
                                             onChange={(_evt, values) => {
                                                 this.update_state(draft => {
-                                                    draft.search.metadata[metadata_type.name] = values
+                                                    draft.search.metadata[metadata_type] = values
                                                 }).then(this.debounce_load_rows)
                                             }}
                                         />
@@ -589,17 +552,16 @@ export default class Content extends Component<ContentProps, ContentState> {
                     <TableHeaderRow showSortingControls />
                     <PagingPanel pageSizes={this.page_sizes} />
                 </DataGrid>
-                {/* Most of the code in these ActionDialogs is still boilerplate, we should revisit how to make this more concise. */}
                 <ActionDialog
-                    title={`Delete Content item ${this.state.delete_modal.row.title}?`}
-                    open={this.state.delete_modal.is_open}
+                    title={`Delete Content item ${delete_content.row.title}?`}
+                    open={delete_content.is_open}
                     actions={[(
                         <Button
                             key={1}
                             onClick={()=> {
-                                this.deleteItem(this.state.delete_modal.row.id)
+                                Axios.delete(APP_URLS.CONTENT_ITEM(delete_content.row.id))
                                 this.load_content_rows()
-                                this.closeDialog("delete_modal")
+                                this.close_modals()
                             }}
                             color="secondary"
                         >
@@ -608,9 +570,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                     ), (
                         <Button
                             key={2}
-                            onClick={() => {
-                                this.closeDialog("delete_modal")
-                            }}
+                            onClick={this.close_modals}
                             color="primary"
                         >
                             Cancel
@@ -619,400 +579,56 @@ export default class Content extends Component<ContentProps, ContentState> {
                 >
                     <Typography>This action is irreversible</Typography>
                 </ActionDialog>
-                <ActionDialog
-                    title={`Add new content item`}
-                    open={this.state.add_modal.is_open}
-                    actions={[(
-                        <Button
-                            key={1}
-                            onClick={() => {
-                                this.closeDialog("add_modal")
-                            }}
-                            color="secondary"
-                        >
-                            Cancel
-                        </Button>
-                    ), (
-                        <Button
-                            key={2}
-                            onClick={()=> {
-                                this.add_file("add_modal")
-                                .then(() => this.run_validators("add_modal"))
-                                .then(() => {
-                                    //If theres is invalid user input exit upload logic without closing the modal
-                                    for (const validator_entry of this.add_content_validators) {
-                                        const [state_field] = validator_entry
-                                        if (this.state.add_modal[state_field].reason !== "") return
-                                    }
-
-                                    const data = this.state.add_modal
-                                    
-                                    //Form data instead of js object needed so the file upload works as multipart
-                                    //There might be a better way to do this with Axios
-                                    const file = data.content_file.value
-                                    if (file === null) return
-                                    const formData = new FormData()
-                                    formData.append('content_file', file)
-                                    formData.append('title', data.title.value)
-                                    formData.append('description', data.description.value)
-                                    formData.append('published_date', `${data.year.value}-01-01`)
-                                    formData.append('active', "true")
-                                    
-                                    this.props.all_metadata_types.map(type => {
-                                        if (type.name in data.metadata.value) {
-                                            data.metadata.value[type.name].map(metadata => {
-                                                formData.append("metadata", `${metadata.id}`)
-                                            })
-                                        }
-                                    })
-
-                                    Axios.post(APP_URLS.CONTENT, formData, {
-                                        headers: {
-                                            'Content-Type': 'multipart/form-data'
-                                        }
-                                    })
-                                    .then((_res) => {
-                                        //Runs if success
-                                        this.props.show_toast_message("Added content successfully")
-                                        this.load_content_rows()
-                                        this.closeDialog("add_modal")
-                                    }, (err) => {
-                                        //Runs if failed validation or other error
-                                        const default_error = "Error while adding content"
-                                        try {
-                                            console.log(err.response)
-                                            const err_obj = err.response.data.error
-                                            console.log(Object.keys(err_obj))
-                                            this.props.show_toast_message(
-                                                //This returns the error object if its a string or looks for an error string as the value
-                                                //to the first object key's first member (in case of validation error)
-                                                //Javascript will choose which key is first randomly
-                                                //The syntax looks weird but this just creates an anonymous function and immediately calls it
-                                                //so we can define variables for use in inline if expressions
-                                                isString(err_obj) ? err_obj : (() => {
-                                                    const first_msg = err_obj[Object.keys(err_obj)[0]][0]
-                                                    return isString(first_msg) ? first_msg : default_error
-                                                })()
-                                            )
-                                        } catch {
-                                            this.props.show_toast_message(default_error)
-                                        }
-                                    })
-                                })
-                            }}
-                            color="primary"
-                        >
-                            Add
-                        </Button>
-                    )]}
-                >
-                    <TextField
-                        error={this.state.add_modal.title.reason !== ""}
-                        helperText={this.state.add_modal.title.reason}
-                        label={"Title"}
-                        value={this.state.add_modal.title.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.add_modal.title.value = evt.target.value
-                            })
-                        }}
-                    />
-                    <br />
-                    <br />
-                    <TextField
-                        error={this.state.add_modal.description.reason !== ""}
-                        helperText={this.state.add_modal.description.reason}
-                        label={"Description"}
-                        value={this.state.add_modal.description.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.add_modal.description.value = evt.target.value
-                            })
-                        }}
-                    />
-                    <br />
-                    <br />
-                    <input
-                        accept="*"
-                        id="raised-button-file"
-                        type="file"
-                        ref={this.add_modal_ref}
-                    />
-                    <br />
-                    <br />
-                    <TextField
-                        error={this.state.add_modal.year.reason !== ""}
-                        helperText={this.state.add_modal.year.reason}
-                        label={"Year Published"}
-                        value={this.state.add_modal.year.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.add_modal.year.value = evt.target.value
-                            })
-                        }}
-                    />
-                    <br />
-                    <br />
-                    <TextField
-                        error={this.state.add_modal.copyright.reason !== ""}
-                        helperText={this.state.add_modal.copyright.reason}
-                        label={"Copyright"}
-                        value={this.state.add_modal.copyright.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.add_modal.copyright.value = evt.target.value
-                            })
-                        }}
-                    />
-                    <br />
-                    <br />
-                    <TextField
-                        error={this.state.add_modal.rights_statement.reason !== ""}
-                        helperText={this.state.add_modal.rights_statement.reason}
-                        label={"Rights Statement"}
-                        value={this.state.add_modal.rights_statement.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.add_modal.rights_statement.value = evt.target.value
-                            })
-                        }}
-                    />
-                    <br />
-                    <br />
-                    {this.props.all_metadata_types.map((metadata_type: SerializedMetadataType) => {
-                        return (
-                            <Grid item xs={4} key={metadata_type.id}>
-                                <Autocomplete
-                                    multiple
-                                    options={this.props.metadata_type_dict[metadata_type.name]}
-                                    getOptionLabel={option => option.name}
-                                    renderInput={(params) => (
-                                        <TextField
-                                            error={this.state.add_modal.metadata.reason !== ""}
-                                            helperText={this.state.add_modal.metadata.reason}
-                                            {...params}
-                                            variant={"standard"}
-                                            label={metadata_type.name}
-                                            placeholder={metadata_type.name}
-                                        />
-                                    )}
-                                    onChange={(_evt, values) => {
-                                        this.update_state(draft => {
-                                            draft.add_modal.metadata.value[metadata_type.name] = values
-                                        })
-                                    }}
-                                />
-                            </Grid>
-                        )
-                    })}
-                </ActionDialog>
-                <ActionDialog
-                    title={"Edit content item"}
-                    open={this.state.edit_modal.is_open}
-                    actions={[(
-                        <Button
-                            key={1}
-                            onClick={() => {
-                                this.closeDialog("edit_modal")
-                            }}
-                            color="secondary"
-                        >
-                            Cancel
-                        </Button>
-                    ), (
-                        <Button
-                            key={2}
-                            onClick={()=> {
-                                this.add_file("edit_modal")
-                                .then(() => this.run_validators("edit_modal"))
-                                .then(() => {
-                                    //If theres is invalid user input exit upload logic without closing the modal
-                                    for (const validator_entry of this.edit_content_validators) {
-                                        const [state_field] = validator_entry
-                                        if (this.state.edit_modal[state_field].reason !== "") return
-                                    }
-
-                                    const data = this.state.edit_modal
-                                    
-                                    //Form data instead of js object needed so the file upload works as multipart
-                                    //There might be a better way to do this with Axios
-                                    const file: File | null = data.content_file.value
-                                    const formData = new FormData()
-                                    if (file !== null) {
-                                        formData.append('content_file', file)
-                                    }
-                                    formData.append('title', data.title.value)
-                                    formData.append('description', data.description.value)
-                                    formData.append('published_date', `${data.year.value}-01-01`)
-                                    formData.append('active', "true")
-                                    this.props.all_metadata_types.map(type => {
-                                        if (type.name in data.metadata.value) {
-                                            data.metadata.value[type.name].map(metadata => {
-                                                formData.append("metadata", `${metadata.id}`)
-                                            })
-                                        }
-                                    })
-
-                                    Axios.patch(APP_URLS.CONTENT_ITEM(data.row.id), formData, {
-                                        headers: {
-                                            'Content-Type': 'multipart/form-data'
-                                        }
-                                    })
-                                    .then((_res) => {
-                                        //Runs if success
-                                        this.props.show_toast_message("Edited content successfully")
-                                        this.load_content_rows()
-                                        this.closeDialog("edit_modal")
-                                    }, (err) => {
-                                        //Runs if failed validation or other error
-                                        const default_error = "Error while editing content"
-                                        try {
-                                            console.log(err.response)
-                                            const err_obj = err.response.data.error
-                                            console.log(Object.keys(err_obj))
-                                            this.props.show_toast_message(
-                                                //This returns the error object if its a string or looks for an error string as the value
-                                                //to the first object key's first member (in case of validation error)
-                                                //Javascript will choose which key is first randomly
-                                                //The syntax looks weird but this just creates an anonymous function and immediately calls it
-                                                //so we can define variables for use in inline if expressions
-                                                isString(err_obj) ? err_obj : (() => {
-                                                    const first_msg = err_obj[Object.keys(err_obj)[0]][0]
-                                                    return isString(first_msg) ? first_msg : default_error
-                                                })()
-                                            )
-                                        } catch {
-                                            this.props.show_toast_message(default_error)
-                                        }
-                                    })
-                                })
-                            }}
-                            color="primary"
-                        >
-                            Save
-                        </Button>
-                    )]}
-                >
-                    <TextField
-                        error={this.state.edit_modal.title.reason !== ""}
-                        helperText={this.state.edit_modal.title.reason}
-                        label={"Title"}
-                        value={this.state.edit_modal.title.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.edit_modal.title.value = evt.target.value
-                            })
-                        }}
-                    />
-                    <br />
-                    <br />
-                    <TextField
-                        error={this.state.edit_modal.description.reason !== ""}
-                        helperText={this.state.edit_modal.description.reason}
-                        label={"Description"}
-                        value={this.state.edit_modal.description.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.edit_modal.description.value = evt.target.value
-                            })
-                        }}
-                    />
-                    <br />
-                    <br />
-                    <input
-                        accept="*"
-                        id="raised-button-file"
-                        type="file"
-                        ref={this.edit_modal_ref}
-                    />
-                    <br />
-                    <br />
-                    <TextField
-                        error={this.state.edit_modal.year.reason !== ""}
-                        helperText={this.state.edit_modal.year.reason}
-                        label={"Year Published"}
-                        value={this.state.edit_modal.year.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.edit_modal.year.value = evt.target.value
-                            })
-                        }}
-                    />
-                    <br />
-                    <br />
-                    <TextField
-                        error={this.state.edit_modal.copyright.reason !== ""}
-                        helperText={this.state.edit_modal.copyright.reason}
-                        label={"Copyright"}
-                        value={this.state.edit_modal.copyright.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.edit_modal.copyright.value = evt.target.value
-                            })
-                        }}
-                    />
-                    <br />
-                    <br />
-                    <TextField
-                        error={this.state.edit_modal.rights_statement.reason !== ""}
-                        helperText={this.state.edit_modal.rights_statement.reason}
-                        label={"Rights Statement"}
-                        value={this.state.edit_modal.rights_statement.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.edit_modal.rights_statement.value = evt.target.value
-                            })
-                        }}
-                    />
-                    <br />
-                    <br />
-                    {this.props.all_metadata_types.map((metadata_type: SerializedMetadataType) => {
-                        return (
-                            <Grid item xs={4} key={metadata_type.id}>
-                                <Autocomplete
-                                    multiple
-                                    options={this.props.metadata_type_dict[metadata_type.name]}
-                                    getOptionLabel={option => option.name}
-                                    renderInput={(params) => (
-                                        <TextField
-                                            error={this.state.edit_modal.metadata.reason !== ""}
-                                            helperText={this.state.edit_modal.metadata.reason}
-                                            {...params}
-                                            variant={"standard"}
-                                            label={metadata_type.name}
-                                            placeholder={metadata_type.name}
-                                        />
-                                    )}
-                                    onChange={(_evt, values) => {
-                                        this.update_state(draft => {
-                                            draft.edit_modal.metadata.value[metadata_type.name] = values
-                                        })
-                                    }}
-                                    defaultValue={this.state.edit_modal.metadata.value[metadata_type.name]}
-                                />
-                            </Grid>
-                        )
-                    })}
-                </ActionDialog>
+                <ContentModal
+                    is_open={add.is_open}
+                    on_close={() => {
+                        this.update_state(draft => {
+                            draft.modals.add.is_open = false
+                        })
+                    }}
+                    metadata_api={metadata_api}
+                    modal_type={"add"}
+                    validators={{
+                        content_file: VALIDATORS.ADD_FILE,
+                        title: VALIDATORS.TITLE,
+                        description: VALIDATORS.DESCRIPTION,
+                        year: VALIDATORS.YEAR,
+                        reviewed_on: VALIDATORS.REVIEWED_ON,
+                        metadata: VALIDATORS.METADATA,
+                        copyright: VALIDATORS.COPYRIGHT,
+                        rights_statement: VALIDATORS.RIGHTS_STATEMENT
+                    }}
+                    show_toast_message={this.props.show_toast_message}
+                />
+                <ContentModal
+                    is_open={edit.is_open}
+                    on_close={() => {
+                        this.update_state(draft => {
+                            draft.modals.edit.is_open = false
+                        })
+                    }}
+                    metadata_api={metadata_api}
+                    modal_type={"edit"}
+                    row={edit.row}
+                    validators={{
+                        content_file: VALIDATORS.EDIT_FILE,
+                        title: VALIDATORS.TITLE,
+                        description: VALIDATORS.DESCRIPTION,
+                        year: VALIDATORS.YEAR,
+                        reviewed_on: VALIDATORS.REVIEWED_ON,
+                        metadata: VALIDATORS.METADATA,
+                        copyright: VALIDATORS.COPYRIGHT,
+                        rights_statement: VALIDATORS.RIGHTS_STATEMENT
+                    }}
+                    show_toast_message={this.props.show_toast_message}
+                />
                 <ActionDialog
                     title={"View Content Item"}
-                    open={this.state.view_modal.is_open}
+                    open={view.is_open}
                     actions={[(
                         <Button
                             key={1}
-                            onClick={() => {
-                                this.closeDialog("view_modal")
-                            }}
+                            onClick={this.close_modals}
                             color="secondary"
                         >
                             Close
@@ -1022,12 +638,14 @@ export default class Content extends Component<ContentProps, ContentState> {
                     <Grid container>
                         <Grid item xs={4}>
                             {[
-                                ["Title", view_row.title],
-                                ["Description", view_row.description],
-                                ["Filename", <a href={new URL(view_row.file_name, APP_URLS.CONTENT_FOLDER).href}>{view_row.file_name}</a>],
-                                ["Year Published", view_row.published_year],
-                                ["Copyright", view_row.copyright],
-                                ["Rights Statement", view_row.rights_statement]
+                                ["Title", view.row.title],
+                                ["Description", view.row.description],
+                                ["Filename", <a href={new URL(view.row.file_name, APP_URLS.CONTENT_FOLDER).href}>{view.row.file_name}</a>],
+                                ["Year Published", view.row.published_year],
+                                ["Reviewed On", view.row.reviewed_on],
+                                ["Copyright", view.row.copyright],
+                                ["Rights Statement", view.row.rights_statement],
+                                ["File Size", isUndefined(view.row.file_size) ? 0 : prettyBytes(view.row.file_size)]
                             ].map(([title, value], idx) => {
                                 return (
                                     <Container style={{marginBottom: "1em"}} key={idx}>
@@ -1036,12 +654,12 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     </Container>
                                 )
                             })}
-                            {this.props.all_metadata_types.map((metadata_type: SerializedMetadataType) => {
+                            {this.props.metadata_api.state.metadata_types.map((metadata_type: SerializedMetadataType) => {
                                 return (
                                     <Container key={metadata_type.id} style={{marginBottom: "1em"}}>
                                         <Typography variant={"h6"}>{metadata_type.name}</Typography>
                                         <Paper>
-                                            {view_row.metadata_info?.filter(value => value.type_name == metadata_type.name).map((metadata, idx) => (
+                                            {view.row.metadata_info?.filter(value => value.type_name == metadata_type.name).map((metadata, idx) => (
                                                     <li key={idx} style={{listStyle: "none"}}>
                                                         <Chip
                                                             label={metadata.name}
@@ -1056,10 +674,10 @@ export default class Content extends Component<ContentProps, ContentState> {
                             
                         </Grid>
                         <Grid item xs={8}>
-                            {this.state.view_modal.is_open ? (
+                            {view.is_open ? (
                                 <object
                                     style={{maxWidth: "100%"}}
-                                    data={new URL(view_row.file_name, APP_URLS.CONTENT_FOLDER).href}
+                                    data={new URL(view.row.file_name, APP_URLS.CONTENT_FOLDER).href}
                                 />
                             ) : null}
                         </Grid>
