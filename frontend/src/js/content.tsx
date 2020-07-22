@@ -15,17 +15,17 @@ import {
 
 } from "@devexpress/dx-react-grid"
 
-import ActionPanel from './action_panel';
+import ActionPanel from './reusable/action_panel';
 import { APP_URLS, get_data } from './urls';
 import { content_display } from './settings';
 import { get, set, cloneDeep, debounce, isUndefined } from 'lodash';
-import ActionDialog from './action_dialog';
+import ActionDialog from './reusable/action_dialog';
 import { Button, Typography, TextField, Paper, Chip, ExpansionPanelSummary, ExpansionPanelDetails, ExpansionPanel, Grid, Select, MenuItem, Container } from '@material-ui/core';
 import { Autocomplete } from "@material-ui/lab"
 import Axios from 'axios';
 import VALIDATORS from './validators';
 import { update_state } from './utils';
-import ContentModal from './content_modal';
+import ContentModal from './reusable/content_modal';
 
 import prettyBytes from "pretty-bytes"
 import { KeyboardDatePicker } from '@material-ui/pickers';

@@ -2,11 +2,11 @@ import ActionDialog from "./action_dialog"
 import { cloneDeep, isEqual, set, isNull, isUndefined } from "lodash"
 import { Button, TextField, Grid } from "@material-ui/core"
 import Axios, { AxiosResponse } from "axios"
-import { APP_URLS } from "./urls"
+import { APP_URLS } from "../urls"
 import { Autocomplete, createFilterOptions } from "@material-ui/lab"
 import { Component, RefObject } from 'react'
 import React from 'react'
-import { update_state, get_string_from_error, get_field_info_default } from './utils'
+import { update_state, get_string_from_error, get_field_info_default } from '../utils'
 
 import { KeyboardDatePicker }   from '@material-ui/pickers';
 import { format } from 'date-fns'
