@@ -1,5 +1,6 @@
 import { get, isString } from 'lodash'
 import { produce } from 'immer'
+import { SerializedMetadata, field_info } from './types'
 
 // Gets a SerlializedMetadata given an array of SerializedMetadata and an id to look for
 // If none found, return null

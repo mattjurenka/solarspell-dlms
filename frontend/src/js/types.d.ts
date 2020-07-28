@@ -1,3 +1,5 @@
+import LibraryAssets from "./library_assets"
+
 interface TabDict {
     [key: string]: TabData
 }
@@ -51,16 +53,43 @@ interface SerializedMetadataType {
 
 type MetadataAPI = {
     state: MetadataProviderState
-    refresh_metadata: () => Promise<void>
-    add_metadata_type: (type_name: string) => Promise<void>
-    edit_metadata_type: (old_type: SerializedMetadataType, new_name: string) => Promise<void>
-    delete_metadata_type: (meta_type: SerializedMetadataType) => Promise<void>
-    add_metadata: (meta_name: string, meta_type: SerializedMetadataType) => Promise<void>
-    edit_metadata: (old_meta: SerializedMetadata, new_name: string) => Promise<void>
-    delete_metadata: (meta_type: SerializedMetadata) => Promise<void>
+    refresh_metadata: () => Promise<any>
+    add_metadata_type: (type_name: string) => Promise<any>
+    edit_metadata_type: (old_type: SerializedMetadataType, new_name: string) => Promise<any>
+    delete_metadata_type: (meta_type: SerializedMetadataType) => Promise<any>
+    add_metadata: (meta_name: string, meta_type: SerializedMetadataType) => Promise<any>
+    edit_metadata: (old_meta: SerializedMetadata, new_name: string) => Promise<any>
+    delete_metadata: (meta_type: SerializedMetadata) => Promise<any>
+}
+
+type LibraryAssetsAPI = {
+    state: LibraryAssetsState
+    refresh_assets: () => Promise<any>
+    add_library_asset: (image: File, group: AssetGroup) => Promise<any>
+    edit_library_asset: (old_asset: LibraryAsset, new_image: File, new_group: AssetGroup) => Promise<any>
+    delete_library_asset: (old_asset: LibraryAsset) => Promise<any>
+}
+
+type AssetGroup = 1 | 2 | 3
+
+type LibraryAsset = {
+    id: number,
+    image_file: string|null,
+    image_group: AssetGroup
+}
+
+interface LibraryAssetsState {
+    initialized: boolean
+    loaded: boolean
+    error: {
+        is_error: boolean
+        message: string
+    }
+    assets: LibraryAsset[]
 }
 
 type MetadataProviderState = {
+    initialized: boolean
     loaded: boolean
     error: {
         is_error: boolean

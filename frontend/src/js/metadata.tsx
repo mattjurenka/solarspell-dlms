@@ -29,6 +29,7 @@ import ActionDialog from './reusable/action_dialog'
 import { update_state, get_field_info_default } from './utils'
 import VALIDATORS from './validators'
 import KebabMenu from './reusable/kebab_menu'
+import { MetadataAPI, SerializedMetadataType, SerializedMetadata, field_info } from './types'
 
 interface MetadataProps {
     metadata_api: MetadataAPI

@@ -16,10 +16,13 @@ import system_info from "../images/home_icons/system_info.png"
 import library_versions from "../images/home_icons/library_versions.png"
 import metadata from "../images/home_icons/metadata.png"
 import solarspell_images from "../images/home_icons/solarspell_images.png"
+import library_assets from "../images/home_icons/library_assets.png"
+
 import { Snackbar } from '@material-ui/core';
 import { Alert } from '@material-ui/lab';
 import { update_state } from './utils';
 import { MetadataContext } from './context/contexts';
+import { TabDict, MetadataAPI } from './types';
 
 interface MainScreenProps {}
 
@@ -76,6 +79,11 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                         </MetadataContext.Consumer>
                     ),
                 icon: contents
+            },
+            "library_assets": {
+                display_label: "Library Assets",
+                component: () => <h1>Library Asset</h1>,
+                icon: library_assets
             },
             "libraries": {
                 display_label: "Libraries",

@@ -10,6 +10,7 @@ import { update_state, get_string_from_error, get_field_info_default } from '../
 
 import { KeyboardDatePicker }   from '@material-ui/pickers';
 import { format } from 'date-fns'
+import { WrappedFieldInfo, metadata_dict, SerializedContent, MetadataAPI, SerializedMetadata, SerializedMetadataType } from 'js/types'
 
 
 type content_fields = {
@@ -167,7 +168,6 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                     }
                                 })
 
-                                console.log("here")
                                 //We have to do this weird pattern so the only caught errors in this promise chain come from the axios call
                                 const axios_response = this.props.modal_type === "add" ?
                                     Axios.post(APP_URLS.CONTENT, formData, {

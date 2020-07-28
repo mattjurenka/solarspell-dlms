@@ -1,7 +1,9 @@
 import React from "react"
+import { LibraryAssetsAPI, MetadataAPI, SerializedMetadataType, SerializedMetadata, AssetGroup, LibraryAsset } from 'js/types'
 
 const MetadataContext = React.createContext<MetadataAPI>({
     state: {
+        initialized: false,
         loaded: false,
         error: {
             is_error: false,
@@ -20,6 +22,23 @@ const MetadataContext = React.createContext<MetadataAPI>({
     delete_metadata: async (_meta_type: SerializedMetadata) => {}
 })
 
+const LibraryAssetsContext = React.createContext<LibraryAssetsAPI>({
+    state: {
+        initialized: false,
+        loaded: false,
+        error: {
+            is_error: false,
+            message: ""
+        },
+        assets: [],
+    },
+    refresh_assets: async () => {},
+    add_library_asset: async (_image: File, _group: AssetGroup) => {},
+    edit_library_asset: async (_old_asset: LibraryAsset, _new_image: File, _new_group: AssetGroup) => {},
+    delete_library_asset: async (_old_asset: LibraryAsset) => {},
+})
+
 export {
-    MetadataContext
+    MetadataContext,
+    LibraryAssetsContext
 }

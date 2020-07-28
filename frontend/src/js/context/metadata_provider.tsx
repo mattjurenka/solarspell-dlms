@@ -4,6 +4,7 @@ import { update_state } from '../utils';
 import { get_data, APP_URLS } from '../urls';
 import { isString, set } from 'lodash';
 import Axios from 'axios';
+import { MetadataProviderState, SerializedMetadataType, SerializedMetadata, metadata_dict } from 'js/types';
 
 
 export default class MetadataProvider extends Component<{}, MetadataProviderState> {
@@ -13,6 +14,7 @@ export default class MetadataProvider extends Component<{}, MetadataProviderStat
         super(props)
 
         this.state = {
+            initialized: true,
             loaded: false,
             error: {
                 is_error: false,
@@ -80,37 +82,37 @@ export default class MetadataProvider extends Component<{}, MetadataProviderStat
     }
 
     async add_metadata_type(type_name: string) {
-        Axios.post(APP_URLS.METADATA_TYPES, {
+        return Axios.post(APP_URLS.METADATA_TYPES, {
             name: type_name
         }).finally(this.refresh_metadata)
     }
 
     async edit_metadata_type(old_type: SerializedMetadataType, new_name: string) {
-        Axios.patch(APP_URLS.METADATA_TYPE(old_type.id), {
+        return Axios.patch(APP_URLS.METADATA_TYPE(old_type.id), {
             name: new_name
         }).finally(this.refresh_metadata)
     }
 
     async delete_metadata_type(meta_type: SerializedMetadataType) {
-        Axios.delete(APP_URLS.METADATA_TYPE(meta_type.id))
+        return Axios.delete(APP_URLS.METADATA_TYPE(meta_type.id))
         .finally(this.refresh_metadata)
     }
     
     async add_metadata(meta_name: string, meta_type: SerializedMetadataType) {
-        Axios.post(APP_URLS.METADATA, {
+        return Axios.post(APP_URLS.METADATA, {
             name: meta_name,
             type: meta_type.id
         }).finally(this.refresh_metadata)
     }
     
     async edit_metadata(old_meta: SerializedMetadata, new_name: string) {
-        Axios.patch(APP_URLS.METADATA_ITEM(old_meta.id), {
+        return Axios.patch(APP_URLS.METADATA_ITEM(old_meta.id), {
             name: new_name
         }).finally(this.refresh_metadata)
     }
 
     async delete_metadata(meta_type: SerializedMetadata) {
-        Axios.delete(APP_URLS.METADATA_ITEM(meta_type.id))
+        return Axios.delete(APP_URLS.METADATA_ITEM(meta_type.id))
         .finally(this.refresh_metadata)
     }
 

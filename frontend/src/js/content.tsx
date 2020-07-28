@@ -29,6 +29,7 @@ import ContentModal from './reusable/content_modal';
 
 import prettyBytes from "pretty-bytes"
 import { KeyboardDatePicker } from '@material-ui/pickers';
+import { MetadataAPI, SerializedContent, metadata_dict, content_filters, SerializedMetadata, SerializedMetadataType } from './types';
 
 interface ContentProps {
     metadata_api: MetadataAPI
