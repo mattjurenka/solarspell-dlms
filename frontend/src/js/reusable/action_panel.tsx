@@ -3,8 +3,8 @@ import { Edit, Delete, CheckCircleOutline, HighlightOff, Visibility } from "@mat
 
 interface ActionPanelProps {
     row?: any,
-    editFn: () => void,
-    deleteFn: () => void,
+    editFn?: () => void,
+    deleteFn?: () => void,
     setActive?: (is_active: boolean) => void
     viewFn?: () => void
 }
@@ -16,14 +16,22 @@ export default function ActionPanel(props:ActionPanelProps) {
     }
     return (
         <>
-            <Edit
-                style={pointerStyle}
-                onClick={editFn}
-            />
-            <Delete
-                style={pointerStyle}
-                onClick={deleteFn}
-            />
+            {editFn !== undefined ? (
+                <Edit
+                    style={pointerStyle}
+                    onClick={editFn}
+                />
+            ) : (
+                <></>
+            )}
+            {deleteFn !== undefined ? (
+                <Delete
+                    style={pointerStyle}
+                    onClick={deleteFn}
+                />
+            ) : (
+                <></>
+            )}
             {setActive !== undefined ? (
                 row.active == 0 ? (
                     <CheckCircleOutline

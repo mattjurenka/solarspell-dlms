@@ -4,7 +4,7 @@ from django.conf.urls.static import static
 
 from dlms import settings
 from .views import (
-    ContentViewSet, MetadataViewSet, MetadataTypeViewSet, ContentSheetView,
+    ContentViewSet, MetadataViewSet, MetadataTypeViewSet, ContentSheetView, UserViewSet,
     LibraryFolderViewSet, LibraryVersionViewSet, LibLayoutImageViewSet, LibraryBuildView, metadata_sheet)
 
 router = routers.DefaultRouter()
@@ -14,6 +14,7 @@ router.register(r'metadata_types', MetadataTypeViewSet)
 router.register(r'lib_layout_images', LibLayoutImageViewSet)
 router.register(r'library_versions', LibraryVersionViewSet)
 router.register(r'library_folders', LibraryFolderViewSet)
+router.register(r'users', UserViewSet)
 
 
 urlpatterns = [

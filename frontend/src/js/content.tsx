@@ -16,37 +16,37 @@ import {
 } from "@devexpress/dx-react-grid"
 
 import ActionPanel from './reusable/action_panel';
-import { APP_URLS, get_data } from './urls';
+import { APP_URLS } from './urls';
 import { content_display } from './settings';
-import { get, set, cloneDeep, debounce, isUndefined } from 'lodash';
+import { get, cloneDeep } from 'lodash';
 import ActionDialog from './reusable/action_dialog';
-import { Button, Typography, TextField, Paper, Chip, ExpansionPanelSummary, ExpansionPanelDetails, ExpansionPanel, Grid, Select, MenuItem, Container } from '@material-ui/core';
+import { Button, Typography, TextField, ExpansionPanelSummary, ExpansionPanelDetails, ExpansionPanel, Grid, Select, MenuItem, Container } from '@material-ui/core';
 import { Autocomplete } from "@material-ui/lab"
 import Axios from 'axios';
 import VALIDATORS from './validators';
 import { update_state } from './utils';
 import ContentModal from './reusable/content_modal';
 
-import prettyBytes from "pretty-bytes"
 import { KeyboardDatePicker } from '@material-ui/pickers';
-import { MetadataAPI, SerializedContent, metadata_dict, content_filters, SerializedMetadata, SerializedMetadataType } from './types';
+import { MetadataAPI, SerializedContent, SerializedMetadata, active_search_option, ContentsAPI } from './types';
+import { ViewContentModal } from './reusable/view_content_modal';
 
 interface ContentProps {
     metadata_api: MetadataAPI
+    contents_api: ContentsAPI
     show_toast_message: (message: string) => void
     close_toast: () => void
 }
 
 interface ContentState {
-    last_request_timestamp: number
-    display_rows: any[]
-    loaded_content: SerializedContent[]
     total_count: number
     page_size: number
     current_page: number
     sorting: Sorting[]
     modals: ContentModals
-    search: search_state
+    search: {
+        is_open: boolean
+    }
 }
 
 interface ContentModals {
@@ -65,23 +65,6 @@ interface ContentModals {
         is_open: boolean
         row: SerializedContent
     }   
-}
-
-
-type active_search_option = "active" | "inactive" | "all"
-type search_state = {
-    is_open: boolean
-    title: string
-    copyright: string
-    years_from: number | null
-    years_to: number | null
-    active: active_search_option
-    filename: string
-    metadata: metadata_dict
-    file_size_from: number | null
-    file_size_to: number | null
-    reviewed_from: Date | null
-    reviewed_to: Date | null
 }
 
 
@@ -104,7 +87,7 @@ export default class Content extends Component<ContentProps, ContentState> {
 
         this.columns = [
             {name: "actions", title: "Actions", getCellValue: (display_row) => {
-                const row = get(this.state.loaded_content.filter(to_check => to_check.id === display_row.id), 0)
+                const row = get(this.props.contents_api.state.loaded_content.filter(to_check => to_check.id === display_row.id), 0)
                 return (
                     <ActionPanel
                         row={row}
@@ -127,7 +110,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                             Axios.patch(APP_URLS.CONTENT_ITEM(row.id), {
                                 active: is_active
                             }).then(_ => {
-                                this.load_content_rows()
+                                this.reload_rows()
                             })
                         }}
                         viewFn={() => {
@@ -159,7 +142,7 @@ export default class Content extends Component<ContentProps, ContentState> {
         this.content_defaults = {
             id: 0,
             file_name: "",
-            file_size: 0,
+            filesize: 0,
             content_file: "",
             title: "",
             description: null,
@@ -192,119 +175,38 @@ export default class Content extends Component<ContentProps, ContentState> {
         }
 
         this.state = {
-            last_request_timestamp: 0,
-            display_rows: [],
-            loaded_content: [],
             total_count: 0,
             current_page: 0,
             page_size: this.page_sizes[0],
             sorting: [],
             modals: cloneDeep(this.modal_defaults),
             search: {
-                is_open: false,
-                title: "",
-                copyright: "",
-                years_from: 0,
-                years_to: 0,
-                active: "all",
-                metadata: {},
-                filename: "",
-                file_size_from: 0,
-                file_size_to: 0,
-                reviewed_from: null,
-                reviewed_to: null
+                is_open: false
             }
         }
 
-        this.load_content_rows = this.load_content_rows.bind(this)
-        this.debounce_load_rows = this.debounce_load_rows.bind(this)
+        this.reload_rows = this.reload_rows.bind(this)
         this.close_modals = this.close_modals.bind(this)
         this.update_state = this.update_state.bind(this)
     }
 
-    //Loads rows into state from database
-    async load_content_rows() {
-        const search = this.state.search
-        const active_filter = {
-            "all": undefined,
-            "active": true,
-            "inactive": false
-        }[search.active]
-
-        //Converts years_from and years_to to a two array of the integers.
-        //Validates that years_from and years_to are valid integers and years_from <= years_to
-        //If invalid years will be undefined
-        const years: content_filters["years"] = (
-            search.years_from !== null && search.years_to !== null && search.years_from >= search.years_to
-        ) ? undefined : [search.years_from, search.years_to]
-        const file_sizes: content_filters["file_sizes"] = (
-            search.file_size_from !== null && search.file_size_to !== null && search.file_size_from >= search.file_size_to
-        ) ? undefined : [search.file_size_from, search.file_size_to]
-        const reviewed_on: content_filters["reviewed_on"] = (
-            search.reviewed_from !== null && search.reviewed_to !== null && search.reviewed_from >= search.reviewed_to
-        ) ? undefined : [search.reviewed_from, search.reviewed_to]
-
-        const filters: content_filters = {
-            years,
-            file_sizes,
-            reviewed_on,
-            title: search.title,
-            copyright: search.copyright,
-            //Turn metadata_dict back to array of integers for search
-            metadata: Object.keys(search.metadata).reduce((prev, current) => {
-                return prev.concat(search.metadata[current].map(metadata => metadata.id))
-            }, [] as number[]),
-            active: active_filter,
-            filename: search.filename,
-            sort: this.state.sorting.length > 0 ? `${this.state.sorting[0].columnName},${this.state.sorting[0].direction}` : undefined
-        }
-
-        const req_timestamp = new Date().getTime()
-
-        // Add one to page because dx-react-grid and django paging start from different places
-        get_data(APP_URLS.CONTENT_PAGE(this.state.current_page + 1, this.state.page_size, filters)).then((data: any) => {
-            // Only update the state if the request was sent after the most recent revied request
-            if (req_timestamp >= this.state.last_request_timestamp) {
-                //Adds the MetadataTypes defined in content_displayy as a key to each item in row so it can be easily accessed
-                //by dx-react-grid later
-                const rows = data.results as SerializedContent[]
-                const display_rows = cloneDeep(rows).map((row: any) => {
-                    row.metadata_info.map((info:SerializedMetadata) => {
-                        if (content_display.includes(info.type_name)) {
-                            const new_metadata_entry = get(row, [info.type_name], []).concat([info.name])
-                            set(row, [info.type_name], new_metadata_entry)
-                        }
-                    })
-                    content_display.map(type_name => {
-                        row[type_name] = get(row, [type_name], []).join(", ")
-                    })
-    
-                    return row
-                })
-    
-                this.update_state(draft => {
-                    draft.last_request_timestamp = req_timestamp
-                    draft.loaded_content = rows
-                    draft.display_rows = display_rows
-                    draft.total_count = data.count
-                })
-            }
-        })
+    componentWillMount() {
+        this.reload_rows()
     }
 
-    //Delays the function call to load_content_rows to whenev
-    debounce_load_rows = debounce(this.load_content_rows, 200)
-
-    //Initially load content roads
-    componentDidMount() {
-        this.load_content_rows()
+    async reload_rows() {
+        return this.props.contents_api.load_content_rows(
+            this.state.current_page + 1,
+            this.state.page_size,
+            this.state.sorting
+        )
     }
 
     //Resets the state of a given modal. Use this to close the modal.
     close_modals() {
         this.update_state(draft => {
             draft.modals = cloneDeep(this.modal_defaults)
-        }).then(this.load_content_rows)
+        }).then(this.reload_rows)
     }
 
     render() {
@@ -314,7 +216,13 @@ export default class Content extends Component<ContentProps, ContentState> {
             edit,
             delete_content
         } = this.state.modals
-        const metadata_api = this.props.metadata_api
+        const {
+            metadata_api,
+            contents_api
+        } = this.props
+        const {
+            search
+        } = contents_api.state
         return (
             <React.Fragment>
                 <Button
@@ -344,12 +252,12 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 <TextField
                                     fullWidth
                                     label={"Title"}
-                                    value={this.state.search.title}
+                                    value={search.title}
                                     onChange={(evt) => {
                                         evt.persist()
-                                        this.update_state(draft => {
-                                            draft.search.title = evt.target.value
-                                        }).then(this.debounce_load_rows)
+                                        contents_api.update_search_state(draft => {
+                                            draft.title = evt.target.value
+                                        }).then(this.reload_rows)
                                     }}
                                 />
                             </Grid>
@@ -357,12 +265,12 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 <TextField
                                     fullWidth
                                     label={"Filename"}
-                                    value={this.state.search.filename}
+                                    value={search.filename}
                                     onChange={(evt) => {
                                         evt.persist()
-                                        this.update_state(draft => {
-                                            draft.search.filename = evt.target.value
-                                        }).then(this.debounce_load_rows)
+                                        contents_api.update_search_state(draft => {
+                                            draft.filename = evt.target.value
+                                        }).then(this.reload_rows)
                                     }}
                                 />
                             </Grid>
@@ -370,12 +278,12 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 <TextField
                                     fullWidth
                                     label={"Copyright"}
-                                    value={this.state.search.copyright}
+                                    value={search.copyright}
                                     onChange={(evt) => {
                                         evt.persist()
-                                        this.update_state(draft => {
-                                            draft.search.copyright = evt.target.value
-                                        }).then(this.debounce_load_rows)
+                                        contents_api.update_search_state(draft => {
+                                            draft.copyright = evt.target.value
+                                        }).then(this.reload_rows)
                                     }}
                                 />
                             </Grid>
@@ -383,15 +291,15 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 <TextField
                                     fullWidth
                                     label={"Years From"}
-                                    value={this.state.search.years_from}
+                                    value={search.years_from}
                                     InputProps={{inputProps: {min: 0, max: 2100}}}
                                     type={"number"}
                                     onChange={(evt) => {
                                         evt.persist()
                                         const parsed = parseInt(evt.target.value)
-                                        this.update_state(draft => {
-                                            draft.search.years_from = isNaN(parsed) ? null : parsed
-                                        }).then(this.debounce_load_rows)
+                                        contents_api.update_search_state(draft => {
+                                            draft.years_from = isNaN(parsed) ? null : parsed
+                                        }).then(this.reload_rows)
                                     }}
                                 />
                             </Grid>
@@ -399,15 +307,15 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 <TextField
                                     fullWidth
                                     label={"Years To"}
-                                    value={this.state.search.years_to}
+                                    value={search.years_to}
                                     InputProps={{inputProps: {min: 0, max: 2100}}}
                                     type={"number"}
                                     onChange={(evt) => {
                                         evt.persist()
                                         const parsed = parseInt(evt.target.value)
-                                        this.update_state(draft => {
-                                            draft.search.years_to = isNaN(parsed) ? null : parsed
-                                        }).then(this.debounce_load_rows)
+                                        contents_api.update_search_state(draft => {
+                                            draft.years_to = isNaN(parsed) ? null : parsed
+                                        }).then(this.reload_rows)
                                     }}
                                 />
                             </Grid>
@@ -415,15 +323,15 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 <TextField
                                     fullWidth
                                     label={"Filesize From"}
-                                    value={this.state.search.file_size_from}
+                                    value={search.file_size_from}
                                     InputProps={{inputProps: {min: 0, max: 1000000000000}}}
                                     type={"number"}
                                     onChange={(evt) => {
                                         evt.persist()
                                         const parsed = parseInt(evt.target.value)
-                                        this.update_state(draft => {
-                                            draft.search.file_size_from = isNaN(parsed) ? null : parsed
-                                        }).then(this.debounce_load_rows)
+                                        contents_api.update_search_state(draft => {
+                                            draft.file_size_from = isNaN(parsed) ? null : parsed
+                                        }).then(this.reload_rows)
                                     }}
                                 />
                             </Grid>
@@ -431,15 +339,15 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 <TextField
                                     fullWidth
                                     label={"Filesize To"}
-                                    value={this.state.search.file_size_to}
+                                    value={search.file_size_to}
                                     InputProps={{inputProps: {min: 0, max: 1000000000000}}}
                                     type={"number"}
                                     onChange={(evt) => {
                                         evt.persist()
                                         const parsed = parseInt(evt.target.value)
-                                        this.update_state(draft => {
-                                            draft.search.file_size_to = isNaN(parsed) ? null : parsed
-                                        }).then(this.debounce_load_rows)
+                                        contents_api.update_search_state(draft => {
+                                            draft.file_size_to = isNaN(parsed) ? null : parsed
+                                        }).then(this.reload_rows)
                                     }}
                                 />
                             </Grid>
@@ -447,12 +355,12 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 <KeyboardDatePicker
                                     variant={"inline"}
                                     format={"MM/dd/yyyy"}
-                                    value={this.state.search.reviewed_from}
+                                    value={search.reviewed_from}
                                     label={"Reviewed From"}
                                     onChange={value => {
-                                        this.update_state(draft => {
-                                            draft.search.reviewed_from = value
-                                        }).then(this.debounce_load_rows)
+                                        contents_api.update_search_state(draft => {
+                                            draft.reviewed_from = value
+                                        }).then(this.reload_rows)
                                     }}
                                 />
                             </Grid>
@@ -460,12 +368,12 @@ export default class Content extends Component<ContentProps, ContentState> {
                                 <KeyboardDatePicker
                                     variant={"inline"}
                                     format={"MM/dd/yyyy"}
-                                    value={this.state.search.reviewed_to}
+                                    value={search.reviewed_to}
                                     label={"Reviewed To"}
                                     onChange={value => {
-                                        this.update_state(draft => {
-                                            draft.search.reviewed_to = value
-                                        }).then(this.debounce_load_rows)
+                                        contents_api.update_search_state(draft => {
+                                            draft.reviewed_to = value
+                                        }).then(this.reload_rows)
                                     }}
                                 />
                             </Grid>
@@ -474,11 +382,11 @@ export default class Content extends Component<ContentProps, ContentState> {
                                     <Select
                                         style={{alignSelf: "bottom"}}
                                         label={"Active"}
-                                        value={this.state.search.active}
+                                        value={search.active}
                                         onChange={(event) => {
-                                            this.update_state(draft => {
-                                                draft.search.active = event.target.value as active_search_option
-                                            }).then(this.debounce_load_rows)
+                                            contents_api.update_search_state(draft => {
+                                                draft.active = event.target.value as active_search_option
+                                            }).then(this.reload_rows)
                                         }}
                                     >
                                         <MenuItem value={"all"}>All</MenuItem>
@@ -504,9 +412,9 @@ export default class Content extends Component<ContentProps, ContentState> {
                                                 />
                                             )}
                                             onChange={(_evt, values) => {
-                                                this.update_state(draft => {
-                                                    draft.search.metadata[metadata_type] = values
-                                                }).then(this.debounce_load_rows)
+                                                contents_api.update_search_state(draft => {
+                                                    draft.metadata[metadata_type] = values
+                                                }).then(this.reload_rows)
                                             }}
                                         />
                                     </Grid>
@@ -518,14 +426,14 @@ export default class Content extends Component<ContentProps, ContentState> {
                 <br />
                 <DataGrid
                     columns={this.columns}
-                    rows={this.state.display_rows}
+                    rows={contents_api.state.display_rows}
                 >
                     <SortingState
                         sorting={this.state.sorting}
                         onSortingChange={(sorting) => {
                             this.update_state(draft => {
                                 draft.sorting = sorting
-                            }).then(this.load_content_rows)
+                            }).then(this.reload_rows)
                         }}
                         columnExtensions={this.columns.map(column => {
                             return {
@@ -539,13 +447,13 @@ export default class Content extends Component<ContentProps, ContentState> {
                         onCurrentPageChange={(current_page: number) => {
                             this.update_state(draft => {
                                 draft.current_page = current_page
-                            }).then(this.load_content_rows)
+                            }).then(this.reload_rows)
                         }}
                         pageSize={this.state.page_size}
                         onPageSizeChange={(page_size: number) => {
                             this.update_state(draft => {
                                 draft.page_size = page_size
-                            }).then(this.load_content_rows)
+                            }).then(this.reload_rows)
                         }}
                     />
                     <CustomPaging totalCount={this.state.total_count}/>
@@ -561,7 +469,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                             key={1}
                             onClick={()=> {
                                 Axios.delete(APP_URLS.CONTENT_ITEM(delete_content.row.id))
-                                this.load_content_rows()
+                                this.reload_rows()
                                 this.close_modals()
                             }}
                             color="secondary"
@@ -623,67 +531,12 @@ export default class Content extends Component<ContentProps, ContentState> {
                     }}
                     show_toast_message={this.props.show_toast_message}
                 />
-                <ActionDialog
-                    title={"View Content Item"}
-                    open={view.is_open}
-                    actions={[(
-                        <Button
-                            key={1}
-                            onClick={this.close_modals}
-                            color="secondary"
-                        >
-                            Close
-                        </Button>
-                    )]}
-                >
-                    <Grid container>
-                        <Grid item xs={4}>
-                            {[
-                                ["Title", view.row.title],
-                                ["Description", view.row.description],
-                                ["Filename", <a href={new URL(view.row.file_name, APP_URLS.CONTENT_FOLDER).href}>{view.row.file_name}</a>],
-                                ["Year Published", view.row.published_year],
-                                ["Reviewed On", view.row.reviewed_on],
-                                ["Copyright", view.row.copyright],
-                                ["Rights Statement", view.row.rights_statement],
-                                ["File Size", isUndefined(view.row.file_size) ? 0 : prettyBytes(view.row.file_size)]
-                            ].map(([title, value], idx) => {
-                                return (
-                                    <Container style={{marginBottom: "1em"}} key={idx}>
-                                        <Typography variant={"h6"}>{title}</Typography>
-                                        <Typography>{value === null ? <i>Not Available</i> : value}</Typography>
-                                    </Container>
-                                )
-                            })}
-                            {this.props.metadata_api.state.metadata_types.map((metadata_type: SerializedMetadataType) => {
-                                return (
-                                    <Container key={metadata_type.id} style={{marginBottom: "1em"}}>
-                                        <Typography variant={"h6"}>{metadata_type.name}</Typography>
-                                        <Paper>
-                                            {view.row.metadata_info?.filter(value => value.type_name == metadata_type.name).map((metadata, idx) => (
-                                                    <li key={idx} style={{listStyle: "none"}}>
-                                                        <Chip
-                                                            label={metadata.name}
-                                                        />
-                                                    </li>
-                                                ))
-                                            }
-                                        </Paper>
-                                    </Container>
-                                )
-                            })}
-                            
-                        </Grid>
-                        <Grid item xs={8}>
-                            {view.is_open ? (
-                                <object
-                                    style={{maxWidth: "100%"}}
-                                    data={new URL(view.row.file_name, APP_URLS.CONTENT_FOLDER).href}
-                                />
-                            ) : null}
-                        </Grid>
-                    </Grid>
-                </ActionDialog>
+                <ViewContentModal
+                    is_open={view.is_open}
+                    metadata_api={metadata_api}
+                    on_close={this.close_modals}
+                    row={view.row}
+                />
             </React.Fragment>
         )
     }

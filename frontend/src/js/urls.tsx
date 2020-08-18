@@ -49,12 +49,16 @@ const APP_URLS = {
     CONTENT_FOLDER: url_with_params("media/contents/"),
     LIBRARY_ASSETS: url_with_params(`${api_path}/lib_layout_images/`),
     LIBRARY_ASSET_ITEM: (id: number) => url_with_params(`${api_path}/lib_layout_images/${id}/`),
+    LIBRARY_VERSIONS: url_with_params(`${api_path}/library_versions/`),
+    LIBRARY_ROOT_FOLDERS: (id:number) => url_with_params(`${api_path}/library_versions/${id}/root/`),
+    LIBRARY_FOLDER_CONTENTS: (id: number) => url_with_params(`${api_path}/library_folders/${id}/contents/`),
     METADATA: url_with_params(`${api_path}/metadata/`),
     METADATA_ITEM: (id: number) => url_with_params(`${api_path}/metadata/${id}/`),
     METADATA_TYPE: (id: number) => url_with_params(`${api_path}/metadata_types/${id}/`),
     METADATA_TYPES: url_with_params(`${api_path}/metadata_types/`),
     METADATA_BY_TYPE: (type: string) => url_with_params(`${api_path}/metadata/${type}/get/`),
-    METADATA_SHEET: (metadata_type: string) => url_with_params(`${api_path}/spreadsheet/metadata/${metadata_type}`)
+    METADATA_SHEET: (metadata_type: string) => url_with_params(`${api_path}/spreadsheet/metadata/${metadata_type}`),
+    USERS: url_with_params(`${api_path}/users/`),
 }
 
 //Transforms url into a promise containing the data or error from that api call

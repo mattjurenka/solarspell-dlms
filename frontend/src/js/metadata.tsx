@@ -529,7 +529,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     </Typography>
                     <TextField
                         fullWidth
-                        error={this.state.modals.delete_type.confirm_text.reason === ""}
+                        error={this.state.modals.delete_type.confirm_text.reason !== ""}
                         helperText={this.state.modals.delete_type.confirm_text.reason}
                         value={this.state.modals.delete_type.confirm_text.value}
                         onChange={(evt) => {

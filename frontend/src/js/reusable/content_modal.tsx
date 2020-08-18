@@ -10,19 +10,8 @@ import { update_state, get_string_from_error, get_field_info_default } from '../
 
 import { KeyboardDatePicker }   from '@material-ui/pickers';
 import { format } from 'date-fns'
-import { WrappedFieldInfo, metadata_dict, SerializedContent, MetadataAPI, SerializedMetadata, SerializedMetadataType } from 'js/types'
+import { WrappedFieldInfo, metadata_dict, SerializedContent, MetadataAPI, SerializedMetadata, SerializedMetadataType, content_fields } from 'js/types'
 
-
-type content_fields = {
-    content_file:       File|null
-    title:              string
-    description:        string
-    year:               string
-    reviewed_on:        Date|null
-    metadata:           metadata_dict
-    copyright:          string
-    rights_statement:   string
-}
 
 interface ContentModalProps {
     is_open: boolean

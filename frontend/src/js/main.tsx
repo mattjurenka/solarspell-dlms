@@ -21,8 +21,10 @@ import library_assets from "../images/home_icons/library_assets.png"
 import { Snackbar } from '@material-ui/core';
 import { Alert } from '@material-ui/lab';
 import { update_state } from './utils';
-import { MetadataContext } from './context/contexts';
-import { TabDict, MetadataAPI } from './types';
+import { MetadataContext, LibraryAssetsContext, LibraryVersionsContext, UsersContext, ContentsContext } from './context/contexts';
+import { TabDict, MetadataAPI, LibraryAssetsAPI, LibraryVersionsAPI } from './types';
+import LibraryAssets from './library_assets';
+import Libraries from './libraries';
 
 interface MainScreenProps {}
 
@@ -68,12 +70,20 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                 component: () => (
                         <MetadataContext.Consumer>
                             {(value: MetadataAPI) => {
+                                const metadata_api = value
                                 return(
-                                    <Content
-                                        metadata_api={value}
-                                        show_toast_message={this.show_toast_message}
-                                        close_toast={this.close_toast}
-                                    />
+                                    <ContentsContext.Consumer>
+                                        {(value) => {
+                                            return (
+                                                <Content
+                                                    metadata_api={metadata_api}
+                                                    show_toast_message={this.show_toast_message}
+                                                    close_toast={this.close_toast}
+                                                    contents_api={value}
+                                                />
+                                            )
+                                        }}
+                                    </ContentsContext.Consumer>
                                 )
                             }}
                         </MetadataContext.Consumer>
@@ -82,12 +92,49 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
             },
             "library_assets": {
                 display_label: "Library Assets",
-                component: () => <h1>Library Asset</h1>,
+                component: () => (
+                    <LibraryAssetsContext.Consumer>
+                        {(value: LibraryAssetsAPI) => {
+                            return (
+                                <LibraryAssets
+                                    library_assets_api={value}
+                                />
+                            )
+                        }}
+                    </LibraryAssetsContext.Consumer>
+                ),
                 icon: library_assets
             },
             "libraries": {
                 display_label: "Libraries",
-                component: () => <h1>libraries</h1>,
+                component: () => (
+                    //TODO: refractor
+                    <LibraryVersionsContext.Consumer>
+                        {(value: LibraryVersionsAPI) => {
+                            const lib_versions_api = value
+                            return (<LibraryAssetsContext.Consumer>
+                                {(value: LibraryAssetsAPI) => {
+                                    const lib_assets_api = value
+                                    return (<UsersContext.Consumer>
+                                        {value => {
+                                            const users_api = value
+                                            return (<MetadataContext.Consumer>
+                                                {value => {
+                                                    return (<Libraries 
+                                                        library_versions_api={lib_versions_api}
+                                                        library_assets_api={lib_assets_api}
+                                                        users_api={users_api}
+                                                        metadata_api={value}
+                                                    />)
+                                                }}
+                                            </MetadataContext.Consumer>)
+                                        }}
+                                    </UsersContext.Consumer>)
+                                }}
+                            </LibraryAssetsContext.Consumer>)
+                        }}
+                    </LibraryVersionsContext.Consumer>
+                ),
                 icon: library_versions
             },
             "images": {

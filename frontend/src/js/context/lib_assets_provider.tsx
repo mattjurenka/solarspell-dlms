@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
 import { update_state } from '../utils';
 import { get_data, APP_URLS } from '../urls';
-import { isString } from 'lodash';
+import { isString, range, set } from 'lodash';
 import Axios from 'axios';
-import { LibraryAssetsState, LibraryAsset, AssetGroup } from 'js/types';
+import { LibraryAssetsState, LibraryAsset, AssetGroup } from '../types';
 import { LibraryAssetsContext } from './contexts';
 
 
@@ -21,7 +21,13 @@ export default class LibAssetsProvider extends Component<{}, LibraryAssetsState>
                 is_error: false,
                 message: ""
             },
-            assets: []
+            assets: [],
+            assets_by_group: {},
+            group_name: {
+                1: "logo",
+                2: "banner",
+                3: "version"
+            }
         }
 
         this._set_error_state = this._set_error_state.bind(this)
@@ -34,6 +40,7 @@ export default class LibAssetsProvider extends Component<{}, LibraryAssetsState>
     }
 
     componentDidMount() {
+        console.log("yes")
         this.refresh_assets()
     }
 
@@ -60,15 +67,23 @@ export default class LibAssetsProvider extends Component<{}, LibraryAssetsState>
                     is_error: false,
                     message: ""
                 }
-                draft.assets = library_assets
+                draft.assets = library_assets,
+                draft.assets_by_group = range(1, 4).reduce((acc, group) => {
+                    return set(acc, group, library_assets.filter(asset => asset.image_group === group))
+                }, {})
             })
         }, this._set_error_state)
     }
 
     async add_library_asset(image: File, group: AssetGroup) {
-        return Axios.post(APP_URLS.LIBRARY_ASSETS, {
-            image_file: image,
-            image_group: group
+        const data = new FormData()
+        data.append("image_file", image)
+        data.append("image_group", group.toString())
+
+        return Axios.post(APP_URLS.LIBRARY_ASSETS, data, {
+            headers: {
+                'Content-Type': 'multitype/form-data'
+            }
         }).finally(this.refresh_assets)
     }
 

@@ -62,4 +62,22 @@ export default class VALIDATORS {
     static DELETE_IF_EQUALS<T>(input_str: T, to_delete: T) {
         return isEqual(input_str, to_delete) ? "" : `Input must equal ${to_delete}`
     }
+    static VERSION_NAME(to_check: any) {
+        if (!isString(to_check)) {
+            return "Input must be a string"
+        }
+        if (to_check.length < 0 || to_check.length > 300) {
+            return "Input must be between 0 and 300 characters"
+        }
+        return ""
+    }
+    static VERSION_NUMBER(to_check: any) {
+        if (!isString(to_check)) {
+            return "Input must be a string"
+        }
+        if (to_check.length < 0 || to_check.length > 300) {
+            return "Input must be between 0 and 300 characters"
+        }
+        return ""
+    }
 }

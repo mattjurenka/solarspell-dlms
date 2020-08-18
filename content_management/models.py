@@ -27,6 +27,7 @@ class Content(models.Model):
     def set_file_name(self, file_name):
         path = os.path.join("contents", file_name)
         self.filesize = os.path.getsize(path)
+        self.save()
         return path
 
     content_file = models.FileField(
@@ -87,6 +88,9 @@ class LibLayoutImage(models.Model):
     image_file = models.FileField(upload_to=get_folder_name)
     image_group = models.PositiveSmallIntegerField(choices=GROUPS, default=3)
 
+    def file_name(self):
+        return os.path.basename(self.image_file.name)
+
     def __str__(self):
         return f'{self.image_file.name}'
 
@@ -94,8 +98,9 @@ class LibLayoutImage(models.Model):
 class LibraryVersion(models.Model):
     library_name = models.CharField(max_length=300)
     version_number = models.CharField(max_length=300)
-    library_banner = models.ForeignKey(LibLayoutImage, related_name="versions", on_delete=models.SET_NULL,
-                                       null=True)
+    library_banner = models.ForeignKey(
+        LibLayoutImage, related_name="versions", on_delete=models.SET_NULL, null=True
+    )
 
     def __str__(self):
         return f'[{self.library_name}]{self.version_number}'
@@ -111,3 +116,6 @@ class LibraryFolder(models.Model):
 
     def __str__(self):
         return f'{self.folder_name}'
+
+class User(models.Model):
+    name = models.CharField(max_length=300)
