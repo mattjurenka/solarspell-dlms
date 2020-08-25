@@ -24,12 +24,12 @@ import {
     TableFilterRow
 } from "@devexpress/dx-react-grid-material-ui"
 
-import ActionPanel from "./action_panel"
-import ActionDialog from './action_dialog'
-import excel_icon from '../images/excel_icon.png'; 
-import { Edit, Delete } from '@material-ui/icons'
+import ActionPanel from "./reusable/action_panel"
+import ActionDialog from './reusable/action_dialog'
 import { update_state, get_field_info_default } from './utils'
 import VALIDATORS from './validators'
+import KebabMenu from './reusable/kebab_menu'
+import { MetadataAPI, SerializedMetadataType, SerializedMetadata, field_info } from './types'
 
 interface MetadataProps {
     metadata_api: MetadataAPI
@@ -202,44 +202,35 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                                 <Typography style={{
                                     fontWeight: 600
                                 }}>{metadata_type.name}</Typography>
-                                <Edit
-                                    style={{cursor: "pointer"}}
-                                    onClick={() => {
-                                        this.update_state(draft => {
-                                            draft.modals.edit_type.old_type = metadata_type
-                                            draft.modals.edit_type.is_open = true
-                                        })
-                                    }}
-                                />
-                                <Delete
-                                    style={{cursor: "pointer"}}
-                                    onClick={() => {
-                                        this.update_state(draft => {
-                                            draft.modals.delete_type.meta_type = metadata_type
-                                            draft.modals.delete_type.is_open = true
-                                        })
-                                    }}
-                                />
                             </Grid>
                             <Grid item xs={6} style={{
                                 textAlign: "right"
                             }}>
-                                <a href={APP_URLS.METADATA_SHEET(metadata_type.name)} target="_blank">
-                                    <img src={excel_icon} style={{maxWidth: "40px", maxHeight: "40px", marginRight: "10px"}}/>
-                                </a>
-                                <Button
-                                    onClick={_ => {
-                                        this.update_state(draft => {
-                                            draft.modals.create_meta.meta_type = metadata_type
-                                            draft.modals.create_meta.is_open = true
-                                        })
-                                    }}
-                                    style={{
-                                        backgroundColor: "#75b2dd",
-                                        color: "#FFFFFF",
-                                        marginTop: "0px"
-                                    }}
-                                >New Metadata</Button>
+                                <KebabMenu
+                                    items={[
+                                        [() => {
+                                            this.update_state(draft => {
+                                                draft.modals.create_meta.meta_type = metadata_type
+                                                draft.modals.create_meta.is_open = true
+                                            })
+                                        }, "Add Metadata"],
+                                        [() => {
+                                            this.update_state(draft => {
+                                                draft.modals.edit_type.old_type = metadata_type
+                                                draft.modals.edit_type.is_open = true
+                                            })
+                                        }, "Edit Metadata Type"],
+                                        [() => {
+                                            this.update_state(draft => {
+                                                draft.modals.delete_type.meta_type = metadata_type
+                                                draft.modals.delete_type.is_open = true
+                                            })
+                                        }, "Delete Metadata Type"],
+                                        [() => {
+                                            window.open(APP_URLS.METADATA_SHEET(metadata_type.name))
+                                        }, "Download Spreadsheet"]
+                                    ]}
+                                />
                             </Grid>
                         </Grid>
                     </ExpansionPanelSummary>
@@ -538,7 +529,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     </Typography>
                     <TextField
                         fullWidth
-                        error={this.state.modals.delete_type.confirm_text.reason === ""}
+                        error={this.state.modals.delete_type.confirm_text.reason !== ""}
                         helperText={this.state.modals.delete_type.confirm_text.reason}
                         value={this.state.modals.delete_type.confirm_text.value}
                         onChange={(evt) => {

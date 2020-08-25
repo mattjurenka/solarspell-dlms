@@ -3,11 +3,13 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from content_management.models import (
-    Content, Metadata, MetadataType, LibLayoutImage, LibraryVersion, LibraryFolder)
+    Content, Metadata, MetadataType, LibLayoutImage, LibraryVersion,
+    LibraryFolder, User
+    )
 from content_management.utils import ContentSheetUtil, LibraryBuildUtil
 
 from content_management.serializers import ContentSerializer, MetadataSerializer, MetadataTypeSerializer, \
-    LibLayoutImageSerializer, LibraryVersionSerializer, LibraryFolderSerializer
+    LibLayoutImageSerializer, LibraryVersionSerializer, LibraryFolderSerializer, UserSerializer
 
 from content_management.standardize_format import build_response
 from content_management.paginators import PageNumberSizePagination
@@ -155,15 +157,50 @@ class LibLayoutImageViewSet(StandardDataView, viewsets.ModelViewSet):
     queryset = LibLayoutImage.objects.all()
     serializer_class = LibLayoutImageSerializer
 
+class UserViewSet(StandardDataView, viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
 class LibraryVersionViewSet(StandardDataView, viewsets.ModelViewSet):
     queryset = LibraryVersion.objects.all()
     serializer_class = LibraryVersionSerializer
+    folder_serializer = LibraryFolderSerializer
+
+    @action(methods=['get'], detail=True)
+    def root(self, request, pk=None):
+        return build_response(LibraryFolderSerializer(
+                LibraryFolder.objects.filter(version=pk, parent=None).order_by("id"),
+                many=True
+            ).data if pk is not None else []
+        )
+
 
 
 class LibraryFolderViewSet(StandardDataView, viewsets.ModelViewSet):
     queryset = LibraryFolder.objects.all()
     serializer_class = LibraryFolderSerializer
+
+    @action(methods=['get'], detail=True)
+    def contents(self, request, pk=None):
+        if pk is None:
+            return build_response(
+                status=status.HTTP_400_BAD_REQUEST,
+                success=False,
+                error="No Folder ID supplied"
+                )
+        else:
+            return build_response(
+                {
+                    "folders": self.get_serializer(
+                        self.get_queryset().filter(parent=pk).order_by("id"),
+                        many=True
+                    ).data,
+                    "files": ContentSerializer(
+                        self.get_queryset().get(id=pk).library_content,
+                        many=True
+                    ).data
+                }
+            )
 
 class ContentSheetView(views.APIView):
 

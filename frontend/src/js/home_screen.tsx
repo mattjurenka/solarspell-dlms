@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import { Grid } from "@material-ui/core";
+import { TabDict, TabData } from './types';
 
 interface HomeScreenProps {
     tabs: TabDict,

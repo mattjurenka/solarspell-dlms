@@ -2,26 +2,16 @@ import ActionDialog from "./action_dialog"
 import { cloneDeep, isEqual, set, isNull, isUndefined } from "lodash"
 import { Button, TextField, Grid } from "@material-ui/core"
 import Axios, { AxiosResponse } from "axios"
-import { APP_URLS } from "./urls"
+import { APP_URLS } from "../urls"
 import { Autocomplete, createFilterOptions } from "@material-ui/lab"
 import { Component, RefObject } from 'react'
 import React from 'react'
-import { update_state, get_string_from_error, get_field_info_default } from './utils'
+import { update_state, get_string_from_error, get_field_info_default } from '../utils'
 
 import { KeyboardDatePicker }   from '@material-ui/pickers';
 import { format } from 'date-fns'
+import { WrappedFieldInfo, metadata_dict, SerializedContent, MetadataAPI, SerializedMetadata, SerializedMetadataType, content_fields } from 'js/types'
 
-
-type content_fields = {
-    content_file:       File|null
-    title:              string
-    description:        string
-    year:               string
-    reviewed_on:        Date|null
-    metadata:           metadata_dict
-    copyright:          string
-    rights_statement:   string
-}
 
 interface ContentModalProps {
     is_open: boolean
@@ -167,7 +157,6 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                     }
                                 })
 
-                                console.log("here")
                                 //We have to do this weird pattern so the only caught errors in this promise chain come from the axios call
                                 const axios_response = this.props.modal_type === "add" ?
                                     Axios.post(APP_URLS.CONTENT, formData, {

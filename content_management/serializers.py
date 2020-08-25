@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 from content_management.models import (
-    Content, Metadata, MetadataType,
+    Content, Metadata, MetadataType, User,
     LibraryVersion, LibraryFolder, LibLayoutImage)
 
 class ContentSerializer(ModelSerializer):
@@ -26,7 +26,7 @@ class MetadataTypeSerializer(ModelSerializer):
 class LibLayoutImageSerializer(ModelSerializer):
     class Meta:
         model = LibLayoutImage
-        fields = '__all__'
+        fields = ("id", "image_file", "image_group", "file_name")
 
 
 class LibraryVersionSerializer(ModelSerializer):
@@ -38,4 +38,9 @@ class LibraryVersionSerializer(ModelSerializer):
 class LibraryFolderSerializer(ModelSerializer):
     class Meta:
         model = LibraryFolder
+        fields = '__all__'
+
+class UserSerializer(ModelSerializer):
+    class Meta:
+        model = User
         fields = '__all__'

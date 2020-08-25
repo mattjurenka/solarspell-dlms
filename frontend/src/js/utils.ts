@@ -1,5 +1,6 @@
 import { get, isString } from 'lodash'
 import { produce } from 'immer'
+import { SerializedMetadata, field_info } from './types'
 
 // Gets a SerlializedMetadata given an array of SerializedMetadata and an id to look for
 // If none found, return null
@@ -16,7 +17,7 @@ export const get_metadata = (metadata: SerializedMetadata[], id: number): Serial
 //   this.update_state = update_state.bind(this)
 //
 // Make sure the type of this.update_state is
-//   (update_func: (draft: COMPONENT_STATE_TYPE) => void) => Promise<void>
+//   update_func: (draft: COMPONENT_STATE_TYPE) => void) => Promise<void>
 //
 // Usage example:
 // this.update_state(draft => {
