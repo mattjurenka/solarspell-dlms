@@ -202,7 +202,7 @@ class LibraryFolderViewSet(StandardDataView, viewsets.ModelViewSet):
                 }
             )
 
-class ContentSheetView(views.APIView):
+class BulkAddView(views.APIView):
 
     def post(self, request):
         sheet_util = ContentSheetUtil()

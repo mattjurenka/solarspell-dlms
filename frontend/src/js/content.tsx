@@ -30,12 +30,15 @@ import ContentModal from './reusable/content_modal';
 import { KeyboardDatePicker } from '@material-ui/pickers';
 import { MetadataAPI, SerializedContent, SerializedMetadata, active_search_option, ContentsAPI } from './types';
 import { ViewContentModal } from './reusable/view_content_modal';
+import BulkContentModal from "./reusable/bulk_content_modal";
 
 interface ContentProps {
     metadata_api: MetadataAPI
     contents_api: ContentsAPI
-    show_toast_message: (message: string) => void
+    show_toast_message: (message: string, is_success: boolean) => void
     close_toast: () => void
+    show_loader: () => void
+    remove_loader: () => void
 }
 
 interface ContentState {
@@ -64,9 +67,11 @@ interface ContentModals {
     delete_content: {
         is_open: boolean
         row: SerializedContent
-    }   
+    }
+    bulk_add: {
+        is_open: boolean
+    }
 }
-
 
 export default class Content extends Component<ContentProps, ContentState> {
     columns: Column[]
@@ -171,6 +176,9 @@ export default class Content extends Component<ContentProps, ContentState> {
             delete_content: {
                 is_open: false,
                 row: this.content_defaults
+            },
+            bulk_add: {
+                is_open: false,
             }
         }
 
@@ -214,7 +222,8 @@ export default class Content extends Component<ContentProps, ContentState> {
             add,
             view,
             edit,
-            delete_content
+            delete_content,
+            bulk_add
         } = this.state.modals
         const {
             metadata_api,
@@ -237,7 +246,22 @@ export default class Content extends Component<ContentProps, ContentState> {
                         backgroundColor: "#75b2dd",
                         color: "#FFFFFF"
                     }}
-                >New Content</Button>
+                >New Content
+                </Button>
+                <Button
+                    onClick={_ => {
+                        this.update_state(draft => {
+                            draft.modals.bulk_add.is_open = true
+                        })
+                    }}
+                    style={{
+                        marginLeft: "1em",
+                        marginBottom: "1em",
+                        backgroundColor: "#75b2dd",
+                        color: "#FFFFFF"
+                    }}
+                >Add Bulk Content
+                </Button>
                 <ExpansionPanel expanded={this.state.search.is_open} onChange={(_:any, expanded: boolean) => {
                     this.update_state(draft => {
                         draft.search.is_open = expanded
@@ -508,6 +532,8 @@ export default class Content extends Component<ContentProps, ContentState> {
                         rights_statement: VALIDATORS.RIGHTS_STATEMENT
                     }}
                     show_toast_message={this.props.show_toast_message}
+                    show_loader={this.props.show_loader}
+                    remove_loader={this.props.remove_loader}
                 />
                 <ContentModal
                     is_open={edit.is_open}
@@ -530,6 +556,8 @@ export default class Content extends Component<ContentProps, ContentState> {
                         rights_statement: VALIDATORS.RIGHTS_STATEMENT
                     }}
                     show_toast_message={this.props.show_toast_message}
+                    show_loader={this.props.show_loader}
+                    remove_loader={this.props.remove_loader}
                 />
                 <ViewContentModal
                     is_open={view.is_open}
@@ -537,6 +565,17 @@ export default class Content extends Component<ContentProps, ContentState> {
                     on_close={this.close_modals}
                     row={view.row}
                 />
+                <BulkContentModal
+                    is_open={bulk_add.is_open}
+                    on_close={() => {
+                        this.update_state(draft => {
+                            draft.modals.bulk_add.is_open = false
+                        })
+                    }}
+                    show_toast_message={this.props.show_toast_message}
+                    show_loader={this.props.show_loader}
+                    remove_loader={this.props.remove_loader}>
+               </BulkContentModal>
             </React.Fragment>
         )
     }

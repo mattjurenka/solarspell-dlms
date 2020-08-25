@@ -1,6 +1,8 @@
 import { get, isString } from 'lodash'
 import { produce } from 'immer'
+import XLSX from 'xlsx'
 import { SerializedMetadata, field_info } from './types'
+
 
 // Gets a SerlializedMetadata given an array of SerializedMetadata and an id to look for
 // If none found, return null
@@ -74,3 +76,21 @@ export function get_field_info_default<T>(value: T): field_info<T> {
         reason: ""
     }
 }
+//converts excel sheet data to JSON Format
+export function read_excel_file(fileUploaded: File | null | undefined) {
+    return new Promise( getData => {
+      const readFile = new FileReader();
+      readFile.onload = () => {
+        const storeData: any = readFile.result;
+        const data = new Uint8Array(storeData);
+        const arr = new Array();
+        for (let i = 0; i !== data.length; ++i) { arr[i] = String.fromCharCode(data[i]); }
+        const bstr = arr.join('');
+        const workbook = XLSX.read(bstr, { type: 'binary' });
+        const firstSheetName = workbook.SheetNames[0];
+        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], { raw: true, defval: ''});
+        getData(JSON.stringify(jsonData));
+      };
+      readFile.readAsArrayBuffer(fileUploaded!);
+    });
+  }

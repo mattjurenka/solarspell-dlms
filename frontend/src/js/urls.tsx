@@ -46,6 +46,7 @@ const APP_URLS = {
         return url_with_params(`${api_path}/contents/`, filters_arr)
     },
     CONTENT_ITEM: (id: number) => url_with_params(`${api_path}/contents/${id}/`),
+    CONTENT_BULK: url_with_params(`${api_path}/content_bulk_add/`),
     CONTENT_FOLDER: url_with_params("media/contents/"),
     LIBRARY_ASSETS: url_with_params(`${api_path}/lib_layout_images/`),
     LIBRARY_ASSET_ITEM: (id: number) => url_with_params(`${api_path}/lib_layout_images/${id}/`),

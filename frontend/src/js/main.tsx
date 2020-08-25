@@ -17,8 +17,7 @@ import library_versions from "../images/home_icons/library_versions.png"
 import metadata from "../images/home_icons/metadata.png"
 import solarspell_images from "../images/home_icons/solarspell_images.png"
 import library_assets from "../images/home_icons/library_assets.png"
-
-import { Snackbar } from '@material-ui/core';
+import { Snackbar, CircularProgress, Box} from '@material-ui/core';
 import { Alert } from '@material-ui/lab';
 import { update_state } from './utils';
 import { MetadataContext, LibraryAssetsContext, LibraryVersionsContext, UsersContext, ContentsContext } from './context/contexts';
@@ -34,6 +33,10 @@ interface MainScreenState {
     toast_state: {
         message: string
         is_open: boolean
+        is_success: boolean
+    }
+    loader_state: {
+        loading: boolean
     }
 }
 
@@ -80,6 +83,8 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                                                     show_toast_message={this.show_toast_message}
                                                     close_toast={this.close_toast}
                                                     contents_api={value}
+                                                    show_loader={this.show_loader}
+                                                    remove_loader={this.remove_loader}
                                                 />
                                             )
                                         }}
@@ -163,12 +168,18 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                 (tab_value in this.tabs ? tab_value : default_tab),
             toast_state: {
                 message: "",
-                is_open: false
+                is_open: false,
+                is_success: false
+            },
+            loader_state:{
+                loading:false
             }
         }
 
         this.close_toast = this.close_toast.bind(this)
         this.show_toast_message = this.show_toast_message.bind(this)
+        this.show_loader = this.show_loader.bind(this)
+        this.remove_loader = this.remove_loader.bind(this)
         this.update_state = update_state.bind(this)
     }
 
@@ -181,10 +192,11 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
     }
 
     //Opens the toast message and shows the window
-    show_toast_message(message: string) {
+    show_toast_message(message: string, is_success: boolean) {
         this.update_state(draft => {
             draft.toast_state.is_open = true
             draft.toast_state.message = message
+            draft.toast_state.is_success = is_success
         })
     }
 
@@ -196,6 +208,16 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
             draft.current_tab = new_tab
         }).then(() => {
             history.replaceState({}, "DLMS", this.state.url.toString())
+        })
+    }
+    show_loader(){
+        this.update_state(draft => {
+            draft.loader_state.loading = true
+        })
+    }
+    remove_loader(){
+        this.update_state(draft => {
+            draft.loader_state.loading = false
         })
     }
 
@@ -229,10 +251,21 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                     onClose={this.close_toast}
                     autoHideDuration={6000}
                 >
-                    <Alert severity="error">
+                    <Alert severity={this.state.toast_state.is_success ? "success" : "error"}>
                         {this.state.toast_state.message}
                     </Alert>
                 </Snackbar>
+                <Box
+                    position="absolute"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    top = "50%"
+                    right = "50%"
+                    zIndex = "10001"
+                >
+                {this.state.loader_state.loading && <CircularProgress color="primary"/>}
+                </Box>
             </React.Fragment>
         )
     }
