@@ -94,6 +94,11 @@ class LibLayoutImage(models.Model):
     def __str__(self):
         return f'{self.image_file.name}'
 
+class User(models.Model):
+    name = models.CharField(max_length=300)
+
+    def __str__(self):
+        return f'User<{self.name}>'
 
 class LibraryVersion(models.Model):
     library_name = models.CharField(max_length=300)
@@ -101,6 +106,8 @@ class LibraryVersion(models.Model):
     library_banner = models.ForeignKey(
         LibLayoutImage, related_name="versions", on_delete=models.SET_NULL, null=True
     )
+    created_on = models.DateTimeField(default=datetime.now)
+    created_by = models.ForeignKey(User, related_name="versions", on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
         return f'[{self.library_name}]{self.version_number}'
@@ -117,5 +124,3 @@ class LibraryFolder(models.Model):
     def __str__(self):
         return f'{self.folder_name}'
 
-class User(models.Model):
-    name = models.CharField(max_length=300)
