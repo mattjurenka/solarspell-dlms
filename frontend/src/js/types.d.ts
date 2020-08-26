@@ -85,7 +85,9 @@ type LibraryVersionsAPI = {
     refresh_library_versions: () => Promise<any>
     enter_version_root: (version: LibraryVersion) => Promise<any>
     enter_folder: (folder: LibraryFolder) => Promise<any>
+    enter_parent: () => Promise<any>
     add_version: (name: string, library_version: string) => Promise<any>
+    add_content_to_cd: (content: SerializedContent) => Promise<any>
 }
 
 type UsersAPI = {
@@ -114,13 +116,13 @@ interface LibraryVersionsState {
         is_error: boolean
         message: string
     },
-    library_versions: LibraryVersion[],
+    library_versions: LibraryVersion[]
     current_directory: {
-        parent: number | null,
-        version: LibraryVersion
         folders: LibraryFolder[]
         files: SerializedContent[]
     }
+    current_version: LibraryVersion
+    path: LibraryFolder[]
 }
 
 interface LibraryAssetsState {

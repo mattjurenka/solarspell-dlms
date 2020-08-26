@@ -201,6 +201,28 @@ class LibraryFolderViewSet(StandardDataView, viewsets.ModelViewSet):
                     ).data
                 }
             )
+    
+    @action(methods=['post'], detail=True)
+    def addcontent(self, request, pk=None):
+        if pk is None:
+            return build_response(
+                status=status.HTTP_400_BAD_REQUEST,
+                success=False,
+                error="No Folder ID supplied"
+            )
+        content_id = request.data.get("content_id", None) 
+        if content_id is None:
+            return build_response(
+                status=status.HTTP_400_BAD_REQUEST,
+                success=False,
+                error="No Content ID supplied"
+            )
+        
+        self.get_queryset().get(id=pk).library_content.add(
+            Content.objects.get(id=content_id)
+        )
+
+        return build_response()
 
 class BulkAddView(views.APIView):
 

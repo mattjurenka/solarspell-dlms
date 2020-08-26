@@ -1,7 +1,7 @@
 import React from 'react';
 import { Grid, Box, Typography, Link, Button, TextField } from '@material-ui/core';
-import { Folder, InsertDriveFile, MoreVert, Add, ExitToApp } from '@material-ui/icons';
-import { LibraryVersionsAPI, LibraryVersion, field_info, UsersAPI, LibraryAssetsAPI, SerializedContent, MetadataAPI } from './types';
+import { Folder, InsertDriveFile, MoreVert, Add, ExitToApp, DoubleArrow } from '@material-ui/icons';
+import { LibraryVersionsAPI, LibraryVersion, field_info, UsersAPI, LibraryAssetsAPI, SerializedContent, MetadataAPI, ContentsAPI } from './types';
 import {
     Grid as DataGrid,
     Table,
@@ -14,12 +14,14 @@ import { cloneDeep } from 'lodash';
 import { get_field_info_default, update_state } from './utils';
 import VALIDATORS from './validators';
 import { ViewContentModal } from './reusable/view_content_modal';
+import ContentSearch from './reusable/content_search';
 
 interface LibrariesProps {
     users_api: UsersAPI
     library_assets_api: LibraryAssetsAPI
     library_versions_api: LibraryVersionsAPI
     metadata_api: MetadataAPI
+    contents_api: ContentsAPI
 }
 interface LibrariesState {
     modals: LibrariesModals
@@ -128,7 +130,8 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
             library_versions_api,
             users_api,
             library_assets_api,
-            metadata_api
+            metadata_api,
+            contents_api
         } = this.props
         return (
             <>
@@ -164,24 +167,28 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                     </Grid>
                     <Grid item sm={3}>
                         <Box flexDirection="row" display="flex">
+                            {library_versions_api.state.path.map((folder, idx) => (
+                                <Box key={idx} flexDirection="row" display="flex">
+                                    <Typography>{folder.folder_name}</Typography>
+                                    <DoubleArrow />
+                                </Box>
+                            ))}
+                        </Box>
+                        <Box flexDirection="row" display="flex">
                             <Typography variant="h5">
                                 {//IIFE to avoid typing the long name three times
                                     (name => name === "" ? "None" : name)(
-                                    library_versions_api.state.current_directory.version.library_name
+                                    library_versions_api.state.current_version.library_name
                                 )}
                             </Typography>
-                            {library_versions_api.state.current_directory.parent !== null ? 
+                            {library_versions_api.state.path.length > 0 ? 
                                 <ExitToApp
-                                    onClick={() => {
-                                        library_versions_api.enter_folder(
-                                            library_versions_api.state.current_directory.parent
-                                        )
-                                    }}
+                                    onClick={library_versions_api.enter_parent}
                                 /> : <></>
                             }
                         </Box>
                         {library_versions_api.state.current_directory.folders.map((folder, idx) => (
-                            <Box display="flex" flexDirection="row" width="100%">
+                            <Box key={idx} display="flex" flexDirection="row" width="100%">
                                 <Box key={idx}>
                                     <Folder />
                                 </Box>
@@ -221,7 +228,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                                 })
                                             }}
                                         >
-                                            {content.file_name}
+                                            {content.title}
                                         </Link>
                                     </Typography>
                                 </Box>
@@ -236,7 +243,19 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                         
                     </Grid>
                     <Grid item sm={6}>
-                        Content Table
+                        <ContentSearch
+                            contents_api={contents_api}
+                            metadata_api={metadata_api}
+                            on_view={row => {
+                                this.update_state(draft => {
+                                    draft.modals.view_content.is_open = true
+                                    draft.modals.view_content.row = row
+                                })
+                            }}
+                            on_add={row => {
+                                library_versions_api.add_content_to_cd(row)
+                            }}
+                        />
                     </Grid>
                 </Grid>
                 <ActionDialog

@@ -125,12 +125,18 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                                             const users_api = value
                                             return (<MetadataContext.Consumer>
                                                 {value => {
-                                                    return (<Libraries 
-                                                        library_versions_api={lib_versions_api}
-                                                        library_assets_api={lib_assets_api}
-                                                        users_api={users_api}
-                                                        metadata_api={value}
-                                                    />)
+                                                    const metadata_api = value
+                                                    return (<ContentsContext.Consumer>
+                                                            {value => (
+                                                                <Libraries 
+                                                                    library_versions_api={lib_versions_api}
+                                                                    library_assets_api={lib_assets_api}
+                                                                    users_api={users_api}
+                                                                    metadata_api={metadata_api}
+                                                                    contents_api={value}
+                                                                />
+                                                            )}
+                                                    </ContentsContext.Consumer>)
                                                 }}
                                             </MetadataContext.Consumer>)
                                         }}

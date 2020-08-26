@@ -52,6 +52,7 @@ const APP_URLS = {
     LIBRARY_ASSET_ITEM: (id: number) => url_with_params(`${api_path}/lib_layout_images/${id}/`),
     LIBRARY_VERSIONS: url_with_params(`${api_path}/library_versions/`),
     LIBRARY_ROOT_FOLDERS: (id:number) => url_with_params(`${api_path}/library_versions/${id}/root/`),
+    LIBRARY_FOLDER_ADD_CONTENT: (folder_id: number) => url_with_params(`${api_path}/library_folders/${folder_id}/addcontent/`),
     LIBRARY_FOLDER_CONTENTS: (id: number) => url_with_params(`${api_path}/library_folders/${id}/contents/`),
     METADATA: url_with_params(`${api_path}/metadata/`),
     METADATA_ITEM: (id: number) => url_with_params(`${api_path}/metadata/${id}/`),

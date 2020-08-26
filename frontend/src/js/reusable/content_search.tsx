@@ -1,195 +1,124 @@
-import React, { Component } from 'react';
+import React, {Component} from "react"
+import { ContentsAPI, active_search_option, MetadataAPI, SerializedMetadata, SerializedContent } from '../types'
+import ActionPanel from './action_panel'
+import { content_display } from '../settings'
 
+import {
+    Grid as DataGrid,
+    PagingPanel,
+    Table,
+    TableHeaderRow,
+} from "@devexpress/dx-react-grid-material-ui"
+import {
+    CustomPaging,
+    PagingState,
+    SortingState,
+    Sorting,
+    Column,
+} from "@devexpress/dx-react-grid"
+import { ExpansionPanel, ExpansionPanelSummary, Typography, Grid, ExpansionPanelDetails, TextField, Container, Select, MenuItem } from '@material-ui/core'
+import { update_state } from '../utils'
+import { KeyboardDatePicker } from '@material-ui/pickers'
+import { Autocomplete } from '@material-ui/lab'
 
-import { APP_URLS } from './urls';
-import { cloneDeep } from 'lodash';
-import ActionDialog from './reusable/action_dialog';
-import { Button, Typography } from '@material-ui/core';
-import Axios from 'axios';
-import VALIDATORS from './validators';
-import { update_state } from './utils';
-import ContentModal from './reusable/content_modal';
-
-import { MetadataAPI, SerializedContent, ContentsAPI } from './types';
-import { ViewContentModal } from './reusable/view_content_modal';
-import ContentSearch from './reusable/content_search';
-import BulkContentModal from "./reusable/bulk_content_modal";
-
-
-interface ContentProps {
-    metadata_api: MetadataAPI
+interface ContentSearchProps {
+    on_view?: (row: SerializedContent) => void
+    on_edit?: (row: SerializedContent) => void
+    on_delete?: (row: SerializedContent) => void
+    on_toggle_active?: (row: SerializedContent) => void
+    on_add?: (row: SerializedContent) => void
     contents_api: ContentsAPI
-    show_toast_message: (message: string, is_success: boolean) => void
-    close_toast: () => void
-    show_loader: () => void
-    remove_loader: () => void
+    metadata_api: MetadataAPI
 }
 
-interface ContentState {
-    modals: ContentModals
+interface ContentSearchState {
+    is_open: boolean
+    total_count: number
+    page_size: number
+    current_page: number
+    sorting: Sorting[]
 }
 
-interface ContentModals {
-    add: {
-        is_open: boolean
-    }
-    view: {
-        is_open: boolean
-        row: SerializedContent
-    }
-    edit: {
-        is_open: boolean
-        row: SerializedContent
-    }
-    delete_content: {
-        is_open: boolean
-        row: SerializedContent
-    }
-    bulk_add: {
-        is_open: boolean
-    }
-}
+export default class ContentSearch extends Component<ContentSearchProps, ContentSearchState> {
+    columns: Column[]
+    page_sizes: number[]
 
-export default class Content extends Component<ContentProps, ContentState> {
+    update_state: (update_func: (draft: ContentSearchState) => void) => Promise<void>
 
-    update_state: (update_func: (draft: ContentState) => void) => Promise<void>
-
-    modal_defaults: ContentModals
-    content_defaults: SerializedContent
-
-    
-
-    constructor(props: ContentProps) {
+    constructor(props: ContentSearchProps) {
         super(props)
+        
+        this.page_sizes = [10, 25, 100]
+        
+        this.state = {
+            is_open: false,
+            total_count: 0,
+            page_size: this.page_sizes[0],
+            current_page: 0,
+            sorting: []
+        }
+
+        const {
+            on_edit,
+            on_delete,
+            on_toggle_active,
+            on_view,
+            on_add
+        } = props
+
+        this.columns = [
+            {name: "actions", title: "Actions", getCellValue: (display_row: any) => (
+                <ActionPanel
+                    row={display_row}
+                    editFn={on_edit === undefined ? undefined : () => on_edit(display_row)}
+                    deleteFn={on_delete === undefined ? undefined : () => on_delete(display_row)}
+                    viewFn={on_view === undefined ? undefined : () => on_view(display_row)}
+                    setActive={on_toggle_active === undefined ? undefined : () => on_toggle_active(display_row)}
+                    addFn={on_add === undefined ? undefined : () => on_add(display_row)}
+                />
+            )},
+            {name: "title", title: "Title"},
+            {name: "description", title: "Description"},
+            {name: "published_year", title: "Year Published"},
+            {name: "file_name", title: "File Name"}
+        ]
+        this.columns = this.columns.concat(content_display.map((metadata_type:string) => {
+            return {
+                name: metadata_type,
+                title: metadata_type
+            }
+        }))
 
         this.update_state = update_state.bind(this)
+        this.reload_rows = this.reload_rows.bind(this)
 
-        this.content_defaults = {
-            id: 0,
-            file_name: "",
-            filesize: 0,
-            content_file: "",
-            title: "",
-            description: null,
-            modified_on: "",
-            reviewed_on: "",
-            copyright: null,
-            rights_statement: null,
-            active: false,
-            metadata: [],
-            metadata_info: [],
-            published_year: ""
-        }
-
-        this.modal_defaults = {
-            add: {
-                is_open: false
-            },
-            view: {
-                is_open: false,
-                row: this.content_defaults
-            },
-            edit: {
-                is_open: false,
-                row: this.content_defaults
-            },
-            delete_content: {
-                is_open: false,
-                row: this.content_defaults
-            },
-            bulk_add: {
-                is_open: false,
-            }
-        }
-
-        this.state = {
-            modals: cloneDeep(this.modal_defaults)
-        }
-
-        this.close_modals = this.close_modals.bind(this)
-        this.update_state = this.update_state.bind(this)
     }
 
-    //Resets the state of a given modal. Use this to close the modal.
-    close_modals() {
-        this.update_state(draft => {
-            draft.modals = cloneDeep(this.modal_defaults)
-        })
+    componentWillMount() {
+        this.reload_rows()
+    }
+
+    async reload_rows() {
+        return this.props.contents_api.load_content_rows(
+            this.state.current_page + 1,
+            this.state.page_size,
+            this.state.sorting
+        )
     }
 
     render() {
         const {
-            add,
-            view,
-            edit,
-            delete_content,
-            bulk_add
-        } = this.state.modals
-        const {
-            metadata_api,
-            contents_api
+            contents_api,
+            metadata_api
         } = this.props
+        const {
+            search
+        } = contents_api.state
         return (
-            <React.Fragment>
-                <Button
-                    onClick={_ => {
-                        this.update_state(draft => {
-                            draft.modals.add.is_open = true
-                        })
-                    }}
-                    style={{
-                        marginLeft: "1em",
-                        marginBottom: "1em",
-                        backgroundColor: "#75b2dd",
-                        color: "#FFFFFF"
-                    }}
-                >New Content</Button>
-                <ContentSearch
-                    contents_api={contents_api}
-                    metadata_api={metadata_api}
-                    on_delete={row => {
-                        this.update_state(draft => {
-                            draft.modals.delete_content.is_open = true
-                            draft.modals.delete_content.row = row
-                        })
-                    }}
-                    on_edit={row => {
-                        this.update_state(draft => {
-                            draft.modals.edit.is_open = true
-                            draft.modals.edit.row = row
-                        })
-                    }}
-                    on_view={row => {
-                        this.update_state(draft => {
-                            draft.modals.view.is_open = true
-                            draft.modals.view.row = row
-                        })
-                    }}
-                    on_toggle_active={row => {
-                        Axios.patch(APP_URLS.CONTENT_ITEM(row.id), {
-                            active: !row.active
-                        })
-                    }}
-                />
-                >New Content
-                </Button>
-                <Button
-                    onClick={_ => {
-                        this.update_state(draft => {
-                            draft.modals.bulk_add.is_open = true
-                        })
-                    }}
-                    style={{
-                        marginLeft: "1em",
-                        marginBottom: "1em",
-                        backgroundColor: "#75b2dd",
-                        color: "#FFFFFF"
-                    }}
-                >Add Bulk Content
-                </Button>
-                <ExpansionPanel expanded={this.state.search.is_open} onChange={(_:any, expanded: boolean) => {
+            <>
+                <ExpansionPanel expanded={this.state.is_open} onChange={(_:any, expanded: boolean) => {
                     this.update_state(draft => {
-                        draft.search.is_open = expanded
+                        draft.is_open = expanded
                     })
                 }}>
                     <ExpansionPanelSummary>
@@ -410,97 +339,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                     <TableHeaderRow showSortingControls />
                     <PagingPanel pageSizes={this.page_sizes} />
                 </DataGrid>
-                <ActionDialog
-                    title={`Delete Content item ${delete_content.row.title}?`}
-                    open={delete_content.is_open}
-                    actions={[(
-                        <Button
-                            key={1}
-                            onClick={()=> {
-                                Axios.delete(APP_URLS.CONTENT_ITEM(delete_content.row.id))
-                                this.close_modals()
-                            }}
-                            color="secondary"
-                        >
-                            Delete
-                        </Button>
-                    ), (
-                        <Button
-                            key={2}
-                            onClick={this.close_modals}
-                            color="primary"
-                        >
-                            Cancel
-                        </Button>
-                    )]}
-                >
-                    <Typography>This action is irreversible</Typography>
-                </ActionDialog>
-                <ContentModal
-                    is_open={add.is_open}
-                    on_close={() => {
-                        this.update_state(draft => {
-                            draft.modals.add.is_open = false
-                        })
-                    }}
-                    metadata_api={metadata_api}
-                    modal_type={"add"}
-                    validators={{
-                        content_file: VALIDATORS.ADD_FILE,
-                        title: VALIDATORS.TITLE,
-                        description: VALIDATORS.DESCRIPTION,
-                        year: VALIDATORS.YEAR,
-                        reviewed_on: VALIDATORS.REVIEWED_ON,
-                        metadata: VALIDATORS.METADATA,
-                        copyright: VALIDATORS.COPYRIGHT,
-                        rights_statement: VALIDATORS.RIGHTS_STATEMENT
-                    }}
-                    show_toast_message={this.props.show_toast_message}
-                    show_loader={this.props.show_loader}
-                    remove_loader={this.props.remove_loader}
-                />
-                <ContentModal
-                    is_open={edit.is_open}
-                    on_close={() => {
-                        this.update_state(draft => {
-                            draft.modals.edit.is_open = false
-                        })
-                    }}
-                    metadata_api={metadata_api}
-                    modal_type={"edit"}
-                    row={edit.row}
-                    validators={{
-                        content_file: VALIDATORS.EDIT_FILE,
-                        title: VALIDATORS.TITLE,
-                        description: VALIDATORS.DESCRIPTION,
-                        year: VALIDATORS.YEAR,
-                        reviewed_on: VALIDATORS.REVIEWED_ON,
-                        metadata: VALIDATORS.METADATA,
-                        copyright: VALIDATORS.COPYRIGHT,
-                        rights_statement: VALIDATORS.RIGHTS_STATEMENT
-                    }}
-                    show_toast_message={this.props.show_toast_message}
-                    show_loader={this.props.show_loader}
-                    remove_loader={this.props.remove_loader}
-                />
-                <ViewContentModal
-                    is_open={view.is_open}
-                    metadata_api={metadata_api}
-                    on_close={this.close_modals}
-                    row={view.row}
-                />
-                <BulkContentModal
-                    is_open={bulk_add.is_open}
-                    on_close={() => {
-                        this.update_state(draft => {
-                            draft.modals.bulk_add.is_open = false
-                        })
-                    }}
-                    show_toast_message={this.props.show_toast_message}
-                    show_loader={this.props.show_loader}
-                    remove_loader={this.props.remove_loader}>
-               </BulkContentModal>
-            </React.Fragment>
+            </>
         )
     }
 }

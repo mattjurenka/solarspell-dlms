@@ -1,5 +1,5 @@
 import React from "react"
-import { LibraryAssetsAPI, MetadataAPI, SerializedMetadataType, SerializedMetadata, AssetGroup, LibraryAsset, ContentsAPI, content_fields, SerializedContent, LibraryVersionsAPI, LibraryFolder, UsersAPI } from '../types'
+import { LibraryAssetsAPI, MetadataAPI, SerializedMetadataType, SerializedMetadata, AssetGroup, LibraryAsset, ContentsAPI, content_fields, SerializedContent, LibraryVersionsAPI, UsersAPI } from '../types'
 import { Sorting } from '@devexpress/dx-react-grid'
 
 const MetadataContext = React.createContext<MetadataAPI>({
@@ -88,21 +88,23 @@ const LibraryVersionsContext = React.createContext<LibraryVersionsAPI>({
         },
         library_versions: [],
         current_directory: {
-            version: {
-                id: 0,
-                library_name: "",
-                version_number: "",
-                library_banner: 0
-            },
-            parent: null,
             folders: [],
             files: []
-        }
+        },
+        current_version: {
+            id: 0,
+            library_name: "",
+            version_number: "",
+            library_banner: 0
+        },
+        path: []
     },
     refresh_library_versions: async () => {},
     enter_version_root: async () => {},
-    enter_folder: async (_folder: LibraryFolder) => {},
+    enter_folder: async () => {},
+    enter_parent: async () => {},
     add_version: async () => {},
+    add_content_to_cd: async () => {},
 });
 
 const UsersContext = React.createContext<UsersAPI>({
