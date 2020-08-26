@@ -1,8 +1,10 @@
 import datetime
+import json
 import os
 from typing import Dict, Union
 
 from django.utils import timezone
+from rest_framework import status
 
 from dlms import settings
 from content_management.library_db_utils import LibraryDbUtil
@@ -21,40 +23,64 @@ class ContentSheetUtil:
         :param sheet_contents:
         :return: success status
         """
+        unsuccessful_uploads = []
+        successful_uploads_count = 0
         try:
-            for each_content in sheet_contents:
+            content_data = json.loads(sheet_contents.get("sheet_data"))
+            for each_content in content_data:
                 # if the actual file is not uploaded, don't upload its metadata
-                file_path = os.path.join(os.path.relpath(settings.MEDIA_ROOT), "contents", each_content.get("fileName"))
-                if os.path.exists(file_path) is not True:
+                if sheet_contents.get(each_content.get("FileName")) is None:
                     continue
                 else:
-                    content = Content()
-                    content.file_name = each_content.get("fileName")
-                    content.content_file.name = "contents/" + content.file_name
-                    content.title = each_content.get("title")
-                    content.copyright = each_content.get("copyright")
-                    content.rights_statement = each_content.get("rightsStatement")
-                    if each_content.get("publishedDate") is not None:
-                        content.published_date = datetime.date(each_content.get("publishedDate"), 1, 1)
-                    content.modified_on = timezone.now()
-                    content.active = True
-                    content.save()
-                    for metadata_item in each_content.get("metadata"):
-                        obj, created = Metadata.objects.get_or_create(name=metadata_item.get("name"),
-                                                                      type_id=metadata_item.get("type_id"))
-                        content.metadata.add(obj)
-                    content.save()
+                    try:
+                        content = Content()
+                        content.file_name = each_content.get("FileName")
+                        content.content_file = sheet_contents.get(each_content.get("FileName"))
+                        content.title = each_content.get("Title")
+                        content.description = each_content.get("Description")
+                        content.copyright = each_content.get("Copyright")
+                        content.rights_statement = each_content.get("RightsStatement")
+                        if each_content.get("PublishedDate"):
+                            content.published_date = datetime.date(each_content.get("PublishedDate"), 1, 1)
+                        content.modified_on = timezone.now()
+                        content.active = True
+                        content.save()
+                        metadata = get_associated_meta(each_content)
+                        for metadata_item in metadata:
+                            obj, created = Metadata.objects.get_or_create(name=metadata_item.name,
+                                                                          type=metadata_item.type)
+                            content.metadata.add(obj)
+                        content.save()
+                        successful_uploads_count = successful_uploads_count + 1
+                    except Exception as e:
+                        unsuccessful_uploads.append({'file_name': each_content.get("FileName"), 'error': str(e)
+                                                    .partition('DETAIL:')[-1]})
+                        continue
             data = {
-                'result': 'success',
+                'success_count': successful_uploads_count,
+                'unsuccessful_uploads': unsuccessful_uploads,
             }
             return data
 
         except Exception as e:
             data = {
-                'result': 'error',
-                'error': str(e)
+                'success': False,
+                'error': str(e),
+                'status': status.HTTP_500_INTERNAL_SERVER_ERROR
             }
             return data
+
+
+def get_associated_meta(sheet_row):
+    meta_list = []
+    for metadata_type in MetadataType.objects.all():
+        if sheet_row.get(metadata_type.name) == '' or sheet_row.get(metadata_type.name) is None:
+            continue
+        meta_values = sheet_row[metadata_type.name].split(' | ')
+        for each_value in meta_values:
+            metadata = Metadata(name=each_value, type=metadata_type)
+            meta_list.append(metadata)
+    return meta_list
 
 
 class LibraryBuildUtil:
@@ -62,7 +88,9 @@ class LibraryBuildUtil:
     def build_library(self, version_id):
         metadata_types = MetadataType.objects.all().values_list('id', 'name')
         metadata = Metadata.objects.filter(content__libraryfolder__version_id=version_id).values_list('id', 'name',
-                                                                                                      'type_id').distinct('id')
+                                                                                                      'type_id'). \
+            distinct(
+            'id')
         folders = LibraryFolder.objects.filter(version_id=version_id).values_list('id', 'folder_name',
                                                                                   'banner_img__image_file'
                                                                                   , 'logo_img__image_file', 'parent_id')
@@ -71,8 +99,9 @@ class LibraryBuildUtil:
                                                                                             'published_date',
                                                                                             'copyright',
                                                                                             'rights_statement',
-                                                                                            'libraryfolder__id').distinct('id')
-        contents_metadata = Content.metadata.through.objects.filter(content__libraryfolder__version_id=version_id)\
+                                                                                            'libraryfolder__id') \
+            .distinct('id')
+        contents_metadata = Content.metadata.through.objects.filter(content__libraryfolder__version_id=version_id) \
             .values_list('content_id', 'metadata_id')
 
         db_util = LibraryDbUtil(metadata_types, metadata, folders, contents, contents_metadata)

@@ -1,6 +1,6 @@
 import ActionDialog from "./action_dialog"
 import { cloneDeep, isEqual, set, isNull, isUndefined } from "lodash"
-import { Button, TextField, Grid } from "@material-ui/core"
+import {Button, TextField, Grid} from "@material-ui/core"
 import Axios, { AxiosResponse } from "axios"
 import { APP_URLS } from "../urls"
 import { Autocomplete, createFilterOptions } from "@material-ui/lab"
@@ -10,8 +10,8 @@ import { update_state, get_string_from_error, get_field_info_default } from '../
 
 import { KeyboardDatePicker }   from '@material-ui/pickers';
 import { format } from 'date-fns'
-import { WrappedFieldInfo, metadata_dict, SerializedContent, MetadataAPI, SerializedMetadata, SerializedMetadataType, content_fields } from 'js/types'
-
+import { WrappedFieldInfo, metadata_dict, SerializedContent, MetadataAPI, SerializedMetadata, SerializedMetadataType,
+    content_fields } from 'js/types'
 
 interface ContentModalProps {
     is_open: boolean
@@ -21,18 +21,20 @@ interface ContentModalProps {
         [P in keyof content_fields]: (value: any) => string
     }
     metadata_api: MetadataAPI
-    show_toast_message: (message: string) => void
-    on_close: () => void 
+    show_toast_message: (message: string, is_success: boolean) => void
+    on_close: () => void
+    show_loader: () => void
+    remove_loader: () => void
 }
 
 interface ContentModalState {
     fields: WrappedFieldInfo<content_fields>
 }
- 
+
 
 //This modal should be used to add a new content item or edit an existing one.
 export default class ContentModal extends Component<ContentModalProps, ContentModalState> {
-    
+
     update_state: (update_func: (draft: ContentModalState) => void) => Promise<void>
     default_fields: WrappedFieldInfo<content_fields>
     file_input_ref: RefObject<HTMLInputElement>
@@ -41,7 +43,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
 
     constructor(props: ContentModalProps) {
         super(props)
-        
+
         this.file_input_ref = React.createRef()
 
         this.default_fields = {
@@ -50,7 +52,9 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
             description: get_field_info_default(""),
             year: get_field_info_default(""),
             reviewed_on: get_field_info_default(null),
-            metadata: get_field_info_default({} as metadata_dict),
+            metadata: get_field_info_default(this.props.metadata_api.state.metadata_types.reduce((prev, current) => {
+                    return set(prev, [current.name], [])
+                },{} as metadata_dict)),
             rights_statement: get_field_info_default(""),
             copyright: get_field_info_default("")
         }
@@ -71,7 +75,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
             && !isEqual(this.props.row, prevProps.row)) {
             const row = this.props.row
             const metadata = this.props.metadata_api.state.metadata_types.reduce((prev, metadata_type) => {
-                const filtered = row.metadata_info.filter(to_check => isEqual(to_check, metadata_type))
+                const filtered = row.metadata_info.filter(to_check => isEqual(to_check.type, metadata_type.id))
                 return set(prev, [metadata_type.name], filtered)
             }, {} as metadata_dict)
 
@@ -106,27 +110,28 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                     <Button
                         key={2}
                         onClick={()=> {
+                            this.props.show_loader()
                             console.log("clicked")
                             this.update_state(draft => {
-                                Object.keys(this.state.fields).map((field) => {
+                                const file_raw = this.file_input_ref.current?.files?.item(0)
+                                draft.fields.content_file.value = typeof(file_raw) === "undefined" ? null : file_raw
+                            })
+                                .then(() => this.update_state(draft => {
+                                    Object.keys(this.state.fields).map((field) => {
                                     const cast_field = field as keyof content_fields
                                     draft.fields[cast_field].reason = this.props.validators[cast_field](
                                         draft.fields[cast_field].value
                                     )
                                 })
-                            })
-                            .then(() => this.update_state(draft => {
-                                const file_raw = this.file_input_ref.current?.files?.item(0)
-                                draft.fields.content_file.value = typeof(file_raw) === "undefined" ? null : file_raw
                             }))
                             .then(() => {
                                 for (const key in this.state.fields) {
                                     console.log(key)
                                     if (this.state.fields[key as keyof content_fields].reason !== "") {
-                                        return 
+                                        return
                                     }
                                 }
-                                
+
                                 //Form data instead of js object needed so the file upload works as multipart
                                 //There might be a better way to do this with Axios
                                 const formData = new FormData()
@@ -137,7 +142,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 } else {
                                     if (this.props.modal_type === "add") return
                                 }
-                                
+
                                 formData.append('title', this.state.fields.title.value)
                                 formData.append('description', this.state.fields.description.value)
                                 formData.append('published_date', `${this.state.fields.year.value}-01-01`)
@@ -157,6 +162,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                     }
                                 })
 
+                                console.log("here")
                                 //We have to do this weird pattern so the only caught errors in this promise chain come from the axios call
                                 const axios_response = this.props.modal_type === "add" ?
                                     Axios.post(APP_URLS.CONTENT, formData, {
@@ -169,15 +175,17 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                         }
                                     })
                                 axios_response.then((_res?: AxiosResponse<any>) => {
-                                    this.props.show_toast_message(this.props.modal_type === "add" ? "Added content successfully" : "Edited content successfully")
+                                    this.props.remove_loader()
+                                    this.props.show_toast_message(this.props.modal_type === "add" ? "Added content successfully" : "Edited content successfully",true)
                                     metadata_api.refresh_metadata()
                                     this.props.on_close()
                                 }, (reason: any) => {
+                                    this.props.remove_loader()
                                     const unknown_err_str = this.props.modal_type === "add" ? "Error while adding content" : "Error while editing content"
                                     this.props.show_toast_message(get_string_from_error(
                                         isUndefined(reason?.response?.data?.error) ? reason?.response?.data?.error : unknown_err_str,
                                         unknown_err_str
-                                    ))
+                                    ),false)
                                 })
                             })
                         }}
@@ -280,17 +288,27 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                         value={this.state.fields.metadata.value[metadata_type.name]}
                                         onChange={(_evt, value: SerializedMetadata[]) => {
                                             //Determine which tokens are real or generated by the "Add new metadata ..." option
-                                            const valid_meta = value.filter(to_check => to_check.id !== 0)
-                                            const add_meta_tokens = value.filter(to_check => to_check.id === 0)
-                                            
+                                            let valid_meta = value.filter(to_check => to_check.id !== 0)
+                                            let add_meta_tokens = value.filter(to_check => to_check.id === 0)
+
                                             if (add_meta_tokens.length > 0) {
                                                 const to_add = add_meta_tokens[0]
-                                                metadata_api.add_metadata(to_add.type_name, metadata_type)
-                                            }
+                                                metadata_api.add_metadata(to_add.name, metadata_type)
+                                                    .then((_metadata_response) => {
+                                                    //add the created metadata to valid_meta with its new id
+                                                        valid_meta.push(_metadata_response?.data)
+                                                        add_meta_tokens = []
 
-                                            this.update_state(draft => {
+                                                }).then(()=>
+                                                    this.update_state(draft => {
+                                                        draft.fields.metadata.value[metadata_type.name] = valid_meta
+                                                    }))
+                                            } else {
+                                                this.update_state(draft => {
                                                 draft.fields.metadata.value[metadata_type.name] = valid_meta
                                             })
+                                            }
+
                                         }}
                                         filterOptions={(options, params) => {
                                             const filtered = this.auto_complete_filter(options, params)
@@ -333,4 +351,3 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
         )
     }
 }
-    

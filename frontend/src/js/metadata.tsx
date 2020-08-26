@@ -33,7 +33,7 @@ import { MetadataAPI, SerializedMetadataType, SerializedMetadata, field_info } f
 
 interface MetadataProps {
     metadata_api: MetadataAPI
-    show_toast_message: (message: string) => void
+    show_toast_message: (message: string, is_success:boolean) => void
 }
 
 type panel_data = {

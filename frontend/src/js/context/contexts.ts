@@ -18,7 +18,7 @@ const MetadataContext = React.createContext<MetadataAPI>({
     add_metadata_type: async (_type_name: string) => {},
     edit_metadata_type: async(_old_type: SerializedMetadataType, _new_name: string) => {},
     delete_metadata_type: async (_meta_type: SerializedMetadataType) => {},
-    add_metadata: async (_meta_name: string, _meta_type: SerializedMetadataType) => {},
+    add_metadata: async (_meta_name: string, _meta_type: SerializedMetadataType) => Promise,
     edit_metadata: async (_old_meta: SerializedMetadata, _new_name: string) => {},
     delete_metadata: async (_meta_type: SerializedMetadata) => {}
 })
