@@ -4,7 +4,7 @@ import React, { Component } from 'react';
 import { APP_URLS } from './urls';
 import { cloneDeep } from 'lodash';
 import ActionDialog from './reusable/action_dialog';
-import { Button, Typography } from '@material-ui/core';
+import {Button, Typography} from '@material-ui/core';
 import Axios from 'axios';
 import VALIDATORS from './validators';
 import { update_state } from './utils';
@@ -143,7 +143,22 @@ export default class Content extends Component<ContentProps, ContentState> {
                         backgroundColor: "#75b2dd",
                         color: "#FFFFFF"
                     }}
-                >New Content</Button>
+                >New Content
+                </Button>
+                <Button
+                    onClick={_ => {
+                        this.update_state(draft => {
+                            draft.modals.bulk_add.is_open = true
+                        })
+                    }}
+                    style={{
+                        marginLeft: "1em",
+                        marginBottom: "1em",
+                        backgroundColor: "#75b2dd",
+                        color: "#FFFFFF"
+                    }}
+                >Add Bulk Content
+                </Button>
                 <ContentSearch
                     contents_api={contents_api}
                     metadata_api={metadata_api}
@@ -171,245 +186,6 @@ export default class Content extends Component<ContentProps, ContentState> {
                         })
                     }}
                 />
-                >New Content
-                </Button>
-                <Button
-                    onClick={_ => {
-                        this.update_state(draft => {
-                            draft.modals.bulk_add.is_open = true
-                        })
-                    }}
-                    style={{
-                        marginLeft: "1em",
-                        marginBottom: "1em",
-                        backgroundColor: "#75b2dd",
-                        color: "#FFFFFF"
-                    }}
-                >Add Bulk Content
-                </Button>
-                <ExpansionPanel expanded={this.state.search.is_open} onChange={(_:any, expanded: boolean) => {
-                    this.update_state(draft => {
-                        draft.search.is_open = expanded
-                    })
-                }}>
-                    <ExpansionPanelSummary>
-                        <Typography variant={"h6"}>Search</Typography>
-                    </ExpansionPanelSummary>
-                    <ExpansionPanelDetails>
-                        <Grid container spacing={2}>
-                            <Grid item xs={4}>
-                                <TextField
-                                    fullWidth
-                                    label={"Title"}
-                                    value={search.title}
-                                    onChange={(evt) => {
-                                        evt.persist()
-                                        contents_api.update_search_state(draft => {
-                                            draft.title = evt.target.value
-                                        }).then(this.reload_rows)
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item xs={4}>
-                                <TextField
-                                    fullWidth
-                                    label={"Filename"}
-                                    value={search.filename}
-                                    onChange={(evt) => {
-                                        evt.persist()
-                                        contents_api.update_search_state(draft => {
-                                            draft.filename = evt.target.value
-                                        }).then(this.reload_rows)
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item xs={4}>
-                                <TextField
-                                    fullWidth
-                                    label={"Copyright"}
-                                    value={search.copyright}
-                                    onChange={(evt) => {
-                                        evt.persist()
-                                        contents_api.update_search_state(draft => {
-                                            draft.copyright = evt.target.value
-                                        }).then(this.reload_rows)
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item xs={2}>
-                                <TextField
-                                    fullWidth
-                                    label={"Years From"}
-                                    value={search.years_from}
-                                    InputProps={{inputProps: {min: 0, max: 2100}}}
-                                    type={"number"}
-                                    onChange={(evt) => {
-                                        evt.persist()
-                                        const parsed = parseInt(evt.target.value)
-                                        contents_api.update_search_state(draft => {
-                                            draft.years_from = isNaN(parsed) ? null : parsed
-                                        }).then(this.reload_rows)
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item xs={2}>
-                                <TextField
-                                    fullWidth
-                                    label={"Years To"}
-                                    value={search.years_to}
-                                    InputProps={{inputProps: {min: 0, max: 2100}}}
-                                    type={"number"}
-                                    onChange={(evt) => {
-                                        evt.persist()
-                                        const parsed = parseInt(evt.target.value)
-                                        contents_api.update_search_state(draft => {
-                                            draft.years_to = isNaN(parsed) ? null : parsed
-                                        }).then(this.reload_rows)
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item xs={2}>
-                                <TextField
-                                    fullWidth
-                                    label={"Filesize From"}
-                                    value={search.file_size_from}
-                                    InputProps={{inputProps: {min: 0, max: 1000000000000}}}
-                                    type={"number"}
-                                    onChange={(evt) => {
-                                        evt.persist()
-                                        const parsed = parseInt(evt.target.value)
-                                        contents_api.update_search_state(draft => {
-                                            draft.file_size_from = isNaN(parsed) ? null : parsed
-                                        }).then(this.reload_rows)
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item xs={2}>
-                                <TextField
-                                    fullWidth
-                                    label={"Filesize To"}
-                                    value={search.file_size_to}
-                                    InputProps={{inputProps: {min: 0, max: 1000000000000}}}
-                                    type={"number"}
-                                    onChange={(evt) => {
-                                        evt.persist()
-                                        const parsed = parseInt(evt.target.value)
-                                        contents_api.update_search_state(draft => {
-                                            draft.file_size_to = isNaN(parsed) ? null : parsed
-                                        }).then(this.reload_rows)
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item xs={2}>
-                                <KeyboardDatePicker
-                                    variant={"inline"}
-                                    format={"MM/dd/yyyy"}
-                                    value={search.reviewed_from}
-                                    label={"Reviewed From"}
-                                    onChange={value => {
-                                        contents_api.update_search_state(draft => {
-                                            draft.reviewed_from = value
-                                        }).then(this.reload_rows)
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item xs={2}>
-                                <KeyboardDatePicker
-                                    variant={"inline"}
-                                    format={"MM/dd/yyyy"}
-                                    value={search.reviewed_to}
-                                    label={"Reviewed To"}
-                                    onChange={value => {
-                                        contents_api.update_search_state(draft => {
-                                            draft.reviewed_to = value
-                                        }).then(this.reload_rows)
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item xs={12}>
-                                <Container disableGutters style={{display: "flex", height: "100%"}}>
-                                    <Select
-                                        style={{alignSelf: "bottom"}}
-                                        label={"Active"}
-                                        value={search.active}
-                                        onChange={(event) => {
-                                            contents_api.update_search_state(draft => {
-                                                draft.active = event.target.value as active_search_option
-                                            }).then(this.reload_rows)
-                                        }}
-                                    >
-                                        <MenuItem value={"all"}>All</MenuItem>
-                                        <MenuItem value={"active"}>Active</MenuItem>
-                                        <MenuItem value={"inactive"}>Inactive</MenuItem>
-                                    </Select>
-                                </Container>
-                            </Grid>
-                            {Object.entries(metadata_api.state.metadata_by_type).map((entry: [string, SerializedMetadata[]], idx) => {
-                                const [metadata_type, metadata] = entry
-                                return (
-                                    <Grid item xs={4} key={idx}>
-                                        <Autocomplete
-                                            multiple
-                                            options={metadata}
-                                            getOptionLabel={option => option.name}
-                                            renderInput={(params) => (
-                                                <TextField
-                                                    {...params}
-                                                    variant={"standard"}
-                                                    label={metadata_type}
-                                                    placeholder={metadata_type}
-                                                />
-                                            )}
-                                            onChange={(_evt, values) => {
-                                                contents_api.update_search_state(draft => {
-                                                    draft.metadata[metadata_type] = values
-                                                }).then(this.reload_rows)
-                                            }}
-                                        />
-                                    </Grid>
-                                )
-                            })}
-                        </Grid>
-                    </ExpansionPanelDetails>
-                </ExpansionPanel>
-                <br />
-                <DataGrid
-                    columns={this.columns}
-                    rows={contents_api.state.display_rows}
-                >
-                    <SortingState
-                        sorting={this.state.sorting}
-                        onSortingChange={(sorting) => {
-                            this.update_state(draft => {
-                                draft.sorting = sorting
-                            }).then(this.reload_rows)
-                        }}
-                        columnExtensions={this.columns.map(column => {
-                            return {
-                                columnName: column.name,
-                                sortingEnabled: ["file_name", "title", "description"].includes(column.name)
-                            }
-                        })}
-                    />
-                    <PagingState
-                        currentPage={this.state.current_page}
-                        onCurrentPageChange={(current_page: number) => {
-                            this.update_state(draft => {
-                                draft.current_page = current_page
-                            }).then(this.reload_rows)
-                        }}
-                        pageSize={this.state.page_size}
-                        onPageSizeChange={(page_size: number) => {
-                            this.update_state(draft => {
-                                draft.page_size = page_size
-                            }).then(this.reload_rows)
-                        }}
-                    />
-                    <CustomPaging totalCount={this.state.total_count}/>
-                    <Table />
-                    <TableHeaderRow showSortingControls />
-                    <PagingPanel pageSizes={this.page_sizes} />
-                </DataGrid>
                 <ActionDialog
                     title={`Delete Content item ${delete_content.row.title}?`}
                     open={delete_content.is_open}
