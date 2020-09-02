@@ -94,7 +94,7 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
 
     }
 
-    componentWillMount() {
+    componentDidMount() {
         this.reload_rows()
     }
 

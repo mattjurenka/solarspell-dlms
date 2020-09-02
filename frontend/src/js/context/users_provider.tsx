@@ -25,7 +25,7 @@ export default class UsersProvider extends Component<{}, UserProviderState> {
         this.add_user = this.add_user.bind(this)
     }
 
-    componentWillMount() {
+    componentDidMount() {
         this.refresh_users()
     }
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Grid, Box, Typography, Link, Button, TextField } from '@material-ui/core';
-import { Folder, InsertDriveFile, MoreVert, Add, ExitToApp, DoubleArrow } from '@material-ui/icons';
-import { LibraryVersionsAPI, LibraryVersion, field_info, UsersAPI, LibraryAssetsAPI, SerializedContent, MetadataAPI, ContentsAPI, User, LibraryAsset } from './types';
+import { Folder, InsertDriveFile, MoreVert, DoubleArrow } from '@material-ui/icons';
+import { LibraryVersionsAPI, LibraryVersion, field_info, UsersAPI, LibraryAssetsAPI, SerializedContent, MetadataAPI, ContentsAPI, User } from './types';
 import {
     Grid as DataGrid,
     Table,
@@ -33,15 +33,15 @@ interface LibrariesModals {
     add_version: {
         is_open: boolean
         name: field_info<string>
-        version: field_info<string>
+        number: field_info<string>
         banner: field_info<number>
         created_by: User
     }
     edit_version: {
         is_open: boolean
+        version: LibraryVersion
         name: field_info<string>
-        version: field_info<string>
-        banner: field_info<number>
+        number: field_info<string>
         created_by: User
     }
     delete_version: {
@@ -73,6 +73,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
             library_name: "",
             version_number: "",
             library_banner: 0,
+            created_by: 0
         }
 
         this.content_defaults = {
@@ -101,15 +102,15 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
             add_version: {
                 is_open: false,
                 name: get_field_info_default(""),
-                version: get_field_info_default(""),
+                number: get_field_info_default(""),
                 banner: get_field_info_default(0),
                 created_by: cloneDeep(this.user_defaults)
             },
             edit_version: {
                 is_open: false,
+                version: cloneDeep(this.library_version_default),
                 name: get_field_info_default(""),
-                version: get_field_info_default(""),
-                banner: get_field_info_default(0),
+                number: get_field_info_default(""),
                 created_by: cloneDeep(this.user_defaults),
             },
             delete_version: {
@@ -148,7 +149,6 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
         const {
             library_versions_api,
             users_api,
-            library_assets_api,
             metadata_api,
             contents_api
         } = this.props
@@ -187,11 +187,26 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                                 draft.modals.delete_version.to_delete = row
                                             })
                                         }}
+                                        editFn={() => {
+                                            this.update_state(draft => {
+                                                draft.modals.edit_version.is_open = true
+                                                draft.modals.edit_version.version = cloneDeep(row)
+                                                draft.modals.edit_version.name.value = row.library_name
+                                                draft.modals.edit_version.number.value = row.version_number
+                                                const user = this.props.users_api.state.users.find(user => user.id === row.created_by)
+                                                if (user !== undefined) {
+                                                    draft.modals.edit_version.created_by = user
+                                                }
+                                            })
+                                        }}
                                     />
                                 )},
                                 {name: "library_name", title: "Name"},
                                 {name: "version_number", title: "Version"},
-                                {name: "created_by_name", title: "Creator"},
+                                {name: "created_by_name", title: "Creator", getCellValue: (row: LibraryVersion) => {
+                                    const user = this.props.users_api.state.users.find(user => user.id === row.created_by)
+                                    return user === undefined ? "None" : user.name
+                                }},
                                 {name: "created_on", title: "Created On"}
                             ]}
                             rows={library_versions_api.state.library_versions.map((version: any) => {
@@ -210,41 +225,66 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                     <Grid item sm={3}>
                         {
                             this.props.library_versions_api.state.current_version.id !== 0 ?
-                            <Button
-                                onClick={_ => {
-                                    this.update_state(draft => {
-                                        draft.modals.set_banner.is_open = true
-                                    })
-                                }}
-                                style={{
-                                    marginLeft: "1em",
-                                    marginBottom: "1em",
-                                    backgroundColor: "#75b2dd",
-                                    color: "#FFFFFF"
-                                }}
-                            >
-                                Set Banner
-                            </Button> : <></>
+                            <>
+                                <Button
+                                    onClick={_ => {
+                                        this.update_state(draft => {
+                                            draft.modals.set_banner.is_open = true
+                                        })
+                                    }}
+                                    style={{
+                                        marginLeft: "1em",
+                                        marginBottom: "1em",
+                                        backgroundColor: "#75b2dd",
+                                        color: "#FFFFFF"
+                                    }}
+                                >
+                                    Set Banner
+                                </Button>
+                                <br />
+                            </> : <></>
                         }
+                        {(() => {
+                            const library_banner = this.props.library_versions_api.state.current_version.library_banner
+                                if (library_banner !== 0) {
+                                    const version_banner = this.props.library_assets_api.state.assets_by_group[3]?.find(asset => asset.id === library_banner)
+                                    if (version_banner !== undefined && version_banner.image_file !== null) {
+                                        return <img src={version_banner.image_file} style={{maxHeight: "100px"}}></img>
+                                    } else {
+                                        return <></>
+                                    }
+                                } else {
+                                    return <></>
+                                }
+                            })()}
                         <Box flexDirection="row" display="flex">
-                            {library_versions_api.state.path.map((folder, idx) => (
-                                <Box key={idx} flexDirection="row" display="flex">
-                                    <Typography>{folder.folder_name}</Typography>
-                                    <DoubleArrow />
-                                </Box>
-                            ))}
-                        </Box>
-                        <Box flexDirection="row" display="flex">
-                            <Typography variant="h5">
-                                {//IIFE to avoid typing the long name three times
-                                    (name => name === "" ? "None" : name)(
-                                    library_versions_api.state.current_version.library_name
-                                )}
-                            </Typography>
-                            {library_versions_api.state.path.length > 0 ? 
-                                <ExitToApp
-                                    onClick={library_versions_api.enter_parent}
-                                /> : <></>
+                            {
+                                [
+                                    (() => {
+                                        const name = library_versions_api.state.current_version.library_name
+                                        return (
+                                            <Box key={0} flexDirection="row" display="flex">
+                                                <Typography>
+                                                    {name === "" ? "None" : (
+                                                        <Link
+                                                            onClick={() => library_versions_api.enter_version_root(library_versions_api.state.current_version)}
+                                                        >
+                                                            {name}
+                                                        </Link>
+                                                    )}
+                                                </Typography>
+                                                <DoubleArrow />
+                                            </Box>
+                                        )
+                                    })()
+                                ].concat(library_versions_api.state.path.map((folder, idx) => (
+                                    <Box key={idx+1} flexDirection="row" display="flex">
+                                        <Typography><Link onClick={() => {
+                                            library_versions_api.enter_folder(folder, library_versions_api.state.path.length - idx - 1)
+                                        }}>{folder.folder_name}</Link></Typography>
+                                        <DoubleArrow />
+                                    </Box>
+                                )))
                             }
                         </Box>
                         {library_versions_api.state.current_directory.folders.map((folder, idx) => (
@@ -336,11 +376,11 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                             onClick={async () => {
                                 this.update_state(draft => {
                                     draft.modals.add_version.name.reason = VALIDATORS.VERSION_NAME(draft.modals.add_version.name.value)
-                                    draft.modals.add_version.version.reason = VALIDATORS.VERSION_NUMBER(draft.modals.add_version.version.value)
+                                    draft.modals.add_version.number.reason = VALIDATORS.VERSION_NUMBER(draft.modals.add_version.number.value)
                                 }).then(() => {
                                     return library_versions_api.add_version(
                                         this.state.modals.add_version.name.value,
-                                        this.state.modals.add_version.version.value,
+                                        this.state.modals.add_version.number.value,
                                         this.state.modals.add_version.created_by.id
                                     )
                                 }).then(this.close_modals)
@@ -365,11 +405,11 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                     <TextField
                         fullWidth
                         label={"Version Number"}
-                        value={this.state.modals.add_version.version.value}
+                        value={this.state.modals.add_version.number.value}
                         onChange={(evt) => {
                             evt.persist()
                             this.update_state(draft => {
-                                draft.modals.add_version.version.value = evt.target.value
+                                draft.modals.add_version.number.value = evt.target.value
                             })
                         }}
                     />
@@ -417,6 +457,104 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                 </ActionDialog>
                 <ActionDialog
                     on_close={this.close_modals}
+                    open={this.state.modals.edit_version.is_open}
+                    title={"Edit a Library Version"}
+                    actions={[(
+                        <Button
+                            key={0}
+                            onClick={this.close_modals}
+                            color="secondary"
+                        >
+                            Cancel
+                        </Button>
+                    ), (
+                        <Button
+                            key={1}
+                            onClick={() => {
+                                this.update_state(draft => {
+                                    draft.modals.edit_version.name.reason = VALIDATORS.VERSION_NAME(draft.modals.edit_version.name.value)
+                                    draft.modals.edit_version.number.reason = VALIDATORS.VERSION_NUMBER(draft.modals.edit_version.number.value)
+                                }).then(() => {
+                                    return library_versions_api.update_version(
+                                        this.state.modals.edit_version.version,
+                                        this.state.modals.edit_version.name.value || undefined,
+                                        this.state.modals.edit_version.number.value || undefined,
+                                        this.state.modals.edit_version.created_by.id !== 0 ? this.state.modals.edit_version.created_by : undefined
+                                    )
+                                }).then(this.close_modals)
+                            }}
+                            color="primary"
+                        >
+                            Edit
+                        </Button>
+                    )]}
+                >
+                    <TextField
+                        fullWidth
+                        label={"Version Name"}
+                        value={this.state.modals.edit_version.name.value}
+                        onChange={(evt) => {
+                            evt.persist()
+                            this.update_state(draft => {
+                                draft.modals.edit_version.name.value = evt.target.value
+                            })
+                        }}
+                    />
+                    <TextField
+                        fullWidth
+                        label={"Version Number"}
+                        value={this.state.modals.edit_version.number.value}
+                        onChange={(evt) => {
+                            evt.persist()
+                            this.update_state(draft => {
+                                draft.modals.edit_version.number.value = evt.target.value
+                            })
+                        }}
+                    />
+                    <Autocomplete
+                        value={this.state.modals.edit_version.created_by}
+                        onChange={(_evt, value: User | null) => {
+                            if (value?.id === -1) {
+                                users_api.add_user(value.name).then(() => {
+                                    const new_user = this.props.users_api.state.users.find(user => user.name == value.name)
+                                    if (new_user !== undefined) {
+                                        this.update_state(draft => {
+                                            draft.modals.edit_version.created_by = new_user
+                                        })
+                                    }
+                                })
+                            } else if (!(value === null)) {
+                                this.update_state(draft => {
+                                    draft.modals.edit_version.created_by = value
+                                })
+                            }
+                        }}
+                        filterOptions={(options, params) => {
+                            const filtered = this.auto_complete_filter(options, params)
+                            if (params.inputValue !== "") {
+                                filtered.push({
+                                    id: -1,
+                                    name: params.inputValue
+                                } as User)
+                            }
+                            return filtered
+                        }}
+                        handleHomeEndKeys
+                        options={users_api.state.users}
+                        getOptionLabel={option => {
+                            return option.id === -1 ? `Add new User "${option.name}"` : option.name
+                        }}
+                        renderInput={params => (
+                            <TextField
+                                {...params}
+                                variant={"standard"}
+                                placeholder={"User"}
+                            />
+                        )}
+                    />
+                </ActionDialog>
+                <ActionDialog
+                    on_close={this.close_modals}
                     open={this.state.modals.set_banner.is_open}
                     title={"Set Library Banner"}
                     actions={[(
@@ -430,10 +568,10 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                     )]}
                 >
                     <Grid container spacing={2}>
-                        {this.props.library_assets_api.state.assets_by_group[3]?.map(asset => {
-                            console.log(asset, this.props.library_versions_api.state.current_version.library_banner)
+                        {this.props.library_assets_api.state.assets_by_group[3]?.map((asset, idx) => {
                             return (
                                 <Grid
+                                    key={idx}
                                     item
                                     style={this.props.library_versions_api.state.current_version.library_banner === asset.id
                                     ? {backgroundColor: "#75b2dd"} : undefined}
