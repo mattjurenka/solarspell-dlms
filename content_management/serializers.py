@@ -32,7 +32,8 @@ class LibLayoutImageSerializer(ModelSerializer):
 class LibraryVersionSerializer(ModelSerializer):
     class Meta:
         model = LibraryVersion
-        fields = '__all__'
+        fields = ("id", "library_name", "version_number", "created_on",
+        "library_banner", "created_by", "user_info")
 
 
 class LibraryFolderSerializer(ModelSerializer):

@@ -105,6 +105,8 @@ const LibraryVersionsContext = React.createContext<LibraryVersionsAPI>({
     enter_parent: async () => {},
     add_version: async () => {},
     add_content_to_cd: async () => {},
+    set_version_image: async () => {},
+    delete_version: async () => {}
 });
 
 const UsersContext = React.createContext<UsersAPI>({

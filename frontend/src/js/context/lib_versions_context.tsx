@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { update_state } from '../utils';
 import { isString, cloneDeep } from 'lodash';
-import { LibraryVersionsState, LibraryVersion, LibraryFolder, SerializedContent } from '../types';
+import { LibraryVersionsState, LibraryVersion, LibraryFolder, SerializedContent, LibraryAsset } from '../types';
 import { LibraryVersionsContext } from './contexts';
 import { APP_URLS, get_data } from '../urls';
 import Axios from 'axios';
@@ -45,6 +45,7 @@ export default class LibVersionsProvider extends Component<{}, LibraryVersionsSt
         this.enter_parent = this.enter_parent.bind(this)
         this.add_version = this.add_version.bind(this)
         this.add_content_to_cd = this.add_content_to_cd.bind(this)
+        this.set_version_image = this.set_version_image.bind(this)
     }
 
     componentDidMount() {
@@ -120,10 +121,11 @@ export default class LibVersionsProvider extends Component<{}, LibraryVersionsSt
         return Promise.reject()
     }
 
-    async add_version(library_name: string, version_number: string) {
+    async add_version(library_name: string, version_number: string, user: number) {
         return Axios.post(APP_URLS.LIBRARY_VERSIONS, {
             library_name,
-            version_number
+            version_number,
+            created_by: user
         }).then(this.refresh_library_versions)
     }
 
@@ -140,6 +142,25 @@ export default class LibVersionsProvider extends Component<{}, LibraryVersionsSt
         return Promise.resolve()
     }
 
+    async set_version_image(asset: LibraryAsset) {
+        return Axios.patch(APP_URLS.LIBRARY_VERSION(this.state.current_version.id), {
+            library_banner: asset.id
+        }).then(this.refresh_library_versions)
+        .then(() => {
+            const new_version = this.state.library_versions.find(version => this.state.current_version.id === version.id)
+            if (new_version !== undefined) {
+                this.update_state(draft => {
+                    draft.current_version = cloneDeep(new_version)
+                })
+            }
+        })
+    }
+
+    async delete_version(version: LibraryVersion) {
+        return Axios.delete(APP_URLS.LIBRARY_VERSION(version.id))
+            .then(this.refresh_library_versions)
+    }
+
     render() {
         return (
             <LibraryVersionsContext.Provider
@@ -150,7 +171,9 @@ export default class LibVersionsProvider extends Component<{}, LibraryVersionsSt
                     enter_folder: this.enter_folder,
                     enter_parent: this.enter_parent,
                     add_version: this.add_version,
-                    add_content_to_cd: this.add_content_to_cd
+                    add_content_to_cd: this.add_content_to_cd,
+                    set_version_image: this.set_version_image,
+                    delete_version: this.delete_version
                 }}
             >
                 {this.props.children}

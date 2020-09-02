@@ -86,8 +86,10 @@ type LibraryVersionsAPI = {
     enter_version_root: (version: LibraryVersion) => Promise<any>
     enter_folder: (folder: LibraryFolder) => Promise<any>
     enter_parent: () => Promise<any>
-    add_version: (name: string, library_version: string) => Promise<any>
+    add_version: (name: string, library_version: string, user: number) => Promise<any>
     add_content_to_cd: (content: SerializedContent) => Promise<any>
+    set_version_image: (asset: LibraryAsset) => Promise<any>
+    delete_version: (version: LibraryVersion) => Promise<any>
 }
 
 type UsersAPI = {
