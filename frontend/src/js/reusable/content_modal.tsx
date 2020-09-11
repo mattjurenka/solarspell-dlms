@@ -305,8 +305,8 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                                     }))
                                             } else {
                                                 this.update_state(draft => {
-                                                draft.fields.metadata.value[metadata_type.name] = valid_meta
-                                            })
+                                                    draft.fields.metadata.value[metadata_type.name] = valid_meta
+                                                })
                                             }
 
                                         }}

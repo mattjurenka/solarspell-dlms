@@ -109,6 +109,14 @@ class LibraryVersion(models.Model):
     created_on = models.DateTimeField(default=datetime.now)
     created_by = models.ForeignKey(User, related_name="versions", on_delete=models.SET_NULL, null=True)
 
+    def user_info(self):
+        if self.created_by is None:
+            return None
+        return {
+            "id": self.created_by.id,
+            "name": self.created_by.name
+        }
+
     def __str__(self):
         return f'[{self.library_name}]{self.version_number}'
 

@@ -84,10 +84,13 @@ type LibraryVersionsAPI = {
     state: LibraryVersionsState
     refresh_library_versions: () => Promise<any>
     enter_version_root: (version: LibraryVersion) => Promise<any>
-    enter_folder: (folder: LibraryFolder) => Promise<any>
+    enter_folder: (folder: LibraryFolder, back?: number) => Promise<any>
     enter_parent: () => Promise<any>
-    add_version: (name: string, library_version: string) => Promise<any>
+    add_version: (name: string, library_version: string, user: number) => Promise<any>
     add_content_to_cd: (content: SerializedContent) => Promise<any>
+    set_version_image: (asset: LibraryAsset) => Promise<any>
+    update_version: (version: LibraryVersion, name?: string, number?: string, user?: User) => Promise<any>
+    delete_version: (version: LibraryVersion) => Promise<any>
 }
 
 type UsersAPI = {
@@ -223,6 +226,7 @@ type LibraryVersion = {
     library_name: string
     version_number: string
     library_banner: number
+    created_by: number
 }
 
 type LibraryFolder = {

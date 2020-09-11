@@ -47,7 +47,7 @@ export default class ContentsProvider extends Component<{}, ContentsProviderStat
         this.update_search_state = this.update_search_state.bind(this)
     }
     
-    componentWillMount() {
+    componentDidMount() {
         this.load_content_rows(1, 10, [])
     }
 
