@@ -69,13 +69,16 @@ const ContentsContext = React.createContext<ContentsAPI>({
             title: "",
             years_from: null,
             years_to: null
-        }
+        },
+        selection: [],
     },
     load_content_rows: async (_current_page: number, _page_size: number, _sorting: Sorting[]) => {},
     add_content: async (_fields: content_fields) => {},
     edit_content: async (_fields: content_fields, _to_edit: SerializedContent) => {},
     delete_content: async (_to_delete: SerializedContent) => {},
-    update_search_state: async () => {}
+    update_search_state: async () => {},
+    add_selected_to_folder: async () => {},
+    set_selection: async () => {}
 })
 
 const LibraryVersionsContext = React.createContext<LibraryVersionsAPI>({
@@ -98,17 +101,27 @@ const LibraryVersionsContext = React.createContext<LibraryVersionsAPI>({
             library_banner: 0,
             created_by: 0
         },
-        path: []
+        path: [],
+        folders_in_version: []
     },
     refresh_library_versions: async () => {},
     enter_version_root: async () => {},
     enter_folder: async () => {},
     enter_parent: async () => {},
     add_version: async () => {},
-    add_content_to_cd: async () => {},
     set_version_image: async () => {},
     delete_version: async () => {},
     update_version: async () => {},
+    create_child_folder: async () => {},
+    delete_folder: async () => {},
+    rename_folder: async () => {},
+    set_folder_banner: async () => {},
+    set_folder_logo: async () => {},
+    clone_version: async () => {},
+    refresh_current_directory: async () => {},
+    remove_content_from_folder: async () => {},
+    refresh_folders_in_current_version: async () => {},
+    add_content_to_folder: async () => {}
 });
 
 const UsersContext = React.createContext<UsersAPI>({

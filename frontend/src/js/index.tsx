@@ -11,6 +11,10 @@ import LibAssetsProvider from './context/lib_assets_provider';
 import LibVersionsProvider from './context/lib_versions_context';
 import UsersProvider from './context/users_provider';
 import ContentsProvider from './context/contents_provider';
+import { setAutoFreeze } from 'immer';
+
+setAutoFreeze(false)
+
 /*
 * Load main screen
 */

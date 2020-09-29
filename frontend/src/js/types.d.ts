@@ -78,6 +78,8 @@ type ContentsAPI = {
     edit_content: (fields: content_fields, to_edit: SerializedContent) => Promise<any>
     delete_content: (to_delete: SerializedContent) => Promise<any>
     update_search_state: (update_func: (draft: search_state) => void) => Promise<any>
+    add_selected_to_folder: (folder: LibraryFolder) => Promise<any>
+    set_selection: (selection: any[]) => Promise<any>
 }
 
 type LibraryVersionsAPI = {
@@ -87,10 +89,19 @@ type LibraryVersionsAPI = {
     enter_folder: (folder: LibraryFolder, back?: number) => Promise<any>
     enter_parent: () => Promise<any>
     add_version: (name: string, library_version: string, user: number) => Promise<any>
-    add_content_to_cd: (content: SerializedContent) => Promise<any>
     set_version_image: (asset: LibraryAsset) => Promise<any>
     update_version: (version: LibraryVersion, name?: string, number?: string, user?: User) => Promise<any>
     delete_version: (version: LibraryVersion) => Promise<any>
+    create_child_folder: (parent: LibraryFolder | LibraryVersion, name: string) => Promise<any>
+    delete_folder: (folder: LibraryFolder) => Promise<any>
+    rename_folder: (folder: LibraryFolder, new_name: string) => Promise<any>
+    set_folder_banner: (folder: LibraryFolder, banner: LibraryAsset) => Promise<any>
+    set_folder_logo: (folder: LibraryFolder, logo: LibraryAsset) => Promise<any>
+    clone_version: (version: LibraryVersion) => Promise<any>
+    refresh_current_directory: () => Promise<any>
+    remove_content_from_folder: (folder: LibraryFolder, to_remove: SerializedContent[]) => Promise<any>
+    add_content_to_folder: (folder: LibraryFolder, to_add: SerializedContent[]) => Promise<any>
+    refresh_folders_in_current_version: () => Promise<any>
 }
 
 type UsersAPI = {
@@ -125,6 +136,7 @@ interface LibraryVersionsState {
         files: SerializedContent[]
     }
     current_version: LibraryVersion
+    folders_in_version: [folder: LibraryFolder, path: string][]
     path: LibraryFolder[]
 }
 
@@ -166,6 +178,7 @@ type ContentsProviderState = {
     loaded_content: SerializedContent[]
     total_count: number
     search: search_state
+    selection: number[]
 }
 
 type UserProviderState = {

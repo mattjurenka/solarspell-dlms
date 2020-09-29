@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { ContentsProviderState, SerializedContent, content_filters, SerializedMetadata, content_fields, search_state } from '../types';
+import { ContentsProviderState, SerializedContent, content_filters, SerializedMetadata, content_fields, search_state, LibraryFolder } from '../types';
 import { update_state } from '../utils';
 import { ContentsContext } from './contexts';
 import Axios from 'axios';
@@ -36,7 +36,8 @@ export default class ContentsProvider extends Component<{}, ContentsProviderStat
                 title: "",
                 years_from: null,
                 years_to: null
-            }
+            },
+            selection: []
         }
 
         this.update_state = update_state.bind(this)
@@ -45,10 +46,23 @@ export default class ContentsProvider extends Component<{}, ContentsProviderStat
         this.add_content = this.add_content.bind(this)
         this.edit_content = this.edit_content.bind(this)
         this.update_search_state = this.update_search_state.bind(this)
+        this.set_selection = this.set_selection.bind(this)
     }
     
     componentDidMount() {
         this.load_content_rows(1, 10, [])
+    }
+
+    async set_selection(selection: number[]) {
+        return this.update_state(draft => {
+            draft.selection = selection
+        })
+    }
+
+    async add_selected_to_folder(folder: LibraryFolder) {
+        return Axios.post(APP_URLS.LIBRARY_FOLDER_ADD_CONTENT(folder.id), {
+            content_ids: this.state.selection.map(idx => this.state.loaded_content[idx].id)
+        })
     }
 
     load_content_rows = debounce(async (current_page: number, page_size: number, sorting: Sorting[]) => {
@@ -199,7 +213,9 @@ export default class ContentsProvider extends Component<{}, ContentsProviderStat
                     add_content: this.add_content,
                     edit_content: this.edit_content,
                     delete_content: this.delete_content,
-                    update_search_state: this.update_search_state
+                    update_search_state: this.update_search_state,
+                    add_selected_to_folder: this.add_selected_to_folder,
+                    set_selection: this.set_selection
                 }}
             >
                 {this.props.children}

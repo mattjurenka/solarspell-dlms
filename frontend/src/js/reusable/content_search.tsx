@@ -8,6 +8,7 @@ import {
     PagingPanel,
     Table,
     TableHeaderRow,
+    TableSelection
 } from "@devexpress/dx-react-grid-material-ui"
 import {
     CustomPaging,
@@ -15,6 +16,7 @@ import {
     SortingState,
     Sorting,
     Column,
+    SelectionState, IntegratedSelection 
 } from "@devexpress/dx-react-grid"
 import { ExpansionPanel, ExpansionPanelSummary, Typography, Grid, ExpansionPanelDetails, TextField, Container, Select, MenuItem } from '@material-ui/core'
 import { update_state } from '../utils'
@@ -29,11 +31,11 @@ interface ContentSearchProps {
     on_add?: (row: SerializedContent) => void
     contents_api: ContentsAPI
     metadata_api: MetadataAPI
+    selection?: boolean
 }
 
 interface ContentSearchState {
     is_open: boolean
-    total_count: number
     page_size: number
     current_page: number
     sorting: Sorting[]
@@ -52,7 +54,6 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
         
         this.state = {
             is_open: false,
-            total_count: 0,
             page_size: this.page_sizes[0],
             current_page: 0,
             sorting: []
@@ -334,9 +335,16 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                             }).then(this.reload_rows)
                         }}
                     />
-                    <CustomPaging totalCount={this.state.total_count}/>
+                    {this.props.selection ?
+                        [<SelectionState
+                            selection={this.props.contents_api.state.selection}
+                            onSelectionChange={this.props.contents_api.set_selection}
+                        />, <IntegratedSelection />] : null
+                    }
+                    <CustomPaging totalCount={this.props.contents_api.state.total_count}/>
                     <Table />
                     <TableHeaderRow showSortingControls />
+                    {this.props.selection ? <TableSelection showSelectAll /> : null}
                     <PagingPanel pageSizes={this.page_sizes} />
                 </DataGrid>
             </>
