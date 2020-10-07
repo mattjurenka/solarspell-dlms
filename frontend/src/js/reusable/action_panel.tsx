@@ -1,5 +1,5 @@
 import React from "react"
-import { Edit, Delete, CheckCircleOutline, HighlightOff, Visibility, ArrowBack } from "@material-ui/icons"
+import { Edit, Delete, CheckCircleOutline, HighlightOff, Visibility, ArrowBack, CropOriginal, FileCopy, Build, GetApp } from "@material-ui/icons"
 
 interface ActionPanelProps {
     row?: any,
@@ -8,10 +8,14 @@ interface ActionPanelProps {
     setActive?: (is_active: boolean) => void
     viewFn?: () => void
     addFn?: () => void
+    imageFn?: () => void
+    cloneFn?: () => void
+    buildFn?: () => void
+    downloadFn?: () => void
 }
 
 export default function ActionPanel(props:ActionPanelProps) {
-    const { row, editFn, deleteFn, setActive, viewFn, addFn } = props
+    const { row, editFn, deleteFn, setActive, viewFn, addFn, imageFn, cloneFn, buildFn, downloadFn } = props
     const pointerStyle = {
         cursor: 'pointer'
     }
@@ -59,11 +63,35 @@ export default function ActionPanel(props:ActionPanelProps) {
             {viewFn !== undefined ? (
                 <Visibility
                     style={pointerStyle}
-                    onClick={() => viewFn()}
+                    onClick={viewFn}
                 />
             ) : (
                 <></>
             )}
+            {imageFn !== undefined ? (
+                <CropOriginal
+                    style={pointerStyle}
+                    onClick={imageFn}
+                />
+            ) : <></>}
+            {cloneFn !== undefined ? (
+                <FileCopy
+                    style={pointerStyle}
+                    onClick={cloneFn}
+                />
+            ) : <></>}
+            {buildFn !== undefined ? (
+                <Build
+                    style={pointerStyle}
+                    onClick={buildFn}
+                />
+            ) : <></>}
+            {downloadFn !== undefined ? (
+                <GetApp
+                    style={pointerStyle}
+                    onClick={downloadFn}
+                />
+            ) : <></>}
         </>
     )
 }

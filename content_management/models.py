@@ -48,6 +48,7 @@ class Content(models.Model):
     published_date = models.DateField(null=True)
     reviewed_on = models.DateField(null=True)
     active = models.BooleanField(default=1)
+    duplicatable = models.BooleanField(default=0)
 
     def published_year(self):
         return None if self.published_date == None else str(self.published_date.year)

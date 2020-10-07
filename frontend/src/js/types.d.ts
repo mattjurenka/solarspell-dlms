@@ -7,8 +7,16 @@ interface TabDict {
 
 interface TabData {
     display_label: JSX.Element | string,
-    component: (tabs: TabDict) => JSX.Element,
+    component: (tabs: TabDict, apis: APIs) => JSX.Element,
     icon: any
+}
+
+interface APIs {
+    contents_api: ContentsAPI
+    lib_versions_api: LibraryVersionsAPI
+    lib_assets_api: LibraryAssetsAPI
+    users_api: UsersAPI
+    metadata_api: MetadataAPI
 }
 
 interface SerializedMetadata {
@@ -28,6 +36,7 @@ type content_filters = {
     active?: boolean
     metadata?: number[]
     sort?: string
+    duplicatable?: boolean
 }
 
 interface SerializedContent {
@@ -42,6 +51,7 @@ interface SerializedContent {
     copyright: string|null
     rights_statement: string|null
     active: boolean
+    duplicatable: boolean
     metadata: number[]
     metadata_info: SerializedMetadata[]
     published_year: string|null
@@ -78,6 +88,9 @@ type ContentsAPI = {
     edit_content: (fields: content_fields, to_edit: SerializedContent) => Promise<any>
     delete_content: (to_delete: SerializedContent) => Promise<any>
     update_search_state: (update_func: (draft: search_state) => void) => Promise<any>
+    add_selected_to_folder: (folder: LibraryFolder) => Promise<any>
+    set_selection: (selection: any[]) => Promise<any>
+    reset_search: () => Promise<any>
 }
 
 type LibraryVersionsAPI = {
@@ -87,10 +100,19 @@ type LibraryVersionsAPI = {
     enter_folder: (folder: LibraryFolder, back?: number) => Promise<any>
     enter_parent: () => Promise<any>
     add_version: (name: string, library_version: string, user: number) => Promise<any>
-    add_content_to_cd: (content: SerializedContent) => Promise<any>
     set_version_image: (asset: LibraryAsset) => Promise<any>
     update_version: (version: LibraryVersion, name?: string, number?: string, user?: User) => Promise<any>
     delete_version: (version: LibraryVersion) => Promise<any>
+    create_child_folder: (parent: LibraryFolder | LibraryVersion, name: string) => Promise<any>
+    delete_folder: (folder: LibraryFolder) => Promise<any>
+    rename_folder: (folder: LibraryFolder, new_name: string) => Promise<any>
+    set_folder_banner: (folder: LibraryFolder, banner: LibraryAsset) => Promise<any>
+    set_folder_logo: (folder: LibraryFolder, logo: LibraryAsset) => Promise<any>
+    clone_version: (version: LibraryVersion) => Promise<any>
+    refresh_current_directory: () => Promise<any>
+    remove_content_from_folder: (folder: LibraryFolder, to_remove: SerializedContent[]) => Promise<any>
+    add_content_to_folder: (folder: LibraryFolder, to_add: SerializedContent[]) => Promise<any>
+    refresh_folders_in_current_version: () => Promise<any>
 }
 
 type UsersAPI = {
@@ -113,28 +135,17 @@ type group_to_name = {
 }
 
 interface LibraryVersionsState {
-    initialized: boolean
-    loaded: boolean
-    error: {
-        is_error: boolean
-        message: string
-    },
     library_versions: LibraryVersion[]
     current_directory: {
         folders: LibraryFolder[]
         files: SerializedContent[]
     }
     current_version: LibraryVersion
+    folders_in_version: [folder: LibraryFolder, path: string][]
     path: LibraryFolder[]
 }
 
 interface LibraryAssetsState {
-    initialized: boolean
-    loaded: boolean
-    error: {
-        is_error: boolean
-        message: string
-    }
     assets: LibraryAsset[]
     assets_by_group: {
         [G in AssetGroup]?: LibraryAsset[]
@@ -143,38 +154,22 @@ interface LibraryAssetsState {
 }
 
 type MetadataProviderState = {
-    initialized: boolean
-    loaded: boolean
-    error: {
-        is_error: boolean
-        message: string
-    }
     metadata: SerializedMetadata[]
     metadata_by_type: metadata_dict
     metadata_types: SerializedMetadataType[]
 }
 
 type ContentsProviderState = {
-    initialized: boolean
-    loaded: boolean
-    error: {
-        is_error: boolean
-        message: string
-    }
     last_request_timestamp: number
     display_rows: any[]
     loaded_content: SerializedContent[]
     total_count: number
     search: search_state
+    selection: number[]
+    filter_out: number[]
 }
 
 type UserProviderState = {
-    initialized: boolean
-    loaded: boolean
-    error: {
-        is_error: boolean
-        message: string
-    }
     users: User[]
 }
 
@@ -204,6 +199,7 @@ type content_fields = {
     metadata:           metadata_dict
     copyright:          string
     rights_statement:   string
+    duplicatable:       boolean
 }
 
 type active_search_option = "active" | "inactive" | "all"
@@ -219,6 +215,7 @@ type search_state = {
     file_size_to: number | null
     reviewed_from: Date | null
     reviewed_to: Date | null
+    duplicatable: "all" | "yes" | "no"
 }
 
 type LibraryVersion = {

@@ -20,12 +20,15 @@ import library_assets from "../images/home_icons/library_assets.png"
 import { Snackbar, CircularProgress, Box} from '@material-ui/core';
 import { Alert } from '@material-ui/lab';
 import { update_state } from './utils';
-import { MetadataContext, LibraryAssetsContext, LibraryVersionsContext, UsersContext, ContentsContext } from './context/contexts';
-import { TabDict, MetadataAPI, LibraryAssetsAPI, LibraryVersionsAPI } from './types';
+import { APIs, TabDict } from './types';
 import LibraryAssets from './library_assets';
 import Libraries from './libraries';
+import LibraryImages from './library_images';
+import SystemInfo from './system_info';
 
-interface MainScreenProps {}
+interface MainScreenProps {
+    apis: APIs
+}
 
 interface MainScreenState {
     url: URL,
@@ -43,7 +46,7 @@ interface MainScreenState {
 class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
     tabs: TabDict
     update_state: (update_func: (draft: MainScreenState) => void) => Promise<void>
-    constructor(props: MainScreenState) {
+    constructor(props: MainScreenProps) {
         super(props)
         
         this.change_tab = this.change_tab.bind(this)
@@ -51,111 +54,65 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
         this.tabs = {
             "home": {
                 display_label: <img src={solarSpellLogo} className="spellLogo" />,
-                component: (tabs) => <HomeScreen change_tab={this.change_tab} tabs={tabs}/>,
+                component: (tabs, _apis) => <HomeScreen change_tab={this.change_tab} tabs={tabs}/>,
                 icon: null
             },
             "metadata": {
                 display_label: "Metadata",
-                component: () => (
-                    <MetadataContext.Consumer>
-                        {(value: MetadataAPI) => (
-                            <Metadata
-                                metadata_api={value}
-                                show_toast_message={this.show_toast_message}
-                            />
-                        )}
-                    </MetadataContext.Consumer>
+                component: (_tabs, apis) => (
+                    <Metadata
+                        metadata_api={apis.metadata_api}
+                        show_toast_message={this.show_toast_message}
+                    />
                 ),
                 icon: metadata
             },
             "contents": {
                 display_label: "Contents",
-                component: () => (
-                        <MetadataContext.Consumer>
-                            {(value: MetadataAPI) => {
-                                const metadata_api = value
-                                return(
-                                    <ContentsContext.Consumer>
-                                        {(value) => {
-                                            return (
-                                                <Content
-                                                    metadata_api={metadata_api}
-                                                    show_toast_message={this.show_toast_message}
-                                                    close_toast={this.close_toast}
-                                                    contents_api={value}
-                                                    show_loader={this.show_loader}
-                                                    remove_loader={this.remove_loader}
-                                                />
-                                            )
-                                        }}
-                                    </ContentsContext.Consumer>
-                                )
-                            }}
-                        </MetadataContext.Consumer>
-                    ),
+                component: (_tabs, apis) => (
+                    <Content
+                        metadata_api={apis.metadata_api}
+                        show_toast_message={this.show_toast_message}
+                        close_toast={this.close_toast}
+                        contents_api={apis.contents_api}
+                        show_loader={this.show_loader}
+                        remove_loader={this.remove_loader}
+                    />
+                ),
                 icon: contents
             },
             "library_assets": {
-                display_label: "Library Assets",
-                component: () => (
-                    <LibraryAssetsContext.Consumer>
-                        {(value: LibraryAssetsAPI) => {
-                            return (
-                                <LibraryAssets
-                                    library_assets_api={value}
-                                />
-                            )
-                        }}
-                    </LibraryAssetsContext.Consumer>
+            display_label: "Library Assets",
+                component: (_tabs, apis) => (
+                    <LibraryAssets
+                        library_assets_api={apis.lib_assets_api}
+                    />
                 ),
                 icon: library_assets
             },
             "libraries": {
                 display_label: "Libraries",
-                component: () => (
-                    //TODO: refractor
-                    <LibraryVersionsContext.Consumer>
-                        {(value: LibraryVersionsAPI) => {
-                            const lib_versions_api = value
-                            return (<LibraryAssetsContext.Consumer>
-                                {(value: LibraryAssetsAPI) => {
-                                    const lib_assets_api = value
-                                    return (<UsersContext.Consumer>
-                                        {value => {
-                                            const users_api = value
-                                            return (<MetadataContext.Consumer>
-                                                {value => {
-                                                    const metadata_api = value
-                                                    return (<ContentsContext.Consumer>
-                                                            {value => (
-                                                                <Libraries 
-                                                                    library_versions_api={lib_versions_api}
-                                                                    library_assets_api={lib_assets_api}
-                                                                    users_api={users_api}
-                                                                    metadata_api={metadata_api}
-                                                                    contents_api={value}
-                                                                />
-                                                            )}
-                                                    </ContentsContext.Consumer>)
-                                                }}
-                                            </MetadataContext.Consumer>)
-                                        }}
-                                    </UsersContext.Consumer>)
-                                }}
-                            </LibraryAssetsContext.Consumer>)
-                        }}
-                    </LibraryVersionsContext.Consumer>
+                component: (_tabs, apis) => (
+                    <Libraries 
+                        library_versions_api={apis.lib_versions_api}
+                        library_assets_api={apis.lib_assets_api}
+                        users_api={apis.users_api}
+                        metadata_api={apis.metadata_api}
+                        contents_api={apis.contents_api}
+                    />
                 ),
                 icon: library_versions
             },
             "images": {
                 display_label: "SolarSPELL Images",
-                component: () => <h1>images</h1>,
+                component: (_tabs, apis) => (
+                    <LibraryImages library_versions_api={apis.lib_versions_api}/>
+                ),
                 icon: solarspell_images
             },
             "system_info": {
                 display_label: "System Info",
-                component: () => <h1>images</h1>,
+                component: () => <SystemInfo />,
                 icon: system_info
             }
         }
@@ -231,6 +188,7 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
         const tabs_jsx = Object.entries(this.tabs).map(([tab_name, tab_data]) => {
             return <Tab key={tab_name} value={tab_name} label={(tab_data as any).display_label} />
         })
+
         return (
             <React.Fragment>
                 <Grid container justify="center" alignItems="center" style={{height: '100%'}}>
@@ -245,7 +203,7 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                     </Tabs>
                 </Grid>
                 <Grid style={{marginTop: '20px'}}>
-                    {this.tabs[this.state.current_tab].component(this.tabs)}
+                    {this.tabs[this.state.current_tab].component(this.tabs, this.props.apis)}  
                 </Grid>
                 <Snackbar
                     anchorOrigin={{

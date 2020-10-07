@@ -14,9 +14,12 @@ from content_management.serializers import ContentSerializer, MetadataSerializer
 from content_management.standardize_format import build_response
 from content_management.paginators import PageNumberSizePagination
 
+from django.db.models import Q
+
 from django.http import HttpResponse
 
 import csv
+from rest_framework.generics import get_object_or_404
 
 class StandardDataView:
 
@@ -60,8 +63,17 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
         
         active_raw = self.request.GET.get("active", None)
         if active_raw is not None:
-            active = active_raw.lower() == "true"
-            queryset = queryset.filter(active=active)
+            if active_raw.lower() == "true":
+                queryset = queryset.filter(active=True)
+            if active_raw.lower() == "false":
+                queryset = queryset.filter(active=False)
+
+        duplicated_raw = self.request.GET.get("duplicatable", None)
+        if duplicated_raw is not None:
+            if duplicated_raw.lower() == "true":
+                queryset = queryset.filter(duplicatable=True)
+            if duplicated_raw.lower() == "false":
+                queryset = queryset.filter(duplicatable=False)
         
         metadata_raw = self.request.GET.get("metadata", None)
         if metadata_raw is not None:
@@ -128,6 +140,18 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
                 queryset = queryset.order_by(order_str)
             except:
                 pass
+        
+        exclude_version = self.request.GET.get("exclude_in_version", None)
+        if exclude_version is not None:
+            try:
+                content_in_version = LibraryFolder.objects.filter(version_id=exclude_version).values_list('library_content', flat=True)
+                id_list = list(content_in_version)
+                if id_list != [None]:
+                    print(id_list)
+                    queryset = queryset.filter(Q(duplicatable=True) | ~Q(id__in=id_list))
+                print(queryset)
+            except Exception as e:
+                print(e)
 
         return queryset
 
@@ -173,6 +197,53 @@ class LibraryVersionViewSet(StandardDataView, viewsets.ModelViewSet):
                 many=True
             ).data if pk is not None else []
         )
+    
+    @action(methods=['get'], detail=True)
+    def folders(self, request, pk=None):
+        return build_response(LibraryFolderSerializer(
+                LibraryFolder.objects.filter(version=pk).order_by("id"),
+                many=True
+            ).data if pk is not None else []
+        )
+    
+    @action(methods=['get'], detail=True)
+    def clone(self, request, pk=None):
+        if pk is None:
+            return build_response(
+                status=status.HTTP_400_BAD_REQUEST,
+                success=False,
+                error="No Folder ID supplied"
+                )
+        
+        version_to_clone = get_object_or_404(LibraryVersion, id=pk)
+
+        #clone version
+        version_to_clone.id = None
+        version_to_clone.library_name = "(CLONED) " +  version_to_clone.library_name
+        version_to_clone.save()
+
+        def clone_recursively(folder_to_clone, new_parent):
+            #save relationships of the old folder
+            subfolders = folder_to_clone.subfolders.all()
+            library_content = folder_to_clone.library_content.all()
+            
+            #clone subfolder
+            folder_to_clone.id = None
+            folder_to_clone.save()
+            folder_to_clone.parent = new_parent
+            folder_to_clone.version = version_to_clone
+            folder_to_clone.library_content.set(library_content)
+            folder_to_clone.save()
+            
+            for child in subfolders:
+                clone_recursively(child, folder_to_clone)
+        
+        [
+            clone_recursively(top_level_folder, None) for top_level_folder
+            in LibraryFolder.objects.filter(parent=None, version_id=pk)
+        ]
+
+        return build_response(LibraryVersionSerializer(version_to_clone).data)
 
 
 
@@ -210,17 +281,44 @@ class LibraryFolderViewSet(StandardDataView, viewsets.ModelViewSet):
                 success=False,
                 error="No Folder ID supplied"
             )
-        content_id = request.data.get("content_id", None) 
-        if content_id is None:
+        content_ids = request.data.get("content_ids", None) 
+        if content_ids is None:
             return build_response(
                 status=status.HTTP_400_BAD_REQUEST,
                 success=False,
                 error="No Content ID supplied"
             )
         
-        self.get_queryset().get(id=pk).library_content.add(
-            Content.objects.get(id=content_id)
-        )
+        folder = self.get_queryset().get(id=pk)
+        for content_id in content_ids:
+            folder.library_content.add(
+                Content.objects.get(id=content_id)
+            )
+
+        return build_response()
+    
+    @action(methods=['post'], detail=True)
+    def removecontent(self, request, pk=None):
+        if pk is None:
+            return build_response(
+                status=status.HTTP_400_BAD_REQUEST,
+                success=False,
+                error="No Folder ID supplied"
+            )
+        
+        content_ids = request.data.get("content_ids", None) 
+        if content_ids is None:
+            return build_response(
+                status=status.HTTP_400_BAD_REQUEST,
+                success=False,
+                error="No Content ID supplied"
+            )
+        
+        folder = self.get_queryset().get(id=pk)
+        for content_id in content_ids:
+            folder.library_content.remove(
+                Content.objects.get(id=content_id)
+            )
 
         return build_response()
 

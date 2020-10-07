@@ -1,6 +1,6 @@
 import React, { Component, Fragment, RefObject } from 'react';
 import { LibraryAssetsAPI, AssetGroup, LibraryAsset, field_info } from './types';
-import { Typography, Grid, Button, Box, TextField } from '@material-ui/core';
+import { Typography, Grid, Button, TextField } from '@material-ui/core';
 import { isUndefined, capitalize, isNull, cloneDeep } from 'lodash';
 import ActionDialog from './reusable/action_dialog';
 import { update_state, get_field_info_default } from './utils';

@@ -1,7 +1,7 @@
 import Axios from "axios"
 import { isUndefined } from 'lodash'
 import { format } from 'date-fns'
-import { content_filters } from './types'
+import { content_filters, LibraryVersion } from './types'
 
 const api_path = "api"
 
@@ -16,11 +16,11 @@ function url_with_params(urlstr: string, params:[string, any][]=[]) {
 const APP_URLS = {
     API: url_with_params(api_path),
     CONTENT: url_with_params(`${api_path}/contents/`),
-    CONTENT_PAGE: (page: number, size: number, filters?: content_filters) => {
+    CONTENT_PAGE: (page: number, size: number, filters?: content_filters, exclude_if_in_version?: LibraryVersion) => {
         //TODO: refractor
         const content_filter = filters || {}
         const {
-            title, years, filename, copyright, active, metadata, sort, file_sizes, reviewed_on
+            title, years, filename, copyright, active, metadata, sort, file_sizes, reviewed_on, duplicatable
         } = content_filter
         const filters_arr: [string, any][] = [["page", `${page}`], ["size", `${size}`]]
         
@@ -42,6 +42,8 @@ const APP_URLS = {
         if (!isUndefined(active)) filters_arr.push(["active", active ? "true" : "false"])
         if (!isUndefined(metadata) && metadata.length > 0) filters_arr.push(["metadata", metadata.join(",")])
         if (!isUndefined(sort)) filters_arr.push(["sort", sort])
+        if (!isUndefined(duplicatable)) filters_arr.push(["duplicatable", duplicatable])
+        if (!isUndefined(exclude_if_in_version)) filters_arr.push(["exclude_in_version", exclude_if_in_version.id])
 
         return url_with_params(`${api_path}/contents/`, filters_arr)
     },
@@ -50,11 +52,16 @@ const APP_URLS = {
     CONTENT_FOLDER: url_with_params("media/contents/"),
     LIBRARY_ASSETS: url_with_params(`${api_path}/lib_layout_images/`),
     LIBRARY_ASSET_ITEM: (id: number) => url_with_params(`${api_path}/lib_layout_images/${id}/`),
-    LIBRARY_VERSION: (id: number) => url_with_params(`${api_path}/library_versions/${id}/`),
-    LIBRARY_VERSIONS: url_with_params(`${api_path}/library_versions/`),
-    LIBRARY_ROOT_FOLDERS: (id:number) => url_with_params(`${api_path}/library_versions/${id}/root/`),
+    LIBRARY_FOLDER: (id: number) => url_with_params(`${api_path}/library_folders/${id}/`),
+    LIBRARY_FOLDERS: url_with_params(`${api_path}/library_folders/`),
     LIBRARY_FOLDER_ADD_CONTENT: (folder_id: number) => url_with_params(`${api_path}/library_folders/${folder_id}/addcontent/`),
+    LIBRARY_FOLDER_REMOVE_CONTENT: (folder_id: number) => url_with_params(`${api_path}/library_folders/${folder_id}/removecontent/`),
     LIBRARY_FOLDER_CONTENTS: (id: number) => url_with_params(`${api_path}/library_folders/${id}/contents/`),
+    LIBRARY_ROOT_FOLDERS: (id:number) => url_with_params(`${api_path}/library_versions/${id}/root/`),
+    LIBRARY_VERSION: (id: number) => url_with_params(`${api_path}/library_versions/${id}/`),
+    LIBRARY_VERSION_CLONE: (id: number) => url_with_params(`${api_path}/library_versions/${id}/clone/`),
+    LIBRARY_VERSION_FOLDERS: (id: number) => url_with_params(`${api_path}/library_versions/${id}/folders/`),
+    LIBRARY_VERSIONS: url_with_params(`${api_path}/library_versions/`),
     METADATA: url_with_params(`${api_path}/metadata/`),
     METADATA_ITEM: (id: number) => url_with_params(`${api_path}/metadata/${id}/`),
     METADATA_TYPE: (id: number) => url_with_params(`${api_path}/metadata_types/${id}/`),

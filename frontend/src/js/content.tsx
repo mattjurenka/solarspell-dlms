@@ -57,8 +57,6 @@ export default class Content extends Component<ContentProps, ContentState> {
     modal_defaults: ContentModals
     content_defaults: SerializedContent
 
-    
-
     constructor(props: ContentProps) {
         super(props)
 
@@ -78,7 +76,8 @@ export default class Content extends Component<ContentProps, ContentState> {
             active: false,
             metadata: [],
             metadata_info: [],
-            published_year: ""
+            published_year: "",
+            duplicatable: false
         }
 
         this.modal_defaults = {
@@ -229,7 +228,8 @@ export default class Content extends Component<ContentProps, ContentState> {
                         reviewed_on: VALIDATORS.REVIEWED_ON,
                         metadata: VALIDATORS.METADATA,
                         copyright: VALIDATORS.COPYRIGHT,
-                        rights_statement: VALIDATORS.RIGHTS_STATEMENT
+                        rights_statement: VALIDATORS.RIGHTS_STATEMENT,
+                        duplicatable: () => ""
                     }}
                     show_toast_message={this.props.show_toast_message}
                     show_loader={this.props.show_loader}
@@ -253,7 +253,8 @@ export default class Content extends Component<ContentProps, ContentState> {
                         reviewed_on: VALIDATORS.REVIEWED_ON,
                         metadata: VALIDATORS.METADATA,
                         copyright: VALIDATORS.COPYRIGHT,
-                        rights_statement: VALIDATORS.RIGHTS_STATEMENT
+                        rights_statement: VALIDATORS.RIGHTS_STATEMENT,
+                        duplicatable: () => ""
                     }}
                     show_toast_message={this.props.show_toast_message}
                     show_loader={this.props.show_loader}
