@@ -235,6 +235,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
                     draft.contents_api.loaded_content = rows
                     draft.contents_api.display_rows = display_rows
                     draft.contents_api.total_count = data.count
+                    draft.contents_api.selection = []
                 })
             }
         })
