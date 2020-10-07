@@ -23,6 +23,7 @@ import { update_state } from './utils';
 import { APIs, TabDict } from './types';
 import LibraryAssets from './library_assets';
 import Libraries from './libraries';
+import LibraryImages from './library_images';
 
 interface MainScreenProps {
     apis: APIs
@@ -103,7 +104,9 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
             },
             "images": {
                 display_label: "SolarSPELL Images",
-                component: () => <h1>images</h1>,
+                component: (_tabs, apis) => (
+                    <LibraryImages library_versions_api={apis.lib_versions_api}/>
+                ),
                 icon: solarspell_images
             },
             "system_info": {
@@ -181,10 +184,11 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
     }
 
     render() {
+        console.log(this.props.apis)
         const tabs_jsx = Object.entries(this.tabs).map(([tab_name, tab_data]) => {
             return <Tab key={tab_name} value={tab_name} label={(tab_data as any).display_label} />
         })
-        console.log("rendering main", this.props.apis.contents_api.state.display_rows)
+
         return (
             <React.Fragment>
                 <Grid container justify="center" alignItems="center" style={{height: '100%'}}>

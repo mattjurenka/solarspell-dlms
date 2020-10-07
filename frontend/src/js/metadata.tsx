@@ -176,17 +176,9 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
     }
 
     render() {
-        const metadata_api = this.props.metadata_api
-        if (metadata_api.state === undefined || !metadata_api.state.loaded) {
-            return <Typography variant={"h3"}>Loading...</Typography>
-        }
-        if (metadata_api.state.error.is_error) {
-            return <Typography variant={"h3"}>Error: {metadata_api.state.error.message}</Typography>
-        }
-
         const panels = Object.keys(this.state.panel_data).map((type_name, idx) => {
             const expanded = this.state.panel_data[type_name]
-            const metadata_type = metadata_api.state.metadata_types.find(to_test => to_test.name === type_name)
+            const metadata_type = this.props.metadata_api.state.metadata_types.find(to_test => to_test.name === type_name)
             if (metadata_type === undefined) {
                 return <></>
             }
@@ -236,7 +228,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     </ExpansionPanelSummary>
                     <ExpansionPanelDetails>
                         <DataGrid
-                            rows={metadata_api.state.metadata_by_type[metadata_type.name]}
+                            rows={((val => val === undefined ? [] : val))(this.props.metadata_api.state.metadata_by_type[metadata_type.name])}
                             columns={[
                                 { name: 'actions', title: 'Actions', getCellValue: (row: SerializedMetadata) => {
                                     return (
@@ -314,7 +306,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                                     )
                                 }).then(() => {
                                     if (this.state.modals.delete_meta.confirm_text.reason === "") {
-                                        metadata_api.delete_metadata(this.state.modals.delete_meta.metadata)
+                                        this.props.metadata_api.delete_metadata(this.state.modals.delete_meta.metadata)
                                         this.close_modals()
                                     }
                                 })
@@ -358,7 +350,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         <Button
                             key={1}
                             onClick={()=> {
-                                metadata_api.add_metadata_type(this.state.modals.create_type.type_name)
+                                this.props.metadata_api.add_metadata_type(this.state.modals.create_type.type_name)
                                 this.close_modals()
                             }}
                             color="primary"
@@ -395,7 +387,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         <Button
                             key={1}
                             onClick={()=> {
-                                metadata_api.add_metadata(this.state.modals.create_meta.meta_name, this.state.modals.create_meta.meta_type)
+                                this.props.metadata_api.add_metadata(this.state.modals.create_meta.meta_name, this.state.modals.create_meta.meta_type)
                                 this.close_modals()
                             }}
                             color="primary"
@@ -432,7 +424,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         <Button
                             key={1}
                             onClick={()=> {
-                                metadata_api.edit_metadata(this.state.modals.edit_meta.metadata, this.state.modals.edit_meta.new_name)
+                                this.props.metadata_api.edit_metadata(this.state.modals.edit_meta.metadata, this.state.modals.edit_meta.new_name)
                                 this.close_modals()
                             }}
                             color="primary"
@@ -469,7 +461,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         <Button
                             key={1}
                             onClick={()=> {
-                                metadata_api.edit_metadata_type(this.state.modals.edit_type.old_type, this.state.modals.edit_type.new_name)
+                                this.props.metadata_api.edit_metadata_type(this.state.modals.edit_type.old_type, this.state.modals.edit_type.new_name)
                                 this.close_modals()
                             }}
                             color="primary"
@@ -512,7 +504,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                                     )
                                 }).then(() => {
                                     if (this.state.modals.delete_type.confirm_text.reason === "") {
-                                        metadata_api.delete_metadata_type(this.state.modals.delete_type.meta_type)
+                                        this.props.metadata_api.delete_metadata_type(this.state.modals.delete_type.meta_type)
                                         this.close_modals()
                                     }
                                 })
