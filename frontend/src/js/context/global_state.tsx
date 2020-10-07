@@ -5,7 +5,7 @@ import { content_display } from '../settings';
 import { APIs, AssetGroup, ContentsProviderState, content_fields, content_filters, LibraryAsset, LibraryAssetsState, LibraryFolder, LibraryVersion, LibraryVersionsState, MetadataProviderState, metadata_dict, search_state, SerializedContent, SerializedMetadata, SerializedMetadataType, User, UserProviderState } from '../types';
 import { APP_URLS, get_data } from '../urls';
 import { update_state } from '../utils';
-import { cloneDeep, debounce, get, range, set } from 'lodash';
+import { cloneDeep, get, range, set } from 'lodash';
 import React from 'react';
 
 interface GlobalStateProps {
@@ -97,6 +97,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
         this.update_search_state = this.update_search_state.bind(this)
         this.set_selection = this.set_selection.bind(this)
         this.reset_search = this.reset_search.bind(this)
+        this.add_selected_to_folder = this.add_selected_to_folder.bind(this)
 
         //MetadataAPI
         this.refresh_metadata = this.refresh_metadata.bind(this)
@@ -165,10 +166,10 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
     async add_selected_to_folder(folder: LibraryFolder) {
         return Axios.post(APP_URLS.LIBRARY_FOLDER_ADD_CONTENT(folder.id), {
             content_ids: this.state.contents_api.selection.map(idx => this.state.contents_api.loaded_content[idx].id)
-        })
+        }).then(() => this.load_content_rows(1, 10, []))
     }
 
-    load_content_rows = debounce(async (current_page: number, page_size: number, sorting: Sorting[]) => {
+    load_content_rows = async (current_page: number, page_size: number, sorting: Sorting[]) => {
 
         const search = this.state.contents_api.search
         const active_filter = {
@@ -237,7 +238,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
                 })
             }
         })
-    }, 200)
+    }
 
     async add_content(fields: content_fields) {
         const form_data = new FormData()

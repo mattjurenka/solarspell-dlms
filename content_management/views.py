@@ -145,7 +145,11 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
         if exclude_version is not None:
             try:
                 content_in_version = LibraryFolder.objects.filter(version_id=exclude_version).values_list('library_content', flat=True)
-                queryset = queryset.filter(Q(duplicatable=True) | ~Q(id__in=content_in_version))
+                id_list = list(content_in_version)
+                if id_list != [None]:
+                    print(id_list)
+                    queryset = queryset.filter(Q(duplicatable=True) | ~Q(id__in=id_list))
+                print(queryset)
             except Exception as e:
                 print(e)
 
