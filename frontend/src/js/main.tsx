@@ -24,6 +24,7 @@ import { APIs, TabDict } from './types';
 import LibraryAssets from './library_assets';
 import Libraries from './libraries';
 import LibraryImages from './library_images';
+import SystemInfo from './system_info';
 
 interface MainScreenProps {
     apis: APIs
@@ -111,7 +112,7 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
             },
             "system_info": {
                 display_label: "System Info",
-                component: () => <h1>images</h1>,
+                component: () => <SystemInfo />,
                 icon: system_info
             }
         }
@@ -184,7 +185,6 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
     }
 
     render() {
-        console.log(this.props.apis)
         const tabs_jsx = Object.entries(this.tabs).map(([tab_name, tab_data]) => {
             return <Tab key={tab_name} value={tab_name} label={(tab_data as any).display_label} />
         })

@@ -109,7 +109,6 @@ export default class BulkContentModal extends Component<BulkContentModalProps, B
                                             unknown_err_str
                                         ),false)
                                     })
-                                    console.log(request_data)
                             })
                         }}
                         color="primary"

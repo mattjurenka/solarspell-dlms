@@ -15,7 +15,6 @@ export default class LibraryImages extends React.Component<LibraryImagesProps, L
     }
 
     render() {
-        console.log(this.props.library_versions_api)
         return (
             <>
                 <Typography>Library Images</Typography>

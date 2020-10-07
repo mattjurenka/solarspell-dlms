@@ -113,7 +113,6 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                         key={2}
                         onClick={()=> {
                             this.props.show_loader()
-                            console.log("clicked")
                             this.update_state(draft => {
                                 const file_raw = this.file_input_ref.current?.files?.item(0)
                                 draft.fields.content_file.value = typeof(file_raw) === "undefined" ? null : file_raw
@@ -128,7 +127,6 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                             }))
                             .then(() => {
                                 for (const key in this.state.fields) {
-                                    console.log(key)
                                     if (this.state.fields[key as keyof content_fields].reason !== "") {
                                         return
                                     }

@@ -101,7 +101,6 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
     }
 
     async reload_rows() {
-        console.log(this.props.versions_api?.state?.current_version)
         return this.props.contents_api.load_content_rows(
             this.state.current_page + 1,
             this.state.page_size,
