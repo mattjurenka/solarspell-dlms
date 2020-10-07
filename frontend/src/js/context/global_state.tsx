@@ -165,7 +165,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
 
     async add_selected_to_folder(folder: LibraryFolder) {
         return Axios.post(APP_URLS.LIBRARY_FOLDER_ADD_CONTENT(folder.id), {
-            content_ids: this.state.contents_api.selection.map(idx => this.state.contents_api.loaded_content[idx].id)
+            content_ids: this.state.contents_api.selection.map(idx => this.state.contents_api.loaded_content[idx]?.id).filter(v => v !== undefined)
         }).then(() => this.load_content_rows(1, 10, []))
     }
 
