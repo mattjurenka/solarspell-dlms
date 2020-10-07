@@ -26,6 +26,7 @@ interface LibrariesProps {
     metadata_api: MetadataAPI
     contents_api: ContentsAPI
 }
+
 interface LibrariesState {
     modals: LibrariesModals
     selected_folders: LibraryFolder[]
@@ -119,6 +120,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
             copyright: null,
             rights_statement: null,
             active: false,
+            duplicatable: false,
             metadata: [],
             metadata_info: [],
             published_year: ""
@@ -580,6 +582,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                         <ContentSearch
                             contents_api={contents_api}
                             metadata_api={metadata_api}
+                            versions_api={library_versions_api}
                             selection
                             on_view={row => {
                                 this.update_state(draft => {

@@ -42,7 +42,8 @@ export const ViewContentModal = ({
                     ["Reviewed On", row.reviewed_on],
                     ["Copyright", row.copyright],
                     ["Rights Statement", row.rights_statement],
-                    ["File Size", isNull(row.filesize) ? 0 : prettyBytes(row.filesize)]
+                    ["File Size", isNull(row.filesize) ? 0 : prettyBytes(row.filesize)],
+                    ["Duplicatable", row.duplicatable ? "Yes" : "No"]
                 ].map(([title, value], idx) => {
                     return (
                         <Container style={{marginBottom: "1em"}} key={idx}>

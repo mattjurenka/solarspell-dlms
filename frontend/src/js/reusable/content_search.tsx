@@ -1,5 +1,5 @@
 import React, {Component} from "react"
-import { ContentsAPI, active_search_option, MetadataAPI, SerializedMetadata, SerializedContent } from '../types'
+import { ContentsAPI, active_search_option, MetadataAPI, SerializedMetadata, SerializedContent, LibraryVersionsAPI } from '../types'
 import ActionPanel from './action_panel'
 import { content_display } from '../settings'
 
@@ -31,6 +31,7 @@ interface ContentSearchProps {
     on_add?: (row: SerializedContent) => void
     contents_api: ContentsAPI
     metadata_api: MetadataAPI
+    versions_api?: LibraryVersionsAPI
     selection?: boolean
 }
 
@@ -100,17 +101,18 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
     }
 
     async reload_rows() {
+        console.log(this.props.versions_api?.state?.current_version)
         return this.props.contents_api.load_content_rows(
             this.state.current_page + 1,
             this.state.page_size,
-            this.state.sorting
+            this.state.sorting,
         )
     }
 
     render() {
         const {
             contents_api,
-            metadata_api
+            metadata_api,
         } = this.props
         const {
             search
@@ -272,6 +274,22 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                                         <MenuItem value={"active"}>Active</MenuItem>
                                         <MenuItem value={"inactive"}>Inactive</MenuItem>
                                     </Select>
+                                    {this.props.versions_api ? 
+                                        <Select
+                                            style={{alignSelf: "bottom"}}
+                                            label={"Duplicatable"}
+                                            value={search.duplicatable}
+                                            onChange={(event) => {
+                                                contents_api.update_search_state(draft => {
+                                                    draft.duplicatable = event.target.value as "yes" | "no" | "all"
+                                                }).then(this.reload_rows)
+                                            }}
+                                        >
+                                            <MenuItem value={"all"}>All</MenuItem>
+                                            <MenuItem value={"yes"}>Duplicatable</MenuItem>
+                                            <MenuItem value={"no"}>Non-Duplicatable</MenuItem>
+                                        </Select> : <></>
+                                    }
                                 </Container>
                             </Grid>
                             {Object.entries(metadata_api.state.metadata_by_type).map((entry: [string, SerializedMetadata[]], idx) => {

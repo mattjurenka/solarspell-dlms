@@ -1,7 +1,7 @@
 import Axios from "axios"
 import { isUndefined } from 'lodash'
 import { format } from 'date-fns'
-import { content_filters } from './types'
+import { content_filters, LibraryVersion } from './types'
 
 const api_path = "api"
 
@@ -16,11 +16,11 @@ function url_with_params(urlstr: string, params:[string, any][]=[]) {
 const APP_URLS = {
     API: url_with_params(api_path),
     CONTENT: url_with_params(`${api_path}/contents/`),
-    CONTENT_PAGE: (page: number, size: number, filters?: content_filters) => {
+    CONTENT_PAGE: (page: number, size: number, filters?: content_filters, exclude_if_in_version?: LibraryVersion) => {
         //TODO: refractor
         const content_filter = filters || {}
         const {
-            title, years, filename, copyright, active, metadata, sort, file_sizes, reviewed_on
+            title, years, filename, copyright, active, metadata, sort, file_sizes, reviewed_on, duplicatable
         } = content_filter
         const filters_arr: [string, any][] = [["page", `${page}`], ["size", `${size}`]]
         
@@ -42,6 +42,8 @@ const APP_URLS = {
         if (!isUndefined(active)) filters_arr.push(["active", active ? "true" : "false"])
         if (!isUndefined(metadata) && metadata.length > 0) filters_arr.push(["metadata", metadata.join(",")])
         if (!isUndefined(sort)) filters_arr.push(["sort", sort])
+        if (!isUndefined(duplicatable)) filters_arr.push(["duplicatable", duplicatable])
+        if (!isUndefined(exclude_if_in_version)) filters_arr.push(["exclude_in_version", exclude_if_in_version.id])
 
         return url_with_params(`${api_path}/contents/`, filters_arr)
     },

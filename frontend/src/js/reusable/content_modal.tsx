@@ -1,6 +1,6 @@
 import ActionDialog from "./action_dialog"
 import { cloneDeep, isEqual, set, isNull, isUndefined } from "lodash"
-import {Button, TextField, Grid} from "@material-ui/core"
+import {Button, TextField, Grid, Checkbox, Typography} from "@material-ui/core"
 import Axios, { AxiosResponse } from "axios"
 import { APP_URLS } from "../urls"
 import { Autocomplete, createFilterOptions } from "@material-ui/lab"
@@ -56,7 +56,8 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                     return set(prev, [current.name], [])
                 },{} as metadata_dict)),
             rights_statement: get_field_info_default(""),
-            copyright: get_field_info_default("")
+            copyright: get_field_info_default(""),
+            duplicatable: get_field_info_default(false)
         }
 
         this.state = {
@@ -87,6 +88,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                 draft.fields.rights_statement = get_field_info_default(row.rights_statement === null? "" : row.rights_statement)
                 draft.fields.title = get_field_info_default(row.title === null ? "" : row.title)
                 draft.fields.year = get_field_info_default(row.published_year === null ? "" : row.published_year)
+                draft.fields.duplicatable = get_field_info_default(row.duplicatable)
             })
         }
     }
@@ -145,6 +147,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
 
                                 formData.append('title', this.state.fields.title.value)
                                 formData.append('description', this.state.fields.description.value)
+                                formData.append('duplicatable', this.state.fields.duplicatable.value ? "true" : "false")
                                 formData.append('published_date', `${this.state.fields.year.value}-01-01`)
                                 if (this.props.modal_type === "add") {
                                     formData.append('active', "true")
@@ -162,7 +165,6 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                     }
                                 })
 
-                                console.log("here")
                                 //We have to do this weird pattern so the only caught errors in this promise chain come from the axios call
                                 const axios_response = this.props.modal_type === "add" ?
                                     Axios.post(APP_URLS.CONTENT, formData, {
@@ -280,6 +282,17 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 })
                             }}
                         />,
+                        <>
+                            <Typography>Duplicatable</Typography>
+                            <Checkbox
+                                checked={this.state.fields.duplicatable.value}
+                                onChange={(_evt, checked) => {
+                                    this.update_state(draft => {
+                                        draft.fields.duplicatable.value = checked
+                                    })
+                                }}
+                            />
+                        </>,
                         metadata_api.state.metadata_types.map((metadata_type: SerializedMetadataType, idx) => {
                             return (
                                 <Grid item key={idx}>

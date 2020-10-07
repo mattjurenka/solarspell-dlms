@@ -14,6 +14,8 @@ from content_management.serializers import ContentSerializer, MetadataSerializer
 from content_management.standardize_format import build_response
 from content_management.paginators import PageNumberSizePagination
 
+from django.db.models import Q
+
 from django.http import HttpResponse
 
 import csv
@@ -61,8 +63,17 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
         
         active_raw = self.request.GET.get("active", None)
         if active_raw is not None:
-            active = active_raw.lower() == "true"
-            queryset = queryset.filter(active=active)
+            if active_raw.lower() == "true":
+                queryset = queryset.filter(active=True)
+            if active_raw.lower() == "false":
+                queryset = queryset.filter(active=False)
+
+        duplicated_raw = self.request.GET.get("duplicatable", None)
+        if duplicated_raw is not None:
+            if duplicated_raw.lower() == "true":
+                queryset = queryset.filter(duplicatable=True)
+            if duplicated_raw.lower() == "false":
+                queryset = queryset.filter(duplicatable=False)
         
         metadata_raw = self.request.GET.get("metadata", None)
         if metadata_raw is not None:
@@ -129,6 +140,14 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
                 queryset = queryset.order_by(order_str)
             except:
                 pass
+        
+        exclude_version = self.request.GET.get("exclude_in_version", None)
+        if exclude_version is not None:
+            try:
+                content_in_version = LibraryFolder.objects.filter(version_id=exclude_version).values_list('library_content', flat=True)
+                queryset = queryset.filter(Q(duplicatable=True) | ~Q(id__in=content_in_version))
+            except Exception as e:
+                print(e)
 
         return queryset
 
