@@ -26,19 +26,18 @@ class Metadata(models.Model):
 class Content(models.Model):
     def set_file_name(self, file_name):
         path = os.path.join("contents", file_name)
-        self.filesize = os.path.getsize(path)
-        self.save()
+        self.filesize = self.content_file.size
         return path
 
     content_file = models.FileField(
         "File",
-        upload_to="contents/",
+        upload_to=set_file_name,
         max_length=300,
         validators=[
             validate_unique_filename,
             validate_unique_file
         ])
-    filesize = models.IntegerField(null=True, editable=True)
+    filesize = models.FloatField(null=True, editable=True)
     title = models.CharField(max_length=300, unique=True)
     description = models.TextField(null=True)
     modified_on = models.DateTimeField(default=datetime.now)
