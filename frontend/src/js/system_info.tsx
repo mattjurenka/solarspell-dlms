@@ -23,10 +23,14 @@ export default class SystemInfo extends React.Component<SystemInfoProps> {
                     <LinearProgress
                         variant="determinate"
                         value={100 * this.props.utils_api.state.disk_used / (this.props.utils_api.state.disk_available + 1)}
-                        style={{width: "100%"}}
+                        style={{
+                            width: "100%",
+                            marginLeft: "10%",
+                            marginRight: "10%",
+                        }}
                     />
                     <Typography variant="subtitle1">
-                        Available: {prettyBytes(this.props.utils_api.state.disk_available)}
+                        Free: {prettyBytes(this.props.utils_api.state.disk_available)}
                     </Typography>
                 </Box>
             </>
