@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions, views
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, renderer_classes
 from content_management.models import (
     Content, Metadata, MetadataType, LibLayoutImage, LibraryVersion,
     LibraryFolder, User
@@ -20,6 +20,7 @@ from django.http import HttpResponse
 
 import csv
 from rest_framework.generics import get_object_or_404
+from rest_framework.renderers import JSONRenderer
 
 class StandardDataView:
 
@@ -146,10 +147,9 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
             try:
                 content_in_version = LibraryFolder.objects.filter(version_id=exclude_version).values_list('library_content', flat=True)
                 id_list = list(content_in_version)
-                if id_list != [None]:
-                    print(id_list)
-                    queryset = queryset.filter(Q(duplicatable=True) | ~Q(id__in=id_list))
-                print(queryset)
+                filtered = filter(lambda id: id != None, id_list)
+                if filtered != []:
+                    queryset = queryset.filter(Q(duplicatable=True) | ~Q(id__in=filtered))
             except Exception as e:
                 print(e)
 
@@ -352,3 +352,14 @@ def metadata_sheet(request, metadata_type):
         writer.writerow([metadata.name])
     
     return response
+
+@api_view(('GET',))
+@renderer_classes((JSONRenderer,))
+def disk_info(request):
+    import shutil
+    total, used, free = shutil.disk_usage('/')
+    return build_response({
+        "total": total,
+        "used": used,
+        "free": free
+    })

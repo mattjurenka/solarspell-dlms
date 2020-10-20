@@ -1,5 +1,6 @@
 import LibraryAssets from "./library_assets"
 import { Sorting } from "@devexpress/dx-react-grid"
+import { UseMultipleSelectionState } from "downshift"
 
 interface TabDict {
     [key: string]: TabData
@@ -16,7 +17,8 @@ interface APIs {
     lib_versions_api: LibraryVersionsAPI
     lib_assets_api: LibraryAssetsAPI
     users_api: UsersAPI
-    metadata_api: MetadataAPI
+    metadata_api: MetadataAPI,
+    utils_api: UtilsAPI
 }
 
 interface SerializedMetadata {
@@ -119,6 +121,16 @@ type UsersAPI = {
     state: UserProviderState
     refresh_users: () => Promise<any>
     add_user: (name: string) => Promise<any>
+}
+
+type UtilsAPI = {
+    state: UtilsState
+    get_disk_info: () => Promise<any>
+}
+
+type UtilsState = {
+    disk_used: number
+    disk_available: number
 }
 
 type AssetGroup = 1 | 2 | 3
