@@ -4,12 +4,12 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from content_management.models import (
     Content, Metadata, MetadataType, LibLayoutImage, LibraryVersion,
-    LibraryFolder, User
-    )
+    LibraryFolder, User,
+    LibraryModule)
 from content_management.utils import ContentSheetUtil, LibraryBuildUtil
 
 from content_management.serializers import ContentSerializer, MetadataSerializer, MetadataTypeSerializer, \
-    LibLayoutImageSerializer, LibraryVersionSerializer, LibraryFolderSerializer, UserSerializer
+    LibLayoutImageSerializer, LibraryVersionSerializer, LibraryFolderSerializer, UserSerializer, LibraryModuleSerializer
 
 from content_management.standardize_format import build_response
 from content_management.paginators import PageNumberSizePagination
@@ -21,12 +21,13 @@ from django.http import HttpResponse
 import csv
 from rest_framework.generics import get_object_or_404
 
+
 class StandardDataView:
 
     def retrieve(self, request, *args, **kwargs):
-            instance = self.get_object()
-            serializer = self.get_serializer(instance)
-            return build_response(serializer.data)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return build_response(serializer.data)
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -52,15 +53,15 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
         title = self.request.GET.get("title", None)
         if title is not None:
             queryset = queryset.filter(title__icontains=title)
-        
+
         file_name = self.request.GET.get("file_name", None)
         if file_name is not None:
             queryset = queryset.filter(file_name__icontains=file_name)
-        
+
         copyright = self.request.GET.get("copyright", None)
         if copyright is not None:
             queryset = queryset.filter(copyright__icontains=copyright)
-        
+
         active_raw = self.request.GET.get("active", None)
         if active_raw is not None:
             if active_raw.lower() == "true":
@@ -74,7 +75,7 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
                 queryset = queryset.filter(duplicatable=True)
             if duplicated_raw.lower() == "false":
                 queryset = queryset.filter(duplicatable=False)
-        
+
         metadata_raw = self.request.GET.get("metadata", None)
         if metadata_raw is not None:
             try:
@@ -101,7 +102,7 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
                 queryset = queryset.filter(published_date__year__lte=(year))
             except:
                 pass
-        
+
         filesize_from_raw = self.request.GET.get("filesize_from", None)
         if filesize_from_raw is not None:
             try:
@@ -117,7 +118,7 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
                 queryset = queryset.filter(filesize__lte=(filesize))
             except:
                 pass
-        
+
         reviewed_from_raw = self.request.GET.get("reviewed_from", None)
         if reviewed_from_raw is not None:
             try:
@@ -140,11 +141,12 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
                 queryset = queryset.order_by(order_str)
             except:
                 pass
-        
+
         exclude_version = self.request.GET.get("exclude_in_version", None)
         if exclude_version is not None:
             try:
-                content_in_version = LibraryFolder.objects.filter(version_id=exclude_version).values_list('library_content', flat=True)
+                content_in_version = LibraryFolder.objects.filter(version_id=exclude_version).values_list(
+                    'library_content', flat=True)
                 id_list = list(content_in_version)
                 if id_list != [None]:
                     print(id_list)
@@ -172,6 +174,7 @@ class MetadataViewSet(StandardDataView, viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return build_response(serializer.data)
 
+
 class MetadataTypeViewSet(StandardDataView, viewsets.ModelViewSet):
     queryset = MetadataType.objects.all()
     serializer_class = MetadataTypeSerializer
@@ -181,9 +184,11 @@ class LibLayoutImageViewSet(StandardDataView, viewsets.ModelViewSet):
     queryset = LibLayoutImage.objects.all()
     serializer_class = LibLayoutImageSerializer
 
+
 class UserViewSet(StandardDataView, viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
 
 class LibraryVersionViewSet(StandardDataView, viewsets.ModelViewSet):
     queryset = LibraryVersion.objects.all()
@@ -193,19 +198,69 @@ class LibraryVersionViewSet(StandardDataView, viewsets.ModelViewSet):
     @action(methods=['get'], detail=True)
     def root(self, request, pk=None):
         return build_response(LibraryFolderSerializer(
-                LibraryFolder.objects.filter(version=pk, parent=None).order_by("id"),
-                many=True
-            ).data if pk is not None else []
-        )
-    
+            LibraryFolder.objects.filter(version=pk, parent=None).order_by("id"),
+            many=True
+        ).data if pk is not None else []
+                              )
+
     @action(methods=['get'], detail=True)
     def folders(self, request, pk=None):
         return build_response(LibraryFolderSerializer(
-                LibraryFolder.objects.filter(version=pk).order_by("id"),
-                many=True
-            ).data if pk is not None else []
+            LibraryFolder.objects.filter(version=pk).order_by("id"),
+            many=True
+        ).data if pk is not None else []
+                              )
+
+    @action(methods=['get'], detail=True)
+    def modules(self, request, pk=None):
+        return build_response(LibraryModuleSerializer(
+            LibraryVersion.objects.get(id=pk).library_modules.all(),
+            many=True
+        ).data if pk is not None and pk is not '0' else []
+                              )
+
+    @action(methods=['post'], detail=True)
+    def addmodule(self, request, pk=None):
+        if pk is None:
+            return build_response(
+                status=status.HTTP_400_BAD_REQUEST,
+                success=False,
+                error="No Version ID supplied"
+            )
+        library_module_id = request.data.get("library_module_id", None)
+        if library_module_id is None:
+            return build_response(
+                status=status.HTTP_400_BAD_REQUEST,
+                success=False,
+                error="No Module ID supplied"
+            )
+        version = self.get_queryset().get(id=pk)
+        version.library_modules.add(
+            LibraryModule.objects.get(id=library_module_id)
         )
-    
+        return build_response()
+
+    @action(methods=['post'], detail=True)
+    def removemodule(self, request, pk=None):
+        if pk is None:
+            return build_response(
+                status=status.HTTP_400_BAD_REQUEST,
+                success=False,
+                error="No Version ID supplied"
+            )
+        library_module_id = request.data.get("library_module_id", None)
+        if library_module_id is None:
+            return build_response(
+                status=status.HTTP_400_BAD_REQUEST,
+                success=False,
+                error="No Module ID supplied"
+            )
+        version = self.get_queryset().get(id=pk)
+        version.library_modules.remove(
+            LibraryModule.objects.get(id=library_module_id)
+        )
+        return build_response()
+
     @action(methods=['get'], detail=True)
     def clone(self, request, pk=None):
         if pk is None:
@@ -213,38 +268,37 @@ class LibraryVersionViewSet(StandardDataView, viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
                 success=False,
                 error="No Folder ID supplied"
-                )
-        
+            )
+
         version_to_clone = get_object_or_404(LibraryVersion, id=pk)
 
-        #clone version
+        # clone version
         version_to_clone.id = None
-        version_to_clone.library_name = "(CLONED) " +  version_to_clone.library_name
+        version_to_clone.library_name = "(CLONED) " + version_to_clone.library_name
         version_to_clone.save()
 
         def clone_recursively(folder_to_clone, new_parent):
-            #save relationships of the old folder
+            # save relationships of the old folder
             subfolders = folder_to_clone.subfolders.all()
             library_content = folder_to_clone.library_content.all()
-            
-            #clone subfolder
+
+            # clone subfolder
             folder_to_clone.id = None
             folder_to_clone.save()
             folder_to_clone.parent = new_parent
             folder_to_clone.version = version_to_clone
             folder_to_clone.library_content.set(library_content)
             folder_to_clone.save()
-            
+
             for child in subfolders:
                 clone_recursively(child, folder_to_clone)
-        
+
         [
             clone_recursively(top_level_folder, None) for top_level_folder
             in LibraryFolder.objects.filter(parent=None, version_id=pk)
         ]
 
         return build_response(LibraryVersionSerializer(version_to_clone).data)
-
 
 
 class LibraryFolderViewSet(StandardDataView, viewsets.ModelViewSet):
@@ -258,7 +312,7 @@ class LibraryFolderViewSet(StandardDataView, viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
                 success=False,
                 error="No Folder ID supplied"
-                )
+            )
         else:
             return build_response(
                 {
@@ -272,7 +326,7 @@ class LibraryFolderViewSet(StandardDataView, viewsets.ModelViewSet):
                     ).data
                 }
             )
-    
+
     @action(methods=['post'], detail=True)
     def addcontent(self, request, pk=None):
         if pk is None:
@@ -281,14 +335,14 @@ class LibraryFolderViewSet(StandardDataView, viewsets.ModelViewSet):
                 success=False,
                 error="No Folder ID supplied"
             )
-        content_ids = request.data.get("content_ids", None) 
+        content_ids = request.data.get("content_ids", None)
         if content_ids is None:
             return build_response(
                 status=status.HTTP_400_BAD_REQUEST,
                 success=False,
                 error="No Content ID supplied"
             )
-        
+
         folder = self.get_queryset().get(id=pk)
         for content_id in content_ids:
             folder.library_content.add(
@@ -296,7 +350,7 @@ class LibraryFolderViewSet(StandardDataView, viewsets.ModelViewSet):
             )
 
         return build_response()
-    
+
     @action(methods=['post'], detail=True)
     def removecontent(self, request, pk=None):
         if pk is None:
@@ -305,15 +359,15 @@ class LibraryFolderViewSet(StandardDataView, viewsets.ModelViewSet):
                 success=False,
                 error="No Folder ID supplied"
             )
-        
-        content_ids = request.data.get("content_ids", None) 
+
+        content_ids = request.data.get("content_ids", None)
         if content_ids is None:
             return build_response(
                 status=status.HTTP_400_BAD_REQUEST,
                 success=False,
                 error="No Content ID supplied"
             )
-        
+
         folder = self.get_queryset().get(id=pk)
         for content_id in content_ids:
             folder.library_content.remove(
@@ -321,6 +375,12 @@ class LibraryFolderViewSet(StandardDataView, viewsets.ModelViewSet):
             )
 
         return build_response()
+
+
+class LibraryModuleViewSet(StandardDataView, viewsets.ModelViewSet):
+    queryset = LibraryModule.objects.all()
+    serializer_class = LibraryModuleSerializer
+
 
 class BulkAddView(views.APIView):
 
@@ -341,14 +401,15 @@ class LibraryBuildView(views.APIView):
         response = build_response(result)
         return response
 
+
 def metadata_sheet(request, metadata_type):
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="{}.csv"'.format(metadata_type)
-    
+
     writer = csv.writer(response)
     writer.writerow([metadata_type])
 
     for metadata in Metadata.objects.all().filter(type__name=metadata_type):
         writer.writerow([metadata.name])
-    
+
     return response

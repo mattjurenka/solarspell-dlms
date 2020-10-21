@@ -4,6 +4,7 @@ from _datetime import datetime
 from django.db import models
 from content_management.validators import validate_unique_filename, validate_unique_file
 
+
 class MetadataType(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
@@ -12,7 +13,7 @@ class MetadataType(models.Model):
 
 
 class Metadata(models.Model):
-    #TODO: Make sure there are no metadata with the same type and the same name when creating a new one
+    # TODO: Make sure there are no metadata with the same type and the same name when creating a new one
     name = models.CharField(max_length=300)
     type = models.ForeignKey(MetadataType, on_delete=models.CASCADE)
 
@@ -94,11 +95,19 @@ class LibLayoutImage(models.Model):
     def __str__(self):
         return f'{self.image_file.name}'
 
+
 class User(models.Model):
     name = models.CharField(max_length=300)
 
     def __str__(self):
         return f'User<{self.name}>'
+
+
+class LibraryModule(models.Model):
+    module_name = models.CharField(max_length=300)
+    module_file = models.FileField(upload_to="modules/")
+    logo_img = models.ForeignKey(LibLayoutImage, related_name="module_logos", on_delete=models.SET_NULL, null=True)
+
 
 class LibraryVersion(models.Model):
     library_name = models.CharField(max_length=300)
@@ -108,6 +117,7 @@ class LibraryVersion(models.Model):
     )
     created_on = models.DateTimeField(default=datetime.now)
     created_by = models.ForeignKey(User, related_name="versions", on_delete=models.SET_NULL, null=True)
+    library_modules = models.ManyToManyField(LibraryModule, blank=True)
 
     def user_info(self):
         if self.created_by is None:
@@ -131,4 +141,3 @@ class LibraryFolder(models.Model):
 
     def __str__(self):
         return f'{self.folder_name}'
-

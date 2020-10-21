@@ -61,6 +61,9 @@ const APP_URLS = {
     LIBRARY_VERSION: (id: number) => url_with_params(`${api_path}/library_versions/${id}/`),
     LIBRARY_VERSION_CLONE: (id: number) => url_with_params(`${api_path}/library_versions/${id}/clone/`),
     LIBRARY_VERSION_FOLDERS: (id: number) => url_with_params(`${api_path}/library_versions/${id}/folders/`),
+    LIBRARY_VERSION_MODULES: (id: number) => url_with_params(`${api_path}/library_versions/${id}/modules/`),
+    LIBRARY_VERSION_ADD_MODULE: (id: number) => url_with_params(`${api_path}/library_versions/${id}/addmodule/`),
+    LIBRARY_VERSION_REMOVE_MODULE: (id: number) => url_with_params(`${api_path}/library_versions/${id}/remove/`),
     LIBRARY_VERSIONS: url_with_params(`${api_path}/library_versions/`),
     METADATA: url_with_params(`${api_path}/metadata/`),
     METADATA_ITEM: (id: number) => url_with_params(`${api_path}/metadata/${id}/`),
@@ -69,6 +72,10 @@ const APP_URLS = {
     METADATA_BY_TYPE: (type: string) => url_with_params(`${api_path}/metadata/${type}/get/`),
     METADATA_SHEET: (metadata_type: string) => url_with_params(`${api_path}/spreadsheet/metadata/${metadata_type}`),
     USERS: url_with_params(`${api_path}/users/`),
+    LIBRARY_MODULES: url_with_params(`${api_path}/library_modules/`),
+
+
+
 }
 
 //Transforms url into a promise containing the data or error from that api call

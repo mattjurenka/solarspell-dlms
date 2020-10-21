@@ -1,7 +1,19 @@
 import React from 'react';
 import { Grid, Box, Typography, Link, Button, TextField, Checkbox } from '@material-ui/core';
 import { Folder, InsertDriveFile, DoubleArrow } from '@material-ui/icons';
-import { LibraryVersionsAPI, LibraryVersion, field_info, UsersAPI, LibraryAssetsAPI, SerializedContent, MetadataAPI, ContentsAPI, User, LibraryFolder } from './types';
+import {
+    LibraryVersionsAPI,
+    LibraryVersion,
+    field_info,
+    UsersAPI,
+    LibraryAssetsAPI,
+    SerializedContent,
+    MetadataAPI,
+    ContentsAPI,
+    User,
+    LibraryFolder,
+    LibraryModulesAPI, LibraryModule
+} from './types';
 import {
     Grid as DataGrid,
     Table,
@@ -25,6 +37,7 @@ interface LibrariesProps {
     library_versions_api: LibraryVersionsAPI
     metadata_api: MetadataAPI
     contents_api: ContentsAPI
+    library_modules_api: LibraryModulesAPI
 }
 
 interface LibrariesState {
@@ -87,12 +100,17 @@ interface LibrariesModals {
         is_open: boolean
         destination_folder: [LibraryFolder, string]
     }
+    add_module_to_version: {
+        is_open: boolean
+        to_add: LibraryModule
+    }
 }
 
 export default class Libraries extends React.Component<LibrariesProps, LibrariesState> {
     modal_defaults: LibrariesModals
     library_version_default: LibraryVersion
     library_folder_default: LibraryFolder
+    library_module_default: LibraryModule
     content_defaults: SerializedContent
     user_defaults: User
     auto_complete_filter: any
@@ -139,6 +157,13 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
             logo_img: 0,
             parent: null,
             version: 0
+        }
+
+        this.library_module_default = {
+            id: 0,
+            module_name: "",
+            module_file: "",
+            logo_img: 0,
         }
 
         this.modal_defaults = {
@@ -194,13 +219,17 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
             move_content: {
                 is_open: false,
                 destination_folder: [cloneDeep(this.library_folder_default), ""]
+            },
+            add_module_to_version: {
+                is_open: false,
+                to_add: cloneDeep(this.library_module_default)
             }
         }
 
         this.state = {
             modals: cloneDeep(this.modal_defaults),
             selected_files: [],
-            selected_folders: []
+            selected_folders: [],
         }
 
         this.auto_complete_filter = createFilterOptions<User>({
@@ -230,12 +259,13 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
             library_versions_api,
             users_api,
             metadata_api,
-            contents_api
+            contents_api,
+            library_modules_api
         } = this.props
         return (
             <>
                 <Grid container spacing={2} style={{paddingLeft: "15px", paddingRight: "15px"}}>
-                    <Grid item sm={3}>
+                    <Grid item sm={12}>
                         <Box display="flex" flexDirection="row">
                             <Typography variant="h3" style={{marginBottom: "5px"}}>Library Versions</Typography>
                             <Button
@@ -318,7 +348,9 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                             <TableHeaderRow />
                         </DataGrid>
                     </Grid>
-                    <Grid item sm={3}>
+                </Grid>
+                <Grid container spacing={2} style={{paddingLeft: "15px", paddingRight: "15px", marginTop:"20px"}}>
+                    <Grid item sm={6}>
                         {
                             this.props.library_versions_api.state.current_version.id !== 0 ?
                             <Box display="flex" flexDirection="row">
@@ -336,6 +368,21 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                     }}
                                 >
                                     Add Folder
+                                </Button>
+                                <Button
+                                    onClick={_ => {
+                                        this.update_state(draft => {
+                                            draft.modals.add_module_to_version.is_open = true
+                                        })
+                                    }}
+                                    style={{
+                                        marginLeft: "1em",
+                                        marginBottom: "1em",
+                                        backgroundColor: "#75b2dd",
+                                        color: "#FFFFFF"
+                                    }}
+                                >
+                                    Add Module
                                 </Button>
                             </Box> : <></>
                         }
@@ -386,7 +433,11 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                 })()}
                             </Grid>
                         </Grid>
-                        
+                        <Box flexDirection="row" display="flex">
+                            <Typography style={{fontWeight: "bold", color: "#75b2dd"}}>
+                                Library Folders
+                            </Typography>
+                        </Box>
                         <Box flexDirection="row" display="flex">
                             {
                                 [
@@ -568,6 +619,28 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                 <Typography style={{fontStyle: "italic"}}>No Files or Folders</Typography>
                             ) : <></>
                         }
+                        <Box flexDirection="row" display="flex">
+                            <Typography style={{fontWeight: "bold", color: "#75b2dd"}}>Library Modules</Typography>
+                        </Box>
+                        {library_versions_api.state.modules_in_version.map((module: LibraryModule, idx) => (
+                            <Box
+                                key={library_versions_api.state.modules_in_version.length + idx}
+                                display="flex"
+                                flexDirection="row"
+                                width="100%"
+                            >
+                                <Box>
+                                    <Typography>
+                                        {module.module_name}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        ))}
+                        {// Displays an empty message if there are no modules in the current version
+                            library_versions_api.state.modules_in_version.length === 0 ? (
+                                <Typography style={{fontStyle: "italic"}}>No Modules added yet</Typography>
+                            ) : <></>
+                        }                        
                     </Grid>
                     <Grid item sm={6}>
                         <Button onClick={() => {
@@ -1143,6 +1216,63 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                 {...params}
                                 variant={"standard"}
                                 placeholder={"Destination"}
+                            />
+                        )}
+                    />
+                </ActionDialog>
+                <ActionDialog
+                    title={`Choose a Module to add to the Library`}
+                    open={this.state.modals.add_module_to_version.is_open}
+                    actions={[(
+                        <Button
+                            key={2}
+                            onClick={this.close_modals}
+                            color="primary"
+                        >
+                            Cancel
+                        </Button>
+                    ), (
+                        <Button
+                            key={1}
+                            onClick={()=> {
+                                this.props.library_versions_api.add_module_to_version(
+                                    this.props.library_versions_api.state.current_version,
+                                    this.state.modals.add_module_to_version.to_add
+                                ).then(this.close_modals)
+                            }}
+                            color="secondary"
+                        >
+                            Add
+                        </Button>
+                    )]}
+                >
+                    <Autocomplete
+                        value={this.state.modals.add_module_to_version.to_add}
+                        onChange={(_evt, value: LibraryModule | null) => {
+                            if (!(value === null)) {
+                                this.update_state(draft => {
+                                    draft.modals.add_module_to_version.to_add = value
+                                })
+                            }
+                        }}
+                        filterOptions={(options, params) => {
+                            const filtered = this.auto_complete_filter(options, params)
+                            if (params.inputValue !== "") {
+                                filtered.push({
+                                    id: -1,
+                                    module_name: params.inputValue
+                                } as LibraryModule)
+                            }
+                            return filtered
+                        }}
+                        handleHomeEndKeys
+                        options={library_modules_api.state.library_modules}
+                        getOptionLabel={option => option.module_name}
+                        renderInput={params => (
+                            <TextField
+                                {...params}
+                                variant={"standard"}
+                                placeholder={"Module"}
                             />
                         )}
                     />

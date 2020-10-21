@@ -25,6 +25,7 @@ import LibraryAssets from './library_assets';
 import Libraries from './libraries';
 import LibraryImages from './library_images';
 import SystemInfo from './system_info';
+import LibraryModules from "./library_modules";
 
 interface MainScreenProps {
     apis: APIs
@@ -90,6 +91,15 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                 ),
                 icon: library_assets
             },
+            "modules": {
+            display_label: "Modules",
+                component: (_tabs, apis) => (
+                    <LibraryModules
+                        library_modules_api={apis.lib_modules_api}
+                    />
+                ),
+                icon: library_assets
+            },
             "libraries": {
                 display_label: "Libraries",
                 component: (_tabs, apis) => (
@@ -99,6 +109,7 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                         users_api={apis.users_api}
                         metadata_api={apis.metadata_api}
                         contents_api={apis.contents_api}
+                        library_modules_api={apis.lib_modules_api}
                     />
                 ),
                 icon: library_versions

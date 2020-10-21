@@ -5,7 +5,8 @@ from django.conf.urls.static import static
 from dlms import settings
 from .views import (
     ContentViewSet, MetadataViewSet, MetadataTypeViewSet, UserViewSet,
-    LibraryFolderViewSet, LibraryVersionViewSet, LibLayoutImageViewSet, LibraryBuildView, metadata_sheet, BulkAddView)
+    LibraryFolderViewSet, LibraryVersionViewSet, LibLayoutImageViewSet, LibraryBuildView, metadata_sheet, BulkAddView,
+    LibraryModuleViewSet)
 
 router = routers.DefaultRouter()
 router.register(r'contents', ContentViewSet)
@@ -15,6 +16,8 @@ router.register(r'lib_layout_images', LibLayoutImageViewSet)
 router.register(r'library_versions', LibraryVersionViewSet)
 router.register(r'library_folders', LibraryFolderViewSet)
 router.register(r'users', UserViewSet)
+router.register(r'library_modules', LibraryModuleViewSet)
+
 
 
 urlpatterns = [

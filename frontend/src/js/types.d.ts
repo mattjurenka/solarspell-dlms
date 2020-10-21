@@ -17,6 +17,7 @@ interface APIs {
     lib_assets_api: LibraryAssetsAPI
     users_api: UsersAPI
     metadata_api: MetadataAPI
+    lib_modules_api: LibraryModulesAPI
 }
 
 interface SerializedMetadata {
@@ -113,12 +114,20 @@ type LibraryVersionsAPI = {
     remove_content_from_folder: (folder: LibraryFolder, to_remove: SerializedContent[]) => Promise<any>
     add_content_to_folder: (folder: LibraryFolder, to_add: SerializedContent[]) => Promise<any>
     refresh_folders_in_current_version: () => Promise<any>
+    add_module_to_version: (version: LibraryVersion, module: LibraryModule) => Promise<any>
+    remove_module_from_version: (version: LibraryVersion, module: LibraryModule) => Promise<any>
+    refresh_modules_in_current_version: () => Promise<any>
 }
 
 type UsersAPI = {
     state: UserProviderState
     refresh_users: () => Promise<any>
     add_user: (name: string) => Promise<any>
+}
+
+type LibraryModulesAPI = {
+    state: LibraryModulesState
+    refresh_library_modules: () => Promise<any>
 }
 
 type AssetGroup = 1 | 2 | 3
@@ -142,6 +151,7 @@ interface LibraryVersionsState {
     }
     current_version: LibraryVersion
     folders_in_version: [folder: LibraryFolder, path: string][]
+    modules_in_version: LibraryModule[]
     path: LibraryFolder[]
 }
 
@@ -171,6 +181,10 @@ type ContentsProviderState = {
 
 type UserProviderState = {
     users: User[]
+}
+
+type LibraryModulesState = {
+    library_modules: LibraryModule[]
 }
 
 type metadata_dict = {
@@ -239,4 +253,11 @@ type LibraryFolder = {
 type User = {
     id: number
     name: string
+}
+
+type LibraryModule = {
+    id: number
+    module_name: string
+    module_file: string
+    logo_img: number
 }

@@ -2,7 +2,27 @@ import { Sorting } from '@devexpress/dx-react-grid';
 import Axios from 'axios';
 import { format } from 'date-fns';
 import { content_display } from '../settings';
-import { APIs, AssetGroup, ContentsProviderState, content_fields, content_filters, LibraryAsset, LibraryAssetsState, LibraryFolder, LibraryVersion, LibraryVersionsState, MetadataProviderState, metadata_dict, search_state, SerializedContent, SerializedMetadata, SerializedMetadataType, User, UserProviderState } from '../types';
+import {
+    APIs,
+    AssetGroup,
+    ContentsProviderState,
+    content_fields,
+    content_filters,
+    LibraryAsset,
+    LibraryAssetsState,
+    LibraryFolder,
+    LibraryVersion,
+    LibraryVersionsState,
+    MetadataProviderState,
+    metadata_dict,
+    search_state,
+    SerializedContent,
+    SerializedMetadata,
+    SerializedMetadataType,
+    User,
+    UserProviderState,
+    LibraryModulesState, LibraryModule
+} from '../types';
 import { APP_URLS, get_data } from '../urls';
 import { update_state } from '../utils';
 import { cloneDeep, get, range, set } from 'lodash';
@@ -17,8 +37,9 @@ interface GlobalStateState {
     contents_api: ContentsProviderState
     metadata_api: MetadataProviderState
     library_assets_api: LibraryAssetsState
-    library_versions_api: LibraryVersionsState,
+    library_versions_api: LibraryVersionsState
     users_api: UserProviderState
+    library_modules_api: LibraryModulesState
 }
 
 export default class GlobalState extends React.Component<GlobalStateProps, GlobalStateState> {
@@ -78,12 +99,16 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
                     library_name: "",
                     version_number: "",
                     library_banner: 0,
-                    created_by: 0
+                    created_by: 0,
                 },
                 path: [],
+                modules_in_version: []
             },
             users_api: {
                 users: []
+            },
+            library_modules_api: {
+                library_modules: []
             }
         }
 
@@ -133,10 +158,16 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
         this.remove_content_from_folder = this.remove_content_from_folder.bind(this)
         this.refresh_folders_in_current_version = this.refresh_folders_in_current_version.bind(this)
         this.add_content_to_folder = this.add_content_to_folder.bind(this)
+        this.add_module_to_version = this.add_module_to_version.bind(this)
+        this.remove_module_from_version = this.remove_module_from_version.bind(this)
+        this.refresh_modules_in_current_version = this.refresh_modules_in_current_version.bind(this)
 
         //Users API
         this.refresh_users = this.refresh_users.bind(this)
         this.add_user = this.add_user.bind(this)
+
+        //Library Modules API
+        this.refresh_library_modules = this.refresh_library_modules.bind(this)
 
         this.update_state = update_state.bind(this)
     }
@@ -148,6 +179,8 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
         this.refresh_library_versions()
         this.refresh_folders_in_current_version()
         this.refresh_users()
+        this.refresh_library_modules()
+        this.refresh_modules_in_current_version()
     }
 
     // CONTENTS ----------------------------------------------------
@@ -444,7 +477,9 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
                 })
             })
             .then(this.refresh_folders_in_current_version)
+            .then(this.refresh_modules_in_current_version)
             .then(() => this.load_content_rows(1, 10, []))
+
     }
 
     async refresh_current_directory() {
@@ -598,6 +633,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
         return Axios.get(APP_URLS.LIBRARY_VERSION_CLONE(version.id))
         .then(this.refresh_current_directory)
         .then(this.refresh_folders_in_current_version)
+        .then(this.refresh_modules_in_current_version)
     }
  
     async delete_folder(folder: LibraryFolder) {
@@ -611,6 +647,27 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
             folder_name: new_name
         }).then(this.refresh_current_directory)
         .then(this.refresh_folders_in_current_version)
+    }
+
+    async add_module_to_version(version: LibraryVersion, module_to_add: LibraryModule) {
+        return Axios.post(APP_URLS.LIBRARY_VERSION_ADD_MODULE(version.id), {
+                library_module_id: module_to_add.id
+        }).then(this.refresh_modules_in_current_version)
+
+    }
+
+    async remove_module_from_version(version: LibraryVersion, module_to_remove: LibraryModule) {
+        return Axios.post(APP_URLS.LIBRARY_VERSION_REMOVE_MODULE(version.id), {
+                library_module_id: module_to_remove.id
+        }).then(this.refresh_modules_in_current_version)
+
+    }
+
+    async refresh_modules_in_current_version() {
+        return get_data(APP_URLS.LIBRARY_VERSION_MODULES(this.state.library_versions_api.current_version.id))
+            .then((modules: LibraryModule[]) => this.update_state(draft => {
+                draft.library_versions_api.modules_in_version = modules
+            }))
     }
 
     // USERS API -----------------------------------------------
@@ -628,6 +685,18 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
             name
         }).then(this.refresh_users)
     }
+
+    // LIBRARY MODULES API -----------------------------------------------
+    async refresh_library_modules() {
+        return get_data(APP_URLS.LIBRARY_MODULES)
+        .then((library_modules: LibraryModule[]) => {
+            this.update_state(draft => {
+                draft.library_modules_api.library_modules = library_modules
+            })
+        })
+    }
+
+
 
     render() {
         const Render = this.props.render
@@ -670,7 +739,10 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
                     refresh_current_directory: this.refresh_current_directory,
                     remove_content_from_folder: this.remove_content_from_folder,
                     refresh_folders_in_current_version: this.refresh_folders_in_current_version,
-                    add_content_to_folder: this.add_content_to_folder
+                    add_content_to_folder: this.add_content_to_folder,
+                    add_module_to_version: this.add_module_to_version,
+                    remove_module_from_version: this.remove_module_from_version,
+                    refresh_modules_in_current_version: this.refresh_modules_in_current_version,
                 },
                 metadata_api: {
                     state: this.state.metadata_api,
@@ -686,6 +758,10 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
                     state: this.state.users_api,
                     add_user: this.add_user,
                     refresh_users: this.refresh_users
+                },
+                lib_modules_api: {
+                    state: this.state.library_modules_api,
+                    refresh_library_modules: this.refresh_library_modules,
                 }
             }}
         />
