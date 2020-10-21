@@ -112,7 +112,7 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
             },
             "system_info": {
                 display_label: "System Info",
-                component: () => <SystemInfo />,
+                component: (_tabs, apis) => <SystemInfo utils_api={apis.utils_api} />,
                 icon: system_info
             }
         }
