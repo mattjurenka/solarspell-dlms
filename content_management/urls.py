@@ -6,7 +6,7 @@ from dlms import settings
 from .views import (
     ContentViewSet, MetadataViewSet, MetadataTypeViewSet, UserViewSet,
     LibraryFolderViewSet, LibraryVersionViewSet, LibLayoutImageViewSet, LibraryBuildView, metadata_sheet, BulkAddView,
-    LibraryModuleViewSet)
+    LibraryModuleViewSet, disk_info)
 
 router = routers.DefaultRouter()
 router.register(r'contents', ContentViewSet)
@@ -25,5 +25,6 @@ urlpatterns = [
     path('api/contents_upload/', BulkAddView.as_view(), name="contents-upload"),
     path('api/content_bulk_add/', BulkAddView.as_view(), name="content_bulk_add"),
     path('api/create_build/<int:version_id>/', LibraryBuildView.as_view(), name="create-build"),
-    path('api/spreadsheet/metadata/<str:metadata_type>', metadata_sheet)
+    path('api/spreadsheet/metadata/<str:metadata_type>', metadata_sheet),
+    path('api/disk_info/', disk_info)
     ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
