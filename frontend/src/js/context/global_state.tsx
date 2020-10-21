@@ -2,32 +2,11 @@ import { Sorting } from '@devexpress/dx-react-grid';
 import Axios from 'axios';
 import { format } from 'date-fns';
 import { content_display } from '../settings';
-import {
-    APIs,
-    AssetGroup,
-    ContentsProviderState,
-    content_fields,
-    content_filters,
-    LibraryAsset,
-    LibraryAssetsState,
-    LibraryFolder,
-    LibraryVersion,
-    LibraryVersionsState,
-    MetadataProviderState,
-    metadata_dict,
-    search_state,
-    SerializedContent,
-    SerializedMetadata,
-    SerializedMetadataType,
-    User,
-    UserProviderState,
-    LibraryModulesState, LibraryModule,
-    UtilsState
-} from '../types';
-import { APIs, AssetGroup, ContentsProviderState, content_fields, content_filters, LibraryAsset, LibraryAssetsState, LibraryFolder, LibraryVersion, LibraryVersionsState, MetadataProviderState, metadata_dict, search_state, SerializedContent, SerializedMetadata, SerializedMetadataType, User, UserProviderState, UtilsState } from '../types';
+import { APIs, AssetGroup, ContentsProviderState, content_fields, content_filters, LibraryAsset, LibraryAssetsState, LibraryFolder, LibraryVersion, LibraryVersionsState, MetadataProviderState, metadata_dict, search_state, SerializedContent, SerializedMetadata, SerializedMetadataType, User, UserProviderState, LibraryModulesState, LibraryModule,
+UtilsState } from '../types';
 import { APP_URLS, get_data } from '../urls';
 import { update_state } from '../utils';
-import { cloneDeep, get, range } from 'lodash';
+import { cloneDeep, get, range, set } from 'lodash';
 import React from 'react';
 
 interface GlobalStateProps {
@@ -433,12 +412,14 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
      *  Updates the assets held in state to reflect the server.
      */
     async refresh_assets() {
-        const library_assets: LibraryAsset[] = await get_data(APP_URLS.LIBRARY_ASSETS)
-        return this.update_state(draft => {
-            draft.library_assets_api.assets = library_assets,
-            draft.library_assets_api.assets_by_group = range(1, 4).reduce((acc, group) => {
-                acc[group] = library_assets.filter(asset => asset.image_group === group)
-            }, {} as any)
+        get_data(APP_URLS.LIBRARY_ASSETS)
+        .then((library_assets: LibraryAsset[]) => {
+            this.update_state(draft => {
+                draft.library_assets_api.assets = library_assets,
+                draft.library_assets_api.assets_by_group = range(1, 4).reduce((acc, group) => {
+                    return set(acc, group, library_assets.filter(asset => asset.image_group === group))
+                }, {})
+            })
         })
     }
 

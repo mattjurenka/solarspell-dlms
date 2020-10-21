@@ -17,7 +17,6 @@ interface APIs {
     lib_versions_api: LibraryVersionsAPI
     lib_assets_api: LibraryAssetsAPI
     users_api: UsersAPI
-    metadata_api: MetadataAPI
     lib_modules_api: LibraryModulesAPI
     metadata_api: MetadataAPI,
     utils_api: UtilsAPI
