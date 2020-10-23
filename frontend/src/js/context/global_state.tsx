@@ -93,8 +93,9 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
                 library_modules: []
             },
             utils_api: {
-                disk_available: 0,
-                disk_used: 0
+                disk_total: 0,
+                disk_used: 0,
+                disk_free: 0
             }
         }
 
@@ -154,6 +155,9 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
 
         //Library Modules API
         this.refresh_library_modules = this.refresh_library_modules.bind(this)
+        this.set_module_logo = this.set_module_logo.bind(this)
+        this.add_module = this.add_module.bind(this)
+        this.edit_module = this.edit_module.bind(this)
 
         //Utils API
         this.get_disk_info = this.get_disk_info.bind(this)
@@ -709,6 +713,43 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
         })
     }
 
+    async add_module(name: string, file: File) {
+        const form_data = new FormData()
+        form_data.append("module_name", name)
+        form_data.append("module_file", file)
+
+        return Axios.post(APP_URLS.LIBRARY_MODULES, form_data, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        }).then(this.refresh_library_modules)
+    }
+    
+    async edit_module(to_edit: LibraryModule, name: string, file?: File | null) {
+        const form_data = new FormData()
+        form_data.append("module_name", name)
+        if (file != undefined && file.type !== "application/zip") {
+            form_data.append("module_file", file)
+        }
+
+        return Axios.patch(APP_URLS.LIBRARY_MODULE(to_edit.id), form_data, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        }).then(this.refresh_library_modules)
+    }
+
+    async set_module_logo(to_change: LibraryModule, logo: LibraryAsset) {
+        return Axios.patch(APP_URLS.LIBRARY_MODULE(to_change.id), {
+            logo_img: logo.id
+        }).then(this.refresh_library_modules)
+    }
+
+    async delete_module(to_delete: LibraryModule) {
+        return Axios.delete(APP_URLS.LIBRARY_MODULE(to_delete.id))
+            .then(this.refresh_library_modules)
+    }
+
 
 
     // UTILS API -----------------------------------------------
@@ -716,8 +757,9 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
         return get_data(APP_URLS.DISK_INFO)
             .then(data =>
                 this.update_state(draft => {
-                    draft.utils_api.disk_available = data.total
+                    draft.utils_api.disk_total = data.total
                     draft.utils_api.disk_used = data.used
+                    draft.utils_api.disk_free = data.free
                 })
             )
     }
@@ -786,6 +828,10 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
                 lib_modules_api: {
                     state: this.state.library_modules_api,
                     refresh_library_modules: this.refresh_library_modules,
+                    set_module_logo: this.set_module_logo,
+                    add_module: this.add_module,
+                    edit_module: this.edit_module,
+                    delete_module: this.delete_module
                 },
                 utils_api: {
                     state: this.state.utils_api,

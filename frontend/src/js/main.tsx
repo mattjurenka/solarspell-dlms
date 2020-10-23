@@ -96,6 +96,7 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                 component: (_tabs, apis) => (
                     <LibraryModules
                         library_modules_api={apis.lib_modules_api}
+                        library_assets_api={apis.lib_assets_api}
                     />
                 ),
                 icon: library_assets
