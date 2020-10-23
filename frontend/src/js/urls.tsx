@@ -73,10 +73,9 @@ const APP_URLS = {
     METADATA_BY_TYPE: (type: string) => url_with_params(`${api_path}/metadata/${type}/get/`),
     METADATA_SHEET: (metadata_type: string) => url_with_params(`${api_path}/spreadsheet/metadata/${metadata_type}`),
     USERS: url_with_params(`${api_path}/users/`),
+    LIBRARY_MODULE: (id: number) => url_with_params(`${api_path}/library_modules/${id}/`),
     LIBRARY_MODULES: url_with_params(`${api_path}/library_modules/`),
-
-
-
+    
 }
 
 //Transforms url into a promise containing the data or error from that api call

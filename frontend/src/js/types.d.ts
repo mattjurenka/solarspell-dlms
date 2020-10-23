@@ -1,6 +1,4 @@
-import LibraryAssets from "./library_assets"
 import { Sorting } from "@devexpress/dx-react-grid"
-import { UseMultipleSelectionState } from "downshift"
 
 interface TabDict {
     [key: string]: TabData
@@ -134,12 +132,17 @@ type UtilsAPI = {
 
 type UtilsState = {
     disk_used: number
-    disk_available: number
+    disk_free: number
+    disk_total: number
 }
 
 type LibraryModulesAPI = {
     state: LibraryModulesState
     refresh_library_modules: () => Promise<any>
+    set_module_logo: (to_change: LibraryModule, logo: LibraryAsset) => Promise<any>
+    add_module: (name: string, file: File) => Promise<any>
+    edit_module: (to_edit: LibraryModule, name: string, file?: File | null) => Promise<any>
+    delete_module: (to_delete: LibraryModule) => Promise<any>
 }
 
 type AssetGroup = 1 | 2 | 3
@@ -162,7 +165,7 @@ interface LibraryVersionsState {
         files: SerializedContent[]
     }
     current_version: LibraryVersion
-    folders_in_version: [folder: LibraryFolder, path: string][]
+    folders_in_version: Array<[LibraryFolder, string]>
     modules_in_version: LibraryModule[]
     path: LibraryFolder[]
 }

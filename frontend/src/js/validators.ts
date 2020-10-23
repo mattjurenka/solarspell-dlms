@@ -89,4 +89,13 @@ export default class VALIDATORS {
         }
         return ""
     }
+    static MODULE_NAME(to_check: string) {
+        if (!isString(to_check)) {
+            return "Input must be a string"
+        }
+        if (to_check.length < 0 || to_check.length > 300) {
+            return "Input must be between 0 and 300 characters"
+        }
+        return ""
+    }
 }
