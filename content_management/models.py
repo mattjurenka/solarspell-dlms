@@ -2,6 +2,7 @@ import os
 from _datetime import datetime
 
 from django.db import models
+from django.dispatch import receiver
 from content_management.validators import validate_unique_filename, validate_unique_file
 
 
@@ -70,6 +71,11 @@ class Content(models.Model):
     def __str__(self):
         return f'{self.title}'
 
+@receiver(models.signals.post_delete, sender=Content)
+def on_content_delete(sender, instance, **kwargs):
+    if instance.content_file:
+        if os.path.isfile(instance.content_file.path):
+            os.remove(instance.content_file.path)
 
 class LibLayoutImage(models.Model):
 
@@ -108,6 +114,14 @@ class LibraryModule(models.Model):
     module_file = models.FileField(upload_to="modules/")
     logo_img = models.ForeignKey(LibLayoutImage, related_name="module_logos", on_delete=models.SET_NULL, null=True)
 
+    def file_name(self):
+        return os.path.basename(self.module_file.name)
+
+@receiver(models.signals.post_delete, sender=LibraryModule)
+def on_module_delete(sender, instance, **kwargs):
+    if instance.module_file:
+        if os.path.isfile(instance.module_file.path):
+            os.remove(instance.module_file.path)
 
 class LibraryVersion(models.Model):
     library_name = models.CharField(max_length=300)
@@ -118,6 +132,7 @@ class LibraryVersion(models.Model):
     created_on = models.DateTimeField(default=datetime.now)
     created_by = models.ForeignKey(User, related_name="versions", on_delete=models.SET_NULL, null=True)
     library_modules = models.ManyToManyField(LibraryModule, blank=True)
+    metadata_types = models.ManyToManyField(MetadataType, blank=True)
 
     def user_info(self):
         if self.created_by is None:
@@ -129,6 +144,15 @@ class LibraryVersion(models.Model):
 
     def __str__(self):
         return f'[{self.library_name}]{self.version_number}'
+
+@receiver(models.signals.post_save, sender=LibraryVersion)
+def on_version_save(sender, instance, created, **kwargs):
+    # adds initial metadata_types
+    print("Saved")
+    if created:
+        print("created")
+        for metadata_type in MetadataType.objects.all():
+            instance.metadata_types.add(metadata_type)
 
 
 class LibraryFolder(models.Model):

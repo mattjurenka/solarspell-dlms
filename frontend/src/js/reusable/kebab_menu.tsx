@@ -36,6 +36,8 @@ export default class KebabMenu extends Component<KebabMenuProps, KebabMenuState>
             <>
                 <MoreVert
                     onClick={evt => {
+                        evt.stopPropagation()
+                        evt.preventDefault()
                         this.setState({
                             anchor_el: evt.currentTarget
                         })
@@ -45,15 +47,20 @@ export default class KebabMenu extends Component<KebabMenuProps, KebabMenuState>
                     anchorEl={this.state.anchor_el}
                     open={Boolean(this.state.anchor_el)}
                     keepMounted
-                    onClose={this.on_close}
+                    onClose={evt => {
+                        //evt is actually a click evt, this is a bug with MUI
+                        (evt as MouseEvent).stopPropagation()
+                        this.on_close()
+                    }}
                 >
                     {this.props.items.map((item, idx) => {
                         const [func, element] = item
                         return (
                             <MenuItem
-                                onClick={() => {
-                                    this.on_close()
-                                    .then(func)
+                                onClick={evt => {
+                                    evt.stopPropagation()
+                                    evt.preventDefault()
+                                    this.on_close().then(func)
                                 }}
                                 key={idx}
                             >

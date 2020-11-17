@@ -34,7 +34,7 @@ class StandardDataView:
         queryset = self.filter_queryset(self.get_queryset())
 
         page = self.paginate_queryset(queryset)
-        if page is not None:
+        if page != None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
@@ -52,33 +52,33 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
         queryset = self.queryset
 
         title = self.request.GET.get("title", None)
-        if title is not None:
+        if title != None:
             queryset = queryset.filter(title__icontains=title)
         
         file_name = self.request.GET.get("file_name", None)
-        if file_name is not None:
+        if file_name != None:
             queryset = queryset.filter(file_name__icontains=file_name)
         
         copyright = self.request.GET.get("copyright", None)
-        if copyright is not None:
+        if copyright != None:
             queryset = queryset.filter(copyright__icontains=copyright)
         
         active_raw = self.request.GET.get("active", None)
-        if active_raw is not None:
+        if active_raw != None:
             if active_raw.lower() == "true":
                 queryset = queryset.filter(active=True)
             if active_raw.lower() == "false":
                 queryset = queryset.filter(active=False)
 
         duplicated_raw = self.request.GET.get("duplicatable", None)
-        if duplicated_raw is not None:
+        if duplicated_raw != None:
             if duplicated_raw.lower() == "true":
                 queryset = queryset.filter(duplicatable=True)
             if duplicated_raw.lower() == "false":
                 queryset = queryset.filter(duplicatable=False)
         
         metadata_raw = self.request.GET.get("metadata", None)
-        if metadata_raw is not None:
+        if metadata_raw != None:
             try:
                 metadata = [int(x) for x in metadata_raw.split(",")]
                 for meta_id in metadata:
@@ -89,7 +89,7 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
                 print(e)
 
         year_from_raw = self.request.GET.get("published_year_from", None)
-        if year_from_raw is not None:
+        if year_from_raw != None:
             try:
                 year = int(year_from_raw)
                 queryset = queryset.filter(published_date__year__gte=(year))
@@ -97,7 +97,7 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
                 pass
 
         year_to_raw = self.request.GET.get("published_year_to", None)
-        if year_to_raw is not None:
+        if year_to_raw != None:
             try:
                 year = int(year_to_raw)
                 queryset = queryset.filter(published_date__year__lte=(year))
@@ -105,37 +105,37 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
                 pass
         
         filesize_from_raw = self.request.GET.get("filesize_from", None)
-        if filesize_from_raw is not None:
+        if filesize_from_raw != None:
             try:
                 filesize = int(filesize_from_raw)
-                queryset = queryset.filter(filesize__gte=(filesize))
+                queryset = queryset.filter(filesize__gte=(filesize * 1000))
             except:
                 pass
 
         filesize_to_raw = self.request.GET.get("filesize_to", None)
-        if filesize_to_raw is not None:
+        if filesize_to_raw != None:
             try:
                 filesize = int(filesize_to_raw)
-                queryset = queryset.filter(filesize__lte=(filesize))
+                queryset = queryset.filter(filesize__lte=(filesize * 1000))
             except:
                 pass
         
         reviewed_from_raw = self.request.GET.get("reviewed_from", None)
-        if reviewed_from_raw is not None:
+        if reviewed_from_raw != None:
             try:
                 queryset = queryset.filter(reviewed_on__gte=(reviewed_from_raw))
             except:
                 pass
 
         reviewed_to_raw = self.request.GET.get("reviewed_to", None)
-        if reviewed_to_raw is not None:
+        if reviewed_to_raw != None:
             try:
                 queryset = queryset.filter(reviewed_on__lte=(reviewed_to_raw))
             except:
                 pass
 
         order_raw = self.request.GET.get("sort", None)
-        if order_raw is not None:
+        if order_raw != None:
             try:
                 split = order_raw.split(",")
                 order_str = ("-" if split[1] == "desc" else "") + split[0]
@@ -144,7 +144,7 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
                 pass
         
         exclude_version = self.request.GET.get("exclude_in_version", None)
-        if exclude_version is not None:
+        if exclude_version != None:
             try:
                 content_in_version = LibraryFolder.objects.filter(version_id=exclude_version).values_list('library_content', flat=True)
                 id_list = list(content_in_version)
@@ -166,7 +166,7 @@ class MetadataViewSet(StandardDataView, viewsets.ModelViewSet):
         queryset = self.filter_queryset(Metadata.objects.filter(type__name=pk))
 
         page = self.paginate_queryset(queryset)
-        if page is not None:
+        if page != None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
@@ -190,13 +190,50 @@ class LibraryVersionViewSet(StandardDataView, viewsets.ModelViewSet):
     queryset = LibraryVersion.objects.all()
     serializer_class = LibraryVersionSerializer
     folder_serializer = LibraryFolderSerializer
+    pagination_class = PageNumberSizePagination
+
+    @action(methods=['post'], detail=True)
+    def add_metadata_type(self, request, pk=None):
+        metadata_type_id = request.data.get('metadata_type_id', None)
+
+        if metadata_type_id is None:
+            return build_response(
+                status=status.HTTP_400_BAD_REQUEST,
+                success=False,
+                error="No Metadata Type ID supplied"
+            )
+        
+        version = self.get_queryset().get(id=pk)
+        version.metadata_types.add(
+            MetadataType.objects.get(id=metadata_type_id)
+        )
+        print(version.metadata_types )
+        return build_response(LibraryVersionSerializer(version).data)
+
+    @action(methods=['post'], detail=True)
+    def remove_metadata_type(self, request, pk=None):
+        metadata_type_id = request.data.get('metadata_type_id', None)
+        
+        if metadata_type_id is None:
+            return build_response(
+                status=status.HTTP_400_BAD_REQUEST,
+                success=False,
+                error="No Metadata Type ID supplied"
+            )
+        
+        version = self.get_queryset().get(id=pk)
+        version.metadata_types.remove(
+            MetadataType.objects.get(id=metadata_type_id)
+        )
+        print(version.metadata_types)
+        return build_response(LibraryVersionSerializer(version).data)
 
     @action(methods=['get'], detail=True)
     def root(self, request, pk=None):
         return build_response(LibraryFolderSerializer(
                 LibraryFolder.objects.filter(version=pk, parent=None).order_by("id"),
                 many=True
-            ).data if pk is not None else []
+            ).data if pk != None else []
         )
     
     @action(methods=['get'], detail=True)
@@ -204,15 +241,14 @@ class LibraryVersionViewSet(StandardDataView, viewsets.ModelViewSet):
         return build_response(LibraryFolderSerializer(
             LibraryFolder.objects.filter(version=pk).order_by("id"),
             many=True
-        ).data if pk is not None else []
-                              )
+        ).data if pk != None else [])
 
     @action(methods=['get'], detail=True)
     def modules(self, request, pk=None):
         return build_response(LibraryModuleSerializer(
             LibraryVersion.objects.get(id=pk).library_modules.all(),
             many=True
-        ).data if pk is not None and pk is not '0' else []
+        ).data if pk != None and pk != '0' else []
                               )
 
     @action(methods=['post'], detail=True)
@@ -267,11 +303,16 @@ class LibraryVersionViewSet(StandardDataView, viewsets.ModelViewSet):
                 )
         
         version_to_clone = get_object_or_404(LibraryVersion, id=pk)
+        modules = version_to_clone.library_modules.all()
 
         #clone version
         version_to_clone.id = None
         version_to_clone.library_name = "(CLONED) " +  version_to_clone.library_name
         version_to_clone.save()
+        
+        version_to_clone.library_modules.set(modules)
+        version_to_clone.save()
+
 
         def clone_recursively(folder_to_clone, new_parent):
             #save relationships of the old folder

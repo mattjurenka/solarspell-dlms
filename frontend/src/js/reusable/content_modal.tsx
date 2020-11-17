@@ -1,17 +1,18 @@
 import ActionDialog from "./action_dialog"
-import { cloneDeep, isEqual, set, isNull, isUndefined } from "lodash"
+import { cloneDeep, isEqual, set, isNull, isString, isArray } from "lodash"
 import {Button, TextField, Grid, Checkbox, Typography} from "@material-ui/core"
 import Axios, { AxiosResponse } from "axios"
 import { APP_URLS } from "../urls"
 import { Autocomplete, createFilterOptions } from "@material-ui/lab"
 import { Component, RefObject } from 'react'
 import React from 'react'
-import { update_state, get_string_from_error, get_field_info_default } from '../utils'
+import { update_state, get_field_info_default } from '../utils'
 
 import { KeyboardDatePicker }   from '@material-ui/pickers';
 import { format } from 'date-fns'
 import { WrappedFieldInfo, metadata_dict, SerializedContent, MetadataAPI, SerializedMetadata, SerializedMetadataType,
-    content_fields } from 'js/types'
+    content_fields, 
+    ContentsAPI} from '../types'
 
 interface ContentModalProps {
     is_open: boolean
@@ -21,6 +22,7 @@ interface ContentModalProps {
         [P in keyof content_fields]: (value: any) => string
     }
     metadata_api: MetadataAPI
+    contents_api: ContentsAPI
     show_toast_message: (message: string, is_success: boolean) => void
     on_close: () => void
     show_loader: () => void
@@ -128,6 +130,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                             .then(() => {
                                 for (const key in this.state.fields) {
                                     if (this.state.fields[key as keyof content_fields].reason !== "") {
+                                        this.props.remove_loader()
                                         return
                                     }
                                 }
@@ -178,14 +181,18 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                     this.props.remove_loader()
                                     this.props.show_toast_message(this.props.modal_type === "add" ? "Added content successfully" : "Edited content successfully",true)
                                     metadata_api.refresh_metadata()
+                                    this.props.contents_api.load_content_rows()
                                     this.props.on_close()
                                 }, (reason: any) => {
                                     this.props.remove_loader()
                                     const unknown_err_str = this.props.modal_type === "add" ? "Error while adding content" : "Error while editing content"
-                                    this.props.show_toast_message(get_string_from_error(
-                                        isUndefined(reason?.response?.data?.error) ? reason?.response?.data?.error : unknown_err_str,
-                                        unknown_err_str
-                                    ),false)
+                                    const err = reason?.response?.data?.error
+                                    const err_string = err === undefined ?
+                                        unknown_err_str : isArray(err) ? 
+                                            err[0] : isString(err) ?
+                                                err : Object.values(err)[0]
+                                    
+                                    this.props.show_toast_message(err_string, false)
                                 })
                             })
                         }}

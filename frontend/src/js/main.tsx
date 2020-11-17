@@ -38,6 +38,7 @@ interface MainScreenState {
         message: string
         is_open: boolean
         is_success: boolean
+        last_open: number
     }
     loader_state: {
         loading: boolean
@@ -144,7 +145,8 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
             toast_state: {
                 message: "",
                 is_open: false,
-                is_success: false
+                is_success: false,
+                last_open: Date.now()
             },
             loader_state:{
                 loading:false
@@ -160,10 +162,14 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
 
     //Closes the toast message window
     close_toast() {
-        this.update_state(draft => {
-            draft.toast_state.is_open = false
-            draft.toast_state.message = ""
-        })
+        const now = Date.now()
+        console.log(now, this.state.toast_state.last_open)
+        if (this.state.toast_state.last_open + 5000 <= now) {
+            this.update_state(draft => {
+                draft.toast_state.is_open = false
+                draft.toast_state.message = ""
+            })
+        }
     }
 
     //Opens the toast message and shows the window
@@ -172,7 +178,7 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
             draft.toast_state.is_open = true
             draft.toast_state.message = message
             draft.toast_state.is_success = is_success
-        })
+        }).then(() => setTimeout(this.close_toast, 5000))
     }
 
     change_tab(new_tab: string) {

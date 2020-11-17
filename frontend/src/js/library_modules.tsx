@@ -1,5 +1,5 @@
 import React, { RefObject } from 'react';
-import { Button, Grid, TextField } from '@material-ui/core';
+import { Button, Grid, Link, TextField } from '@material-ui/core';
 import { field_info, LibraryAssetsAPI, LibraryModule, LibraryModulesAPI } from './types';
 import { Grid as DataGrid, Table, TableHeaderRow } from '@devexpress/dx-react-grid-material-ui';
 import ActionPanel from './reusable/action_panel';
@@ -7,6 +7,7 @@ import { get_field_info_default, update_state } from './utils';
 import { cloneDeep } from 'lodash';
 import ActionDialog from './reusable/action_dialog';
 import VALIDATORS from './validators';
+import { APP_URLS } from './urls';
 
 interface LibraryModulesProps {
     library_modules_api: LibraryModulesAPI
@@ -53,7 +54,8 @@ export default class LibraryModules extends React.Component<LibraryModulesProps,
             id: 0,
             logo_img: 0,
             module_file: "",
-            module_name: ""
+            module_name: "",
+            file_name: ""
         }
 
         this.modal_defaults = {
@@ -102,7 +104,11 @@ export default class LibraryModules extends React.Component<LibraryModulesProps,
                 <DataGrid
                     columns={[
                         {name: "module_name", title: "Name"},
-                        {name: "module_file", title: "File"},
+                        {name: "file_name", title: "File", getCellValue: (row) => {
+                            return <Link target="_blank" href={new URL(row.file_name, APP_URLS.MODULE_FOLDER).href}>
+                                {row.file_name}
+                            </Link>
+                        }},
                         {name: "logo_img", title: "Logo", getCellValue: (row: LibraryModule) => {
                             return <ActionPanel
                                 imageFn={() => this.update_state(draft => {
