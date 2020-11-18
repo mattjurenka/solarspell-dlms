@@ -74,8 +74,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
                 assets_by_group: {},
                 group_name: {
                     1: "logo",
-                    2: "banner",
-                    3: "version"
+                    2: "version",
                 }
             },
             library_versions_api: {
@@ -278,7 +277,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
             //Unfortunately this means we have to store each content twice, once as SerializedContent and again as any
             const rows = data.results as SerializedContent[]
             const display_rows = cloneDeep(rows).map((row: any) => {
-                row.metadata_info.map((info:SerializedMetadata) => {
+                row.metadata_info.map((info: SerializedMetadata) => {
                     if (this.state.metadata_api.metadata_types.map(type => type.name).includes(info.type_name)) {
                         const new_metadata_entry = get(row, [info.type_name], []).concat([info.name])
                         row[info.type_name] = new_metadata_entry
@@ -425,20 +424,25 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
     async add_metadata_type(type_name: string) {
         return Axios.post(APP_URLS.METADATA_TYPES, {
             name: type_name
-        }).finally(this.refresh_metadata)
+        })
+            .then(this.load_content_rows)
+            .finally(this.refresh_metadata)
     }
 
     //Renames existing MetadataType record
     async edit_metadata_type(old_type: SerializedMetadataType, new_name: string) {
         return Axios.patch(APP_URLS.METADATA_TYPE(old_type.id), {
             name: new_name
-        }).finally(this.refresh_metadata)
+        })
+            .then(this.load_content_rows)
+            .finally(this.refresh_metadata)
     }
 
     //Deletes existing MetadataType record
     async delete_metadata_type(meta_type: SerializedMetadataType) {
         return Axios.delete(APP_URLS.METADATA_TYPE(meta_type.id))
-        .finally(this.refresh_metadata)
+            .then(this.load_content_rows)
+            .finally(this.refresh_metadata)
     }
     
     //Add Metadata with MetadataType
@@ -446,19 +450,24 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
         return Axios.post(APP_URLS.METADATA, {
             name: meta_name,
             type: meta_type.id
-        }).finally(this.refresh_metadata)
+        })
+            .then(this.load_content_rows)
+            .finally(this.refresh_metadata)
     }
     
     //Edit the name of an existing Met
     async edit_metadata(old_meta: SerializedMetadata, new_name: string) {
         return Axios.patch(APP_URLS.METADATA_ITEM(old_meta.id), {
             name: new_name
-        }).finally(this.refresh_metadata)
+        })
+            .then(this.load_content_rows)
+            .finally(this.refresh_metadata)
     }
 
     async delete_metadata(meta_type: SerializedMetadata) {
         return Axios.delete(APP_URLS.METADATA_ITEM(meta_type.id))
-        .finally(this.refresh_metadata)
+            .then(this.load_content_rows)
+            .finally(this.refresh_metadata)
     }
 
     async set_view_metadata_column(update_func: (draft: show_metadata_column) => void) {
@@ -466,7 +475,6 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
             update_func(draft.metadata_api.show_columns)
         })
         const x = Object.keys(this.state.metadata_api.show_columns).filter(name => this.state.metadata_api.show_columns[name])
-        console.log(x, this.state.metadata_api.show_columns)
         Cookies.set('show_columns', x.join(','))
     }
     

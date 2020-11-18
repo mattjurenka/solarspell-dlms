@@ -73,6 +73,7 @@ export default class Content extends Component<ContentProps, ContentState> {
             reviewed_on: "",
             copyright: null,
             rights_statement: null,
+            rights_holder: null,
             active: false,
             metadata: [],
             metadata_info: [],
@@ -237,6 +238,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                         metadata: VALIDATORS.METADATA,
                         copyright: VALIDATORS.COPYRIGHT,
                         rights_statement: VALIDATORS.RIGHTS_STATEMENT,
+                        rights_holder: VALIDATORS.RIGHTS_HOLDER,
                         duplicatable: () => ""
                     }}
                     show_toast_message={this.props.show_toast_message}
@@ -263,6 +265,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                         metadata: VALIDATORS.METADATA,
                         copyright: VALIDATORS.COPYRIGHT,
                         rights_statement: VALIDATORS.RIGHTS_STATEMENT,
+                        rights_holder: VALIDATORS.RIGHTS_HOLDER,
                         duplicatable: () => ""
                     }}
                     show_toast_message={this.props.show_toast_message}

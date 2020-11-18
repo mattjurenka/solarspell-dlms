@@ -58,6 +58,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                     return set(prev, [current.name], [])
                 },{} as metadata_dict)),
             rights_statement: get_field_info_default(""),
+            rights_holder: get_field_info_default(""),
             copyright: get_field_info_default(""),
             duplicatable: get_field_info_default(false)
         }
@@ -88,6 +89,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                 draft.fields.description = get_field_info_default(row.description === null ? "" : row.description)
                 draft.fields.metadata = get_field_info_default(metadata)
                 draft.fields.rights_statement = get_field_info_default(row.rights_statement === null? "" : row.rights_statement)
+                draft.fields.rights_holder = get_field_info_default(row.rights_holder === null? "" : row.rights_holder)
                 draft.fields.title = get_field_info_default(row.title === null ? "" : row.title)
                 draft.fields.year = get_field_info_default(row.published_year === null ? "" : row.published_year)
                 draft.fields.duplicatable = get_field_info_default(row.duplicatable)
@@ -149,6 +151,9 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 formData.append('title', this.state.fields.title.value)
                                 formData.append('description', this.state.fields.description.value)
                                 formData.append('duplicatable', this.state.fields.duplicatable.value ? "true" : "false")
+                                formData.append('rights_statement', this.state.fields.rights_statement.value)
+                                formData.append('rights_holder', this.state.fields.rights_holder.value)
+                                formData.append('copyright', this.state.fields.copyright.value)
                                 formData.append('published_date', `${this.state.fields.year.value}-01-01`)
                                 if (this.props.modal_type === "add") {
                                     formData.append('active', "true")
@@ -230,12 +235,19 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 })
                             }}
                         />,
-                        <input
-                            accept="*"
-                            id="raised-button-file"
-                            type="file"
-                            ref={this.file_input_ref}
-                        />,
+                        <>
+                            {
+                                this.props.row?.content_file ? 
+                                    <Typography>Existing file: {this.props.row?.file_name}</Typography> :
+                                    null
+                            }
+                            <input
+                                accept="*"
+                                id="raised-button-file"
+                                type="file"
+                                ref={this.file_input_ref}
+                            />
+                        </>,
                         <TextField
                             fullWidth
                             error={this.state.fields.year.reason !== ""}
@@ -265,7 +277,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                             fullWidth
                             error={this.state.fields.copyright.reason !== ""}
                             helperText={this.state.fields.copyright.reason}
-                            label={"Copyright"}
+                            label={"Copyright Notes"}
                             value={this.state.fields.copyright.value}
                             onChange={(evt) => {
                                 evt.persist()
@@ -284,6 +296,19 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 evt.persist()
                                 this.update_state(draft => {
                                     draft.fields.rights_statement.value = evt.target.value
+                                })
+                            }}
+                        />,
+                        <TextField
+                            fullWidth
+                            error={this.state.fields.rights_holder.reason !== ""}
+                            helperText={this.state.fields.rights_holder.reason}
+                            label={"Rights Holder"}
+                            value={this.state.fields.rights_holder.value}
+                            onChange={(evt) => {
+                                evt.persist()
+                                this.update_state(draft => {
+                                    draft.fields.rights_holder.value = evt.target.value
                                 })
                             }}
                         />,

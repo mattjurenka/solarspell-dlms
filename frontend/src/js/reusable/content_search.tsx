@@ -134,7 +134,7 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                             <Grid item xs={4}>
                                 <TextField
                                     fullWidth
-                                    label={"Copyright"}
+                                    label={"Copyright Notes"}
                                     value={search.copyright}
                                     onChange={(evt) => {
                                         evt.persist()
@@ -179,7 +179,7 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                             <Grid item xs={2}>
                                 <TextField
                                     fullWidth
-                                    label={"Filesize From"}
+                                    label={"Filesize From (MB)"}
                                     value={search.file_size_from}
                                     InputProps={{inputProps: {min: 0, max: 1000000000000}}}
                                     type={"number"}
@@ -195,7 +195,7 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                             <Grid item xs={2}>
                                 <TextField
                                     fullWidth
-                                    label={"Filesize To"}
+                                    label={"Filesize To (MB)"}
                                     value={search.file_size_to}
                                     InputProps={{inputProps: {min: 0, max: 1000000000000}}}
                                     type={"number"}
@@ -368,7 +368,10 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                         currentPage={this.props.contents_api.state.page}
                         onCurrentPageChange={this.props.contents_api.set_page}
                         pageSize={this.props.contents_api.state.page_size}
-                        onPageSizeChange={this.props.contents_api.set_page}
+                        onPageSizeChange={n => {
+                            console.log(n)
+                            this.props.contents_api.set_page_size(n)
+                        }}
                     />
                     {this.props.selection ?
                         [<SelectionState

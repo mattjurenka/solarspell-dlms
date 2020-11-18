@@ -108,7 +108,7 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
         if filesize_from_raw != None:
             try:
                 filesize = int(filesize_from_raw)
-                queryset = queryset.filter(filesize__gte=(filesize * 1000))
+                queryset = queryset.filter(filesize__gte=(filesize * 1000000))
             except:
                 pass
 
@@ -116,7 +116,7 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
         if filesize_to_raw != None:
             try:
                 filesize = int(filesize_to_raw)
-                queryset = queryset.filter(filesize__lte=(filesize * 1000))
+                queryset = queryset.filter(filesize__lte=(filesize * 1000000))
             except:
                 pass
         

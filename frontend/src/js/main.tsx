@@ -190,6 +190,8 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
         }).then(() => {
             history.replaceState({}, "DLMS", this.state.url.toString())
         })
+            .then(this.props.apis.contents_api.reset_search)
+            .then(this.props.apis.contents_api.load_content_rows)
     }
     show_loader(){
         this.update_state(draft => {

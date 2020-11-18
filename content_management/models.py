@@ -46,6 +46,7 @@ class Content(models.Model):
     metadata = models.ManyToManyField(Metadata, blank=True)
     copyright = models.CharField(max_length=500, null=True)
     rights_statement = models.TextField(null=True)
+    rights_holder = models.TextField(null=True)
     published_date = models.DateField(null=True)
     reviewed_on = models.DateField(null=True)
     active = models.BooleanField(default=1)
@@ -89,8 +90,7 @@ class LibLayoutImage(models.Model):
 
     GROUPS = (
         (1, 'Logo'),
-        (2, 'Banner'),
-        (3, 'Version'),
+        (2, 'Version'),
     )
     image_file = models.FileField(upload_to=get_folder_name)
     image_group = models.PositiveSmallIntegerField(choices=GROUPS, default=3)

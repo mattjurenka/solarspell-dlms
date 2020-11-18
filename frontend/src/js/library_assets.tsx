@@ -81,8 +81,7 @@ export default class LibraryAssets extends Component<LibraryAssetsProps, Library
                         const asset_group_raw = Number.parseInt(group);
                         if (Number.isNaN(asset_group_raw) || (
                             asset_group_raw !== 1 &&
-                            asset_group_raw !== 2 &&
-                            asset_group_raw !== 3
+                            asset_group_raw !== 2
                         )) {
                             return <></>
                         }

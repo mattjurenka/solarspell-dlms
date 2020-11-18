@@ -52,6 +52,7 @@ interface SerializedContent {
     reviewed_on: string
     copyright: string|null
     rights_statement: string|null
+    rights_holder: string|null
     active: boolean
     duplicatable: boolean
     metadata: number[]
@@ -154,7 +155,7 @@ type LibraryModulesAPI = {
     delete_module: (to_delete: LibraryModule) => Promise<any>
 }
 
-type AssetGroup = 1 | 2 | 3
+type AssetGroup = 1 | 2
 
 type LibraryAsset = {
     id: number
@@ -251,6 +252,7 @@ type content_fields = {
     metadata:           metadata_dict
     copyright:          string
     rights_statement:   string
+    rights_holder:   string
     duplicatable:       boolean
 }
 

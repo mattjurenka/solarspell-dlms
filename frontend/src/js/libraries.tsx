@@ -145,6 +145,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
             reviewed_on: "",
             copyright: null,
             rights_statement: null,
+            rights_holder: null,
             active: false,
             duplicatable: false,
             metadata: [],
@@ -378,7 +379,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                     {(() => {
                                         const library_banner = this.props.library_versions_api.state.current_version.library_banner
                                         if (library_banner !== 0) {
-                                            const version_banner = this.props.library_assets_api.state.assets_by_group[3]?.find(asset => asset.id === library_banner)
+                                            const version_banner = this.props.library_assets_api.state.assets_by_group[2]?.find(asset => asset.id === library_banner)
                                             if (version_banner !== undefined && version_banner.image_file !== null) {
                                                 return <img src={version_banner.image_file} style={{maxHeight: "200px", maxWidth: "100%"}}></img>
                                             } else {
@@ -388,24 +389,6 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                             return <></>
                                         }
                                     })()}
-                                    <Grid container style={{maxHeight: "200px"}}>
-                                        <Grid item xs={6}>
-                                            {(() => {
-                                                const path = this.props.library_versions_api.state.path
-                                                const top_level_folder = path.length > 0 ? path[0] : undefined
-                                                if (top_level_folder !== undefined) {
-                                                    const folder_banner = this.props.library_assets_api.state.assets_by_group[2]?.find(asset => asset.id === top_level_folder.banner_img)
-                                                    if (folder_banner !== undefined && folder_banner.image_file !== null) {
-                                                        return <img src={folder_banner.image_file} style={{maxHeight: "200px", maxWidth: "100%"}}></img>
-                                                    } else {
-                                                        return <></>
-                                                    }
-                                                } else {
-                                                    return <></>
-                                                }
-                                            })()}
-                                        </Grid>
-                                    </Grid>
                                     <Box flexDirection="row" display="flex" style={{width: "100%"}}>
                                         <Box style={{
                                             paddingTop: "1em",
@@ -887,7 +870,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                     )]}
                 >
                     <Grid container spacing={2}>
-                        {this.props.library_assets_api.state.assets_by_group[3]?.map((asset, idx) => {
+                        {this.props.library_assets_api.state.assets_by_group[2]?.map((asset, idx) => {
                             return (
                                 <Grid
                                     key={idx}

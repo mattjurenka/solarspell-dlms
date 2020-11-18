@@ -40,15 +40,16 @@ export const ViewContentModal = ({
                     ["Filename", <a href={new URL(row.file_name, APP_URLS.CONTENT_FOLDER).href}>{row.file_name}</a>],
                     ["Year Published", row.published_year],
                     ["Reviewed On", row.reviewed_on],
-                    ["Copyright", row.copyright],
+                    ["Copyright Notes", row.copyright],
                     ["Rights Statement", row.rights_statement],
+                    ["Rights Holder", row.rights_holder],
                     ["File Size", isNull(row.filesize) ? 0 : prettyBytes(row.filesize)],
                     ["Duplicatable", row.duplicatable ? "Yes" : "No"]
                 ].map(([title, value], idx) => {
                     return (
                         <Container style={{marginBottom: "1em"}} key={idx}>
                             <Typography variant={"h6"}>{title}</Typography>
-                            <Typography>{value === null ? <i>Not Available</i> : value}</Typography>
+                            <Typography>{(value === null || value === undefined) ? <i>Not Available</i> : value}</Typography>
                         </Container>
                     )
                 })}
@@ -73,7 +74,10 @@ export const ViewContentModal = ({
             <Grid item xs={8}>
                 {is_open ? (
                     <object
-                        style={{maxWidth: "100%"}}
+                        style={{
+                            maxWidth: "100%",
+                            minHeight: "100%",
+                        }}
                         data={new URL(row.file_name, APP_URLS.CONTENT_FOLDER).href}
                     />
                 ) : null}
