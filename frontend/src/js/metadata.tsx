@@ -183,7 +183,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                 return <></>
             }
             return (
-                <ExpansionPanel expanded={expanded} onChange={(_:any, expanded: boolean) => {
+                <ExpansionPanel expanded={expanded} onChange={(_, expanded: boolean) => {
                     this.update_state(draft => {
                         draft.panel_data[metadata_type.name] = expanded
                     })

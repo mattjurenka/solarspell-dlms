@@ -33,8 +33,10 @@ class LibLayoutImageSerializer(ModelSerializer):
 class LibraryVersionSerializer(ModelSerializer):
     class Meta:
         model = LibraryVersion
-        fields = ("id", "library_name", "version_number", "created_on",
-                  "library_banner", "created_by", "user_info", "library_modules")
+        fields = (
+            "id", "library_name", "version_number", "created_on",
+            "library_banner", "created_by", "user_info", "library_modules", "metadata_types"
+        )
 
 
 class LibraryFolderSerializer(ModelSerializer):
@@ -52,4 +54,4 @@ class UserSerializer(ModelSerializer):
 class LibraryModuleSerializer(ModelSerializer):
     class Meta:
         model = LibraryModule
-        fields = '__all__'
+        fields = ("id", "module_name", "module_file", "logo_img", "file_name")

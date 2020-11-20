@@ -78,6 +78,14 @@ export default class LibraryAssets extends Component<LibraryAssetsProps, Library
                 <Grid style={{marginLeft: "10%", marginRight: "10%"}}>
                     {Object.entries(library_assets_api.state.assets_by_group).map((entry, idx) => {
                         const [group, assets] = entry
+                        const asset_group_raw = Number.parseInt(group);
+                        if (Number.isNaN(asset_group_raw) || (
+                            asset_group_raw !== 1 &&
+                            asset_group_raw !== 2
+                        )) {
+                            return <></>
+                        }
+                        const asset_group = asset_group_raw as AssetGroup
                         if (isUndefined(assets)) return <Fragment key={idx}></Fragment>
                         return (
                             <Fragment key={idx}>
@@ -85,7 +93,7 @@ export default class LibraryAssets extends Component<LibraryAssetsProps, Library
                                     <Grid item xs={6}>
                                         <Typography
                                             variant="h3"
-                                        >{capitalize(library_assets_api.state.group_name[group] + "s")}</Typography>
+                                        >{capitalize(library_assets_api.state.group_name[asset_group] + "s")}</Typography>
                                     </Grid>
                                     <Grid item xs={6} style={{textAlign: "right"}}>
                                         <Button
@@ -93,10 +101,10 @@ export default class LibraryAssets extends Component<LibraryAssetsProps, Library
                                             onClick={() => {
                                                 this.update_state(draft => {
                                                     draft.modals.add_asset.is_open = true
-                                                    draft.modals.add_asset.group = parseInt(group)
+                                                    draft.modals.add_asset.group = asset_group
                                                 })
                                             }}
-                                        >NEW {library_assets_api.state.group_name[group]} ASSET</Button>
+                                        >NEW {library_assets_api.state.group_name[asset_group]} ASSET</Button>
                                     </Grid>
                                 </Grid>
                                 <Grid container style={{marginBottom: "5%"}} spacing={2}>
@@ -162,13 +170,16 @@ export default class LibraryAssets extends Component<LibraryAssetsProps, Library
                             key={1}
                             onClick={()=> {
                                 this.update_state(draft => {
-                                    draft.modals.add_asset.file = this.file_input_ref.current?.files?.item(0)
+                                    draft.modals.add_asset.file = ((file_raw: File | undefined | null) => file_raw === undefined ?
+                                        null :
+                                        file_raw)(this.file_input_ref.current?.files?.item(0))
                                 }).then(() => {
-                                    this.props.library_assets_api.add_library_asset(
-                                        this.state.modals.add_asset.file,
-                                        this.state.modals.add_asset.group
-                                    )
-                                    this.close_modals()
+                                    if (this.state.modals.add_asset.file !== null) {
+                                        this.props.library_assets_api.add_library_asset(
+                                            this.state.modals.add_asset.file,
+                                            this.state.modals.add_asset.group
+                                        ).then(this.close_modals)
+                                    }
                                 })
                             }}
                             color="primary"

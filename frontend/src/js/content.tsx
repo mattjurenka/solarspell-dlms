@@ -73,6 +73,7 @@ export default class Content extends Component<ContentProps, ContentState> {
             reviewed_on: "",
             copyright: null,
             rights_statement: null,
+            rights_holder: null,
             active: false,
             metadata: [],
             metadata_info: [],
@@ -180,9 +181,16 @@ export default class Content extends Component<ContentProps, ContentState> {
                         })
                     }}
                     on_toggle_active={row => {
+                        this.props.show_toast_message(`Setting Active to ${!row.active}`, true)
                         Axios.patch(APP_URLS.CONTENT_ITEM(row.id), {
                             active: !row.active
-                        })
+                        }).then(
+                            () => {
+                                this.props.show_toast_message(`Active Set to ${!row.active}`, true)
+                                return this.props.contents_api.load_content_rows()
+                            },
+                            () => this.props.show_toast_message("Active Toggle Failed", false)
+                        )
                     }}
                 />
                 <ActionDialog
@@ -219,6 +227,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                         })
                     }}
                     metadata_api={metadata_api}
+                    contents_api={this.props.contents_api}
                     modal_type={"add"}
                     validators={{
                         content_file: VALIDATORS.ADD_FILE,
@@ -229,6 +238,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                         metadata: VALIDATORS.METADATA,
                         copyright: VALIDATORS.COPYRIGHT,
                         rights_statement: VALIDATORS.RIGHTS_STATEMENT,
+                        rights_holder: VALIDATORS.RIGHTS_HOLDER,
                         duplicatable: () => ""
                     }}
                     show_toast_message={this.props.show_toast_message}
@@ -243,6 +253,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                         })
                     }}
                     metadata_api={metadata_api}
+                    contents_api={this.props.contents_api}
                     modal_type={"edit"}
                     row={edit.row}
                     validators={{
@@ -254,6 +265,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                         metadata: VALIDATORS.METADATA,
                         copyright: VALIDATORS.COPYRIGHT,
                         rights_statement: VALIDATORS.RIGHTS_STATEMENT,
+                        rights_holder: VALIDATORS.RIGHTS_HOLDER,
                         duplicatable: () => ""
                     }}
                     show_toast_message={this.props.show_toast_message}

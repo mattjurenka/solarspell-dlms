@@ -1,4 +1,5 @@
 import { Sorting } from "@devexpress/dx-react-grid"
+import { LoDashExplicitNumberArrayWrapper } from "lodash"
 
 interface TabDict {
     [key: string]: TabData
@@ -51,6 +52,7 @@ interface SerializedContent {
     reviewed_on: string
     copyright: string|null
     rights_statement: string|null
+    rights_holder: string|null
     active: boolean
     duplicatable: boolean
     metadata: number[]
@@ -72,6 +74,7 @@ type MetadataAPI = {
     add_metadata: (meta_name: string, meta_type: SerializedMetadataType) => Promise<any>
     edit_metadata: (old_meta: SerializedMetadata, new_name: string) => Promise<any>
     delete_metadata: (meta_type: SerializedMetadata) => Promise<any>
+    set_view_metadata_column: (update_func: (draft: show_metadata_column) => void) => Promise<any>
 }
 
 type LibraryAssetsAPI = {
@@ -84,7 +87,7 @@ type LibraryAssetsAPI = {
 
 type ContentsAPI = {
     state: ContentsProviderState
-    load_content_rows: (current_page: number, page_size: number, sorting: Sorting[]) => Promise<void>
+    load_content_rows: () => Promise<void>
     add_content: (fields: content_fields) => Promise<any>
     edit_content: (fields: content_fields, to_edit: SerializedContent) => Promise<any>
     delete_content: (to_delete: SerializedContent) => Promise<any>
@@ -92,6 +95,9 @@ type ContentsAPI = {
     add_selected_to_folder: (folder: LibraryFolder) => Promise<any>
     set_selection: (selection: any[]) => Promise<any>
     reset_search: () => Promise<any>
+    set_page: (page: number) => Promise<any>
+    set_page_size: (page_size: number) => Promise<any>
+    set_sorting: (sorting: Sorting[]) => Promise<any>
 }
 
 type LibraryVersionsAPI = {
@@ -117,6 +123,10 @@ type LibraryVersionsAPI = {
     add_module_to_version: (version: LibraryVersion, module: LibraryModule) => Promise<any>
     remove_module_from_version: (version: LibraryVersion, module: LibraryModule) => Promise<any>
     refresh_modules_in_current_version: () => Promise<any>
+    set_page_size: (size: number) => Promise<any>
+    set_page: (page: number) => Promise<any>
+    add_metadata_type_to_version: (version: LibraryVersion, metadata_type: SerializedMetadataType) => Promise<LibraryVersion>
+    remove_metadata_type_to_version: (version: LibraryVersion, metadata_type: SerializedMetadataType) => Promise<LibraryVersion>
 }
 
 type UsersAPI = {
@@ -145,7 +155,7 @@ type LibraryModulesAPI = {
     delete_module: (to_delete: LibraryModule) => Promise<any>
 }
 
-type AssetGroup = 1 | 2 | 3
+type AssetGroup = 1 | 2
 
 type LibraryAsset = {
     id: number
@@ -160,6 +170,10 @@ type group_to_name = {
 
 interface LibraryVersionsState {
     library_versions: LibraryVersion[]
+    library_versions_page: number
+    library_versions_page_size: number
+    library_versions_count: number
+    versions_page_sizes: number[]
     current_directory: {
         folders: LibraryFolder[]
         files: SerializedContent[]
@@ -168,6 +182,7 @@ interface LibraryVersionsState {
     folders_in_version: Array<[LibraryFolder, string]>
     modules_in_version: LibraryModule[]
     path: LibraryFolder[]
+    
 }
 
 interface LibraryAssetsState {
@@ -178,20 +193,29 @@ interface LibraryAssetsState {
     group_name: group_to_name
 }
 
+type show_metadata_column = {
+    [metadata_name: string]: boolean
+}
+
 type MetadataProviderState = {
     metadata: SerializedMetadata[]
     metadata_by_type: metadata_dict
     metadata_types: SerializedMetadataType[]
+    show_columns: show_metadata_column
 }
 
 type ContentsProviderState = {
     last_request_timestamp: number
     display_rows: any[]
     loaded_content: SerializedContent[]
+    page: number
+    page_size: number
     total_count: number
     search: search_state
     selection: number[]
     filter_out: number[]
+    page_sizes: number[]
+    sorting: Sorting[]
 }
 
 type UserProviderState = {
@@ -228,6 +252,7 @@ type content_fields = {
     metadata:           metadata_dict
     copyright:          string
     rights_statement:   string
+    rights_holder:   string
     duplicatable:       boolean
 }
 
@@ -253,6 +278,7 @@ type LibraryVersion = {
     version_number: string
     library_banner: number
     created_by: number
+    metadata_types: number[]
 }
 
 type LibraryFolder = {
@@ -275,4 +301,5 @@ type LibraryModule = {
     module_name: string
     module_file: string
     logo_img: number
+    file_name: string
 }

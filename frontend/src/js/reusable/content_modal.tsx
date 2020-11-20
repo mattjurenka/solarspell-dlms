@@ -1,17 +1,18 @@
 import ActionDialog from "./action_dialog"
-import { cloneDeep, isEqual, set, isNull, isUndefined } from "lodash"
+import { cloneDeep, isEqual, set, isNull, isString, isArray } from "lodash"
 import {Button, TextField, Grid, Checkbox, Typography} from "@material-ui/core"
 import Axios, { AxiosResponse } from "axios"
 import { APP_URLS } from "../urls"
 import { Autocomplete, createFilterOptions } from "@material-ui/lab"
 import { Component, RefObject } from 'react'
 import React from 'react'
-import { update_state, get_string_from_error, get_field_info_default } from '../utils'
+import { update_state, get_field_info_default } from '../utils'
 
 import { KeyboardDatePicker }   from '@material-ui/pickers';
 import { format } from 'date-fns'
 import { WrappedFieldInfo, metadata_dict, SerializedContent, MetadataAPI, SerializedMetadata, SerializedMetadataType,
-    content_fields } from 'js/types'
+    content_fields, 
+    ContentsAPI} from '../types'
 
 interface ContentModalProps {
     is_open: boolean
@@ -21,6 +22,7 @@ interface ContentModalProps {
         [P in keyof content_fields]: (value: any) => string
     }
     metadata_api: MetadataAPI
+    contents_api: ContentsAPI
     show_toast_message: (message: string, is_success: boolean) => void
     on_close: () => void
     show_loader: () => void
@@ -56,6 +58,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                     return set(prev, [current.name], [])
                 },{} as metadata_dict)),
             rights_statement: get_field_info_default(""),
+            rights_holder: get_field_info_default(""),
             copyright: get_field_info_default(""),
             duplicatable: get_field_info_default(false)
         }
@@ -86,6 +89,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                 draft.fields.description = get_field_info_default(row.description === null ? "" : row.description)
                 draft.fields.metadata = get_field_info_default(metadata)
                 draft.fields.rights_statement = get_field_info_default(row.rights_statement === null? "" : row.rights_statement)
+                draft.fields.rights_holder = get_field_info_default(row.rights_holder === null? "" : row.rights_holder)
                 draft.fields.title = get_field_info_default(row.title === null ? "" : row.title)
                 draft.fields.year = get_field_info_default(row.published_year === null ? "" : row.published_year)
                 draft.fields.duplicatable = get_field_info_default(row.duplicatable)
@@ -128,6 +132,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                             .then(() => {
                                 for (const key in this.state.fields) {
                                     if (this.state.fields[key as keyof content_fields].reason !== "") {
+                                        this.props.remove_loader()
                                         return
                                     }
                                 }
@@ -146,6 +151,9 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 formData.append('title', this.state.fields.title.value)
                                 formData.append('description', this.state.fields.description.value)
                                 formData.append('duplicatable', this.state.fields.duplicatable.value ? "true" : "false")
+                                formData.append('rights_statement', this.state.fields.rights_statement.value)
+                                formData.append('rights_holder', this.state.fields.rights_holder.value)
+                                formData.append('copyright', this.state.fields.copyright.value)
                                 formData.append('published_date', `${this.state.fields.year.value}-01-01`)
                                 if (this.props.modal_type === "add") {
                                     formData.append('active', "true")
@@ -178,14 +186,18 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                     this.props.remove_loader()
                                     this.props.show_toast_message(this.props.modal_type === "add" ? "Added content successfully" : "Edited content successfully",true)
                                     metadata_api.refresh_metadata()
+                                    this.props.contents_api.load_content_rows()
                                     this.props.on_close()
                                 }, (reason: any) => {
                                     this.props.remove_loader()
                                     const unknown_err_str = this.props.modal_type === "add" ? "Error while adding content" : "Error while editing content"
-                                    this.props.show_toast_message(get_string_from_error(
-                                        isUndefined(reason?.response?.data?.error) ? reason?.response?.data?.error : unknown_err_str,
-                                        unknown_err_str
-                                    ),false)
+                                    const err = reason?.response?.data?.error
+                                    const err_string = err === undefined ?
+                                        unknown_err_str : isArray(err) ? 
+                                            err[0] : isString(err) ?
+                                                err : Object.values(err)[0]
+                                    
+                                    this.props.show_toast_message(err_string, false)
                                 })
                             })
                         }}
@@ -223,12 +235,19 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 })
                             }}
                         />,
-                        <input
-                            accept="*"
-                            id="raised-button-file"
-                            type="file"
-                            ref={this.file_input_ref}
-                        />,
+                        <>
+                            {
+                                this.props.row?.content_file ? 
+                                    <Typography>Existing file: {this.props.row?.file_name}</Typography> :
+                                    null
+                            }
+                            <input
+                                accept="*"
+                                id="raised-button-file"
+                                type="file"
+                                ref={this.file_input_ref}
+                            />
+                        </>,
                         <TextField
                             fullWidth
                             error={this.state.fields.year.reason !== ""}
@@ -258,7 +277,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                             fullWidth
                             error={this.state.fields.copyright.reason !== ""}
                             helperText={this.state.fields.copyright.reason}
-                            label={"Copyright"}
+                            label={"Copyright Notes"}
                             value={this.state.fields.copyright.value}
                             onChange={(evt) => {
                                 evt.persist()
@@ -277,6 +296,19 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 evt.persist()
                                 this.update_state(draft => {
                                     draft.fields.rights_statement.value = evt.target.value
+                                })
+                            }}
+                        />,
+                        <TextField
+                            fullWidth
+                            error={this.state.fields.rights_holder.reason !== ""}
+                            helperText={this.state.fields.rights_holder.reason}
+                            label={"Rights Holder"}
+                            value={this.state.fields.rights_holder.value}
+                            onChange={(evt) => {
+                                evt.persist()
+                                this.update_state(draft => {
+                                    draft.fields.rights_holder.value = evt.target.value
                                 })
                             }}
                         />,

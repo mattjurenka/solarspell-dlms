@@ -16,6 +16,7 @@ import {
 } from './types';
 import {
     Grid as DataGrid,
+    PagingPanel,
     Table,
     TableHeaderRow,
 } from "@devexpress/dx-react-grid-material-ui"
@@ -30,6 +31,7 @@ import ContentSearch from './reusable/content_search';
 import { Autocomplete, createFilterOptions } from '@material-ui/lab';
 import { format } from 'date-fns';
 import KebabMenu from './reusable/kebab_menu';
+import { CustomPaging, PagingState } from '@devexpress/dx-react-grid';
 
 interface LibrariesProps {
     users_api: UsersAPI
@@ -44,6 +46,7 @@ interface LibrariesState {
     modals: LibrariesModals
     selected_folders: LibraryFolder[]
     selected_files: SerializedContent[]
+
 }
 
 interface LibrariesModals {
@@ -104,6 +107,10 @@ interface LibrariesModals {
         is_open: boolean
         to_add: LibraryModule
     }
+    set_version_metadata: {
+        is_open: boolean
+        library_version: LibraryVersion
+    }
 }
 
 export default class Libraries extends React.Component<LibrariesProps, LibrariesState> {
@@ -123,7 +130,8 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
             library_name: "",
             version_number: "",
             library_banner: 0,
-            created_by: 0
+            created_by: 0,
+            metadata_types: []
         }
 
         this.content_defaults = {
@@ -137,6 +145,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
             reviewed_on: "",
             copyright: null,
             rights_statement: null,
+            rights_holder: null,
             active: false,
             duplicatable: false,
             metadata: [],
@@ -164,6 +173,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
             module_name: "",
             module_file: "",
             logo_img: 0,
+            file_name: ""
         }
 
         this.modal_defaults = {
@@ -223,6 +233,10 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
             add_module_to_version: {
                 is_open: false,
                 to_add: cloneDeep(this.library_module_default)
+            },
+            set_version_metadata: {
+                is_open: false,
+                library_version: cloneDeep(this.library_version_default)
             }
         }
 
@@ -255,13 +269,6 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
     }
 
     render() {
-        const {
-            library_versions_api,
-            users_api,
-            metadata_api,
-            contents_api,
-            library_modules_api
-        } = this.props
         return (
             <>
                 <Grid container spacing={2} style={{paddingLeft: "15px", paddingRight: "15px"}}>
@@ -289,7 +296,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                 {name: "actions", title: "Actions", getCellValue: (row: LibraryVersion) => (
                                     <ActionPanel
                                         viewFn={() => {
-                                            library_versions_api.enter_version_root(row)
+                                            this.props.library_versions_api.enter_version_root(row)
                                         }}
                                         deleteFn={() => {
                                             this.update_state(draft => {
@@ -310,7 +317,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                             })
                                         }}
                                         imageFn={() => {
-                                            library_versions_api.enter_version_root(row)
+                                            this.props.library_versions_api.enter_version_root(row)
                                             .then(() => {
                                                 this.update_state(draft => {
                                                     draft.modals.set_banner.is_open = true
@@ -318,7 +325,13 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                             })
                                         }}
                                         cloneFn={() => {
-                                            library_versions_api.clone_version(row)
+                                            this.props.library_versions_api.clone_version(row)
+                                        }}
+                                        buildFn={() => {
+                                            this.update_state(draft => {
+                                                draft.modals.set_version_metadata.is_open = true
+                                                draft.modals.set_version_metadata.library_version = cloneDeep(row)
+                                            })
                                         }}
                                     />
                                 )},
@@ -331,7 +344,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                 {name: "created_on", title: "Created On"}
                             ]}
                             
-                            rows={library_versions_api.state.library_versions.map((version: any) => {
+                            rows={this.props.library_versions_api.state.library_versions.map((version: any) => {
                                 const cloned = cloneDeep(version)
                                 cloned.created_on = format(
                                     new Date(version.created_on),
@@ -342,320 +355,301 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                         >
                             <Table
                                 columnExtensions={[
-                                    {columnName: 'actions', width: 170}
+                                    {columnName: 'actions', width: 200}
                                 ]}
                             />
+                            <PagingState
+                                currentPage={this.props.library_versions_api.state.library_versions_page}
+                                onCurrentPageChange={this.props.library_versions_api.set_page}
+                                pageSize={this.props.library_versions_api.state.library_versions_page_size}
+                                onPageSizeChange={this.props.library_versions_api.set_page_size}
+                            />
+                            <CustomPaging totalCount={this.props.library_versions_api.state.library_versions_count}/>
                             <TableHeaderRow />
+                            <PagingPanel />
                         </DataGrid>
                     </Grid>
                 </Grid>
                 <Grid container spacing={2} style={{paddingLeft: "15px", paddingRight: "15px", marginTop:"20px"}}>
                     <Grid item sm={6}>
                         {
-                            this.props.library_versions_api.state.current_version.id !== 0 ?
-                            <Box display="flex" flexDirection="row">
-                                <Button
-                                    onClick={_ => {
-                                        this.update_state(draft => {
-                                            draft.modals.add_folder.is_open = true
-                                        })
-                                    }}
-                                    style={{
-                                        marginLeft: "1em",
-                                        marginBottom: "1em",
-                                        backgroundColor: "#75b2dd",
-                                        color: "#FFFFFF"
-                                    }}
-                                >
-                                    Add Folder
-                                </Button>
-                                <Button
-                                    onClick={_ => {
-                                        this.update_state(draft => {
-                                            draft.modals.add_module_to_version.is_open = true
-                                        })
-                                    }}
-                                    style={{
-                                        marginLeft: "1em",
-                                        marginBottom: "1em",
-                                        backgroundColor: "#75b2dd",
-                                        color: "#FFFFFF"
-                                    }}
-                                >
-                                    Add Module
-                                </Button>
-                            </Box> : <></>
-                        }
-                        {(() => {
-                            const library_banner = this.props.library_versions_api.state.current_version.library_banner
-                            if (library_banner !== 0) {
-                                const version_banner = this.props.library_assets_api.state.assets_by_group[3]?.find(asset => asset.id === library_banner)
-                                if (version_banner !== undefined && version_banner.image_file !== null) {
-                                    return <img src={version_banner.image_file} style={{maxHeight: "200px", maxWidth: "100%"}}></img>
-                                } else {
-                                    return <></>
-                                }
-                            } else {
-                                return <></>
-                            }
-                        })()}
-                        <Grid container style={{maxHeight: "200px"}}>
-                            <Grid item xs={6}>
-                                {(() => {
-                                    const path = this.props.library_versions_api.state.path
-                                    const top_level_folder = path.length > 0 ? path[0] : undefined
-                                    if (top_level_folder !== undefined) {
-                                        const folder_banner = this.props.library_assets_api.state.assets_by_group[2]?.find(asset => asset.id === top_level_folder.banner_img)
-                                        if (folder_banner !== undefined && folder_banner.image_file !== null) {
-                                            return <img src={folder_banner.image_file} style={{maxHeight: "200px", maxWidth: "100%"}}></img>
+                            this.props.library_versions_api.state.current_version.id === 0 ?
+                                <></> :
+                                <Grid item style={{paddingLeft: "2em", paddingRight: "2em"}}>
+                                    {(() => {
+                                        const library_banner = this.props.library_versions_api.state.current_version.library_banner
+                                        if (library_banner !== 0) {
+                                            const version_banner = this.props.library_assets_api.state.assets_by_group[2]?.find(asset => asset.id === library_banner)
+                                            if (version_banner !== undefined && version_banner.image_file !== null) {
+                                                return <img src={version_banner.image_file} style={{maxHeight: "200px", maxWidth: "100%"}}></img>
+                                            } else {
+                                                return <></>
+                                            }
                                         } else {
                                             return <></>
                                         }
-                                    } else {
-                                        return <></>
-                                    }
-                                })()}
-                            </Grid>
-                            <Grid item xs={6}>
-                                {(() => {
-                                    const path = this.props.library_versions_api.state.path
-                                    const top_level_folder = path.length > 0 ? path[0] : undefined
-                                    if (top_level_folder !== undefined) {
-                                        const folder_logo = this.props.library_assets_api.state.assets_by_group[1]?.find(asset => asset.id === top_level_folder.logo_img)
-                                        if (folder_logo !== undefined && folder_logo.image_file !== null) {
-                                            return <img src={folder_logo.image_file} style={{maxHeight: "200px", maxWidth: "100%"}}></img>
-                                        } else {
-                                            return <></>
-                                        }
-                                    } else {
-                                        return <></>
-                                    }
-                                })()}
-                            </Grid>
-                        </Grid>
-                        <Box flexDirection="row" display="flex">
-                            <Typography style={{fontWeight: "bold", color: "#75b2dd"}}>
-                                Library Folders
-                            </Typography>
-                        </Box>
-                        <Box flexDirection="row" display="flex">
-                            {
-                                [
-                                    (() => {
-                                        const name = library_versions_api.state.current_version.library_name
-                                        return (
-                                            <Box key={0} flexDirection="row" display="flex">
-                                                <Typography>
-                                                    {name === "" ? "None" : (
+                                    })()}
+                                    <Box flexDirection="row" display="flex" style={{width: "100%"}}>
+                                        <Box style={{
+                                            paddingTop: "1em",
+                                            paddingBottom: "1em",
+                                        }}>
+                                            <Typography style={{
+                                                fontWeight: "bold",
+                                                color: "#75b2dd",
+                                                fontSize: "16px"
+                                            }}>Library Content</Typography>
+                                        </Box>
+                                        <Box marginLeft="auto"  style={{
+                                            paddingTop: "1em",
+                                            paddingBottom: "1em",
+                                        }}>
+                                            <KebabMenu
+                                                items={[
+                                                    [() => {
+                                                        this.update_state(draft => {
+                                                            draft.modals.add_folder.is_open = true
+                                                        })
+                                                    }, "Add Folder"],
+                                                    [() => {
+                                                        this.update_state(draft => {
+                                                            draft.modals.add_module_to_version.is_open = true
+                                                        })
+                                                    }, "Add Module"]
+                                                ]}
+                                            />
+                                        </Box>
+                                    </Box>
+                                    <Box flexDirection="row" display="flex">
+                                        {
+                                            [
+                                                (() => {
+                                                    const name = this.props.library_versions_api.state.current_version.library_name
+                                                    return (
+                                                        <Box key={0} flexDirection="row" display="flex">
+                                                            <Typography>
+                                                                {name === "" ? "None" : (
+                                                                    <Link
+                                                                        style={{cursor: "pointer"}}
+                                                                        onClick={
+                                                                            () => this.props.library_versions_api.enter_version_root(
+                                                                                this.props.library_versions_api.state.current_version
+                                                                            ).then(this.reset_selection)
+                                                                        }
+                                                                    >
+                                                                        {name}
+                                                                    </Link>
+                                                                )}
+                                                            </Typography>
+                                                            <DoubleArrow />
+                                                        </Box>
+                                                    )
+                                                })()
+                                            ].concat(this.props.library_versions_api.state.path.map((folder, idx) => (
+                                                <Box key={idx+1} flexDirection="row" display="flex">
+                                                    <Typography>
                                                         <Link
                                                             style={{cursor: "pointer"}}
-                                                            onClick={() => library_versions_api.enter_version_root(library_versions_api.state.current_version).then(this.reset_selection)}
+                                                            onClick={() => {
+                                                                this.props.library_versions_api.enter_folder(folder, this.props.library_versions_api.state.path.length - idx - 1).then(this.reset_selection)
+                                                            }}
                                                         >
-                                                            {name}
+                                                            {folder.folder_name}
                                                         </Link>
-                                                    )}
-                                                </Typography>
-                                                <DoubleArrow />
-                                            </Box>
-                                        )
-                                    })()
-                                ].concat(library_versions_api.state.path.map((folder, idx) => (
-                                    <Box key={idx+1} flexDirection="row" display="flex">
-                                        <Typography>
-                                            <Link
-                                                style={{cursor: "pointer"}}
-                                                onClick={() => {
-                                                    library_versions_api.enter_folder(folder, library_versions_api.state.path.length - idx - 1).then(this.reset_selection)
-                                                }}
-                                            >
-                                                {folder.folder_name}
-                                            </Link>
-                                        </Typography>
-                                        <DoubleArrow />
+                                                    </Typography>
+                                                    <DoubleArrow />
+                                                </Box>
+                                            )))
+                                        }
                                     </Box>
-                                )))
-                            }
-                        </Box>
-                        {library_versions_api.state.current_directory.folders.map((folder, idx) => (
-                            <Box key={idx} display="flex" flexDirection="row" width="100%">
-                                <Box>
-                                    <Checkbox
-                                        checked={this.state.selected_folders.find(item => item.id === folder.id) !== undefined}
-                                        onChange={(_evt, checked) => {
-                                            this.update_state(draft => {
-                                                draft.selected_folders = checked ?
-                                                    draft.selected_folders.concat(folder) :
-                                                    draft.selected_folders.filter(item => item.id !== folder.id)
-                                            })
-                                        }}
-                                    />
-                                </Box>
-                                <Box>
-                                    <Folder />
-                                </Box>
-                                <Box>
-                                    <Typography>
-                                        <Link
-                                            style={{cursor: "pointer"}}
-                                            onClick={() => {
-                                                library_versions_api.enter_folder(folder).then(this.reset_selection)
-                                            }}
-                                        >
-                                            {folder.folder_name}
-                                        </Link>
-                                    </Typography>
-                                </Box>
-                                <Box marginLeft="auto">
-                                    <KebabMenu
-                                        items={([
-                                            [
-                                                () => {
-                                                    this.update_state(draft => {
-                                                        draft.modals.delete_folder.is_open = true
-                                                        draft.modals.delete_folder.to_delete = cloneDeep(folder)
-                                                    })
-                                                }, "Delete"
-                                            ], [
-                                                () => {
-                                                    this.update_state(draft => {
-                                                        draft.modals.rename_folder.is_open = true
-                                                        draft.modals.rename_folder.to_rename = cloneDeep(folder)
-                                                    })
-                                                }, "Rename"
-                                            ]
-                                        ] as [() => void, string][]).concat(
-                                            //If we are in the top level version add set folder and set logo menu items
-                                            library_versions_api.state.path.length === 0 ?
-                                            [
-                                                [
-                                                    () => {
+                                    {this.props.library_versions_api.state.current_directory.folders.map((folder, idx) => (
+                                        <Box key={idx} display="flex" flexDirection="row" width="100%">
+                                            <Box>
+                                                <Checkbox
+                                                    checked={this.state.selected_folders.find(item => item.id === folder.id) !== undefined}
+                                                    onChange={(_evt, checked) => {
                                                         this.update_state(draft => {
-                                                            draft.modals.set_folder_banner.is_open = true
-                                                            draft.modals.set_folder_banner.to_change = cloneDeep(folder)
+                                                            draft.selected_folders = checked ?
+                                                                draft.selected_folders.concat(folder) :
+                                                                draft.selected_folders.filter(item => item.id !== folder.id)
                                                         })
-                                                    }, "Set Banner"
-                                                ], [
-                                                    () => {
-                                                        this.update_state(draft => {
-                                                            draft.modals.set_folder_logo.is_open = true
-                                                            draft.modals.set_folder_logo.to_change = cloneDeep(folder)
-                                                        })
-                                                    }, "Set Logo"
-                                                ]
-                                            ] : []
-                                        )}
-                                    />
-                                </Box>
-                            </Box>
-                        ))}
-                        {library_versions_api.state.current_directory.files.map((content: SerializedContent, idx) => (
-                            <Box
-                                key={library_versions_api.state.current_directory.folders.length + idx}
-                                display="flex"
-                                flexDirection="row"
-                                width="100%"
-                            >
-                                <Box>
-                                    <Checkbox
-                                        checked={this.state.selected_files.find(item => item.id === content.id) !== undefined}
-                                        onChange={(_evt, checked) => {
-                                            this.update_state(draft => {
-                                                draft.selected_files = checked ?
-                                                    draft.selected_files.concat(content) :
-                                                    draft.selected_files.filter(item => item.id !== content.id)
-                                            })
-                                        }}
-                                    />
-                                </Box>
-                                <Box>
-                                    <InsertDriveFile />
-                                </Box>
-                                <Box>
-                                    <Typography>
-                                        <Link
-                                            style={{cursor: "pointer"}}
-                                            onClick={() => {
-                                                this.update_state(draft => {
-                                                    draft.modals.view_content.is_open = true
-                                                    draft.modals.view_content.row = content
-                                                })
-                                            }}
+                                                    }}
+                                                />
+                                            </Box>
+                                            <Box style={{paddingTop: "9px"}}>
+                                                <Folder />
+                                            </Box>
+                                            {
+                                                folder.logo_img > 0 ?
+                                                    <Box style={{paddingTop: "9px"}}>
+                                                        <img
+                                                            src={this.props.library_assets_api.state.assets_by_group[1]?.find(logo => logo.id === folder.logo_img)?.image_file as string}
+                                                            style={{maxHeight: "24px"}}
+                                                        />
+                                                    </Box> :
+                                                    <></>
+                                            }
+                                            <Box style={{paddingTop: "9px"}}>
+                                                <Typography>
+                                                    <Link
+                                                        style={{cursor: "pointer"}}
+                                                        onClick={() => {
+                                                            this.props.library_versions_api.enter_folder(folder).then(this.reset_selection)
+                                                        }}
+                                                    >
+                                                        {folder.folder_name}
+                                                    </Link>
+                                                </Typography>
+                                            </Box>
+                                            <Box marginLeft="auto" style={{paddingTop: "9px"}}>
+                                                <KebabMenu
+                                                    items={([
+                                                        [
+                                                            () => {
+                                                                this.update_state(draft => {
+                                                                    draft.modals.delete_folder.is_open = true
+                                                                    draft.modals.delete_folder.to_delete = cloneDeep(folder)
+                                                                })
+                                                            }, "Delete"
+                                                        ], [
+                                                            () => {
+                                                                this.update_state(draft => {
+                                                                    draft.modals.rename_folder.is_open = true
+                                                                    draft.modals.rename_folder.to_rename = cloneDeep(folder)
+                                                                })
+                                                            }, "Rename"
+                                                        ]
+                                                    ] as [() => void, string][]).concat(
+                                                        //If we are in the top level version add set folder and set logo menu items
+                                                        this.props.library_versions_api.state.path.length === 0 ?
+                                                        [
+                                                            [
+                                                                () => {
+                                                                    this.update_state(draft => {
+                                                                        draft.modals.set_folder_banner.is_open = true
+                                                                        draft.modals.set_folder_banner.to_change = cloneDeep(folder)
+                                                                    })
+                                                                }, "Set Banner"
+                                                            ], [
+                                                                () => {
+                                                                    this.update_state(draft => {
+                                                                        draft.modals.set_folder_logo.is_open = true
+                                                                        draft.modals.set_folder_logo.to_change = cloneDeep(folder)
+                                                                    })
+                                                                }, "Set Logo"
+                                                            ]
+                                                        ] : []
+                                                    )}
+                                                />
+                                            </Box>
+                                        </Box>
+                                    ))}
+                                    {this.props.library_versions_api.state.current_directory.files.map((content: SerializedContent, idx) => (
+                                        <Box
+                                            key={this.props.library_versions_api.state.current_directory.folders.length + idx}
+                                            display="flex"
+                                            flexDirection="row"
+                                            width="100%"
                                         >
-                                            {content.title}
-                                        </Link>
-                                    </Typography>
-                                </Box>
-                                <Box marginLeft="auto" minWidth={35}>
-                                    <Typography>{prettyBytes(content.filesize === null ? 0 : content.filesize)}</Typography>
-                                </Box>
-                                <Box>
-                                    <KebabMenu
-                                        items={[
-                                            [
-                                                () => {
-                                                    const path = this.props.library_versions_api.state.path
-                                                    this.props.library_versions_api.remove_content_from_folder(
-                                                        path[path.length -1], this.state.selected_files
-                                                    )
-                                                },
-                                                "Remove Selected"
-                                            ],
-                                            [
-                                                () => {
-                                                    this.update_state(draft => {
-                                                        draft.modals.move_content.is_open = true
-                                                    })
-                                                },
-                                                "Move Selected"
-                                            ]
-                                        ]}
-                                    />
-                                </Box>
-                            </Box>
-                        ))}
-                        {// Displays an empty message if there are no folders or files in the current directory
-                            library_versions_api.state.current_directory.folders.length === 0 &&
-                            library_versions_api.state.current_directory.files.length === 0 ? (
-                                <Typography style={{fontStyle: "italic"}}>No Files or Folders</Typography>
-                            ) : <></>
+                                            <Box>
+                                                <Checkbox
+                                                    checked={this.state.selected_files.find(item => item.id === content.id) !== undefined}
+                                                    onChange={(_evt, checked) => {
+                                                        this.update_state(draft => {
+                                                            draft.selected_files = checked ?
+                                                                draft.selected_files.concat(content) :
+                                                                draft.selected_files.filter(item => item.id !== content.id)
+                                                        })
+                                                    }}
+                                                />
+                                            </Box>
+                                            <Box style={{paddingTop: "9px"}}>
+                                                <InsertDriveFile />
+                                            </Box>
+                                            <Box style={{paddingTop: "9px"}}>
+                                                <Typography>
+                                                    <Link
+                                                        style={{cursor: "pointer"}}
+                                                        onClick={() => {
+                                                            this.update_state(draft => {
+                                                                draft.modals.view_content.is_open = true
+                                                                draft.modals.view_content.row = content
+                                                            })
+                                                        }}
+                                                    >
+                                                        {content.title}
+                                                    </Link>
+                                                </Typography>
+                                            </Box>
+                                            <Box marginLeft="auto" minWidth={35} style={{paddingTop: "9px"}}>
+                                                <Typography>{prettyBytes(content.filesize === null ? 0 : content.filesize)}</Typography>
+                                            </Box>
+                                            <Box style={{paddingTop: "9px"}}>
+                                                <KebabMenu
+                                                    items={[
+                                                        [
+                                                            () => {
+                                                                const path = this.props.library_versions_api.state.path
+                                                                this.props.library_versions_api.remove_content_from_folder(
+                                                                    path[path.length -1], this.state.selected_files
+                                                                )
+                                                            },
+                                                            "Remove Selected"
+                                                        ],
+                                                        [
+                                                            () => {
+                                                                this.update_state(draft => {
+                                                                    draft.modals.move_content.is_open = true
+                                                                })
+                                                            },
+                                                            "Move Selected"
+                                                        ]
+                                                    ]}
+                                                />
+                                            </Box>
+                                        </Box>
+                                    ))}
+                                    {// Displays an empty message if there are no folders or files in the current directory
+                                        this.props.library_versions_api.state.current_directory.folders.length === 0 &&
+                                        this.props.library_versions_api.state.current_directory.files.length === 0 ? (
+                                            <Typography style={{fontStyle: "italic"}}>No Files or Folders</Typography>
+                                        ) : <></>
+                                    }
+                                    <Typography style={{fontWeight: "bold", color: "#75b2dd"}}>Library Modules</Typography>
+                                    {this.props.library_versions_api.state.modules_in_version.map((module: LibraryModule, idx) => (
+                                        <Box
+                                            key={this.props.library_versions_api.state.modules_in_version.length + idx}
+                                            display="flex"
+                                            flexDirection="row"
+                                            width="100%"
+                                        >
+                                            <Box>
+                                                <Typography>
+                                                    {module.module_name}
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                    ))}
+                                    {// Displays an empty message if there are no modules in the current version
+                                        this.props.library_versions_api.state.modules_in_version.length === 0 ? (
+                                            <Typography style={{fontStyle: "italic"}}>No Modules added yet</Typography>
+                                        ) : <></>
+                                    }                        
+                                </Grid>
                         }
-                        <Box flexDirection="row" display="flex">
-                            <Typography style={{fontWeight: "bold", color: "#75b2dd"}}>Library Modules</Typography>
-                        </Box>
-                        {library_versions_api.state.modules_in_version.map((module: LibraryModule, idx) => (
-                            <Box
-                                key={library_versions_api.state.modules_in_version.length + idx}
-                                display="flex"
-                                flexDirection="row"
-                                width="100%"
-                            >
-                                <Box>
-                                    <Typography>
-                                        {module.module_name}
-                                    </Typography>
-                                </Box>
-                            </Box>
-                        ))}
-                        {// Displays an empty message if there are no modules in the current version
-                            library_versions_api.state.modules_in_version.length === 0 ? (
-                                <Typography style={{fontStyle: "italic"}}>No Modules added yet</Typography>
-                            ) : <></>
-                        }                        
                     </Grid>
                     <Grid item sm={6}>
                         <Button onClick={() => {
                             const path = this.props.library_versions_api.state.path
                             const cd = path.length > 0 ? path[path.length - 1] : undefined
                             if (cd) {
-                                this.props.contents_api.add_selected_to_folder(cd).then(
-                                    this.props.library_versions_api.refresh_current_directory
-                                )
+                                this.props.contents_api.add_selected_to_folder(cd)
                             }
                         }}>Add Selected to CD</Button>
                         <ContentSearch
-                            contents_api={contents_api}
-                            metadata_api={metadata_api}
-                            versions_api={library_versions_api}
+                            contents_api={this.props.contents_api}
+                            metadata_api={this.props.metadata_api}
+                            versions_api={this.props.library_versions_api}
                             selection
                             on_view={row => {
                                 this.update_state(draft => {
@@ -686,7 +680,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                     draft.modals.add_version.name.reason = VALIDATORS.VERSION_NAME(draft.modals.add_version.name.value)
                                     draft.modals.add_version.number.reason = VALIDATORS.VERSION_NUMBER(draft.modals.add_version.number.value)
                                 }).then(() => {
-                                    return library_versions_api.add_version(
+                                    return this.props.library_versions_api.add_version(
                                         this.state.modals.add_version.name.value,
                                         this.state.modals.add_version.number.value,
                                         this.state.modals.add_version.created_by.id
@@ -725,7 +719,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                         value={this.state.modals.add_version.created_by}
                         onChange={(_evt, value: User | null) => {
                             if (value?.id === -1) {
-                                users_api.add_user(value.name).then(() => {
+                                this.props.users_api.add_user(value.name).then(() => {
                                     const new_user = this.props.users_api.state.users.find(user => user.name == value.name)
                                     if (new_user !== undefined) {
                                         this.update_state(draft => {
@@ -750,7 +744,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                             return filtered
                         }}
                         handleHomeEndKeys
-                        options={users_api.state.users}
+                        options={this.props.users_api.state.users}
                         getOptionLabel={option => {
                             return option.id === -1 ? `Add new User "${option.name}"` : option.name
                         }}
@@ -783,7 +777,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                     draft.modals.edit_version.name.reason = VALIDATORS.VERSION_NAME(draft.modals.edit_version.name.value)
                                     draft.modals.edit_version.number.reason = VALIDATORS.VERSION_NUMBER(draft.modals.edit_version.number.value)
                                 }).then(() => {
-                                    return library_versions_api.update_version(
+                                    return this.props.library_versions_api.update_version(
                                         this.state.modals.edit_version.version,
                                         this.state.modals.edit_version.name.value || undefined,
                                         this.state.modals.edit_version.number.value || undefined,
@@ -823,7 +817,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                         value={this.state.modals.edit_version.created_by}
                         onChange={(_evt, value: User | null) => {
                             if (value?.id === -1) {
-                                users_api.add_user(value.name).then(() => {
+                                this.props.users_api.add_user(value.name).then(() => {
                                     const new_user = this.props.users_api.state.users.find(user => user.name == value.name)
                                     if (new_user !== undefined) {
                                         this.update_state(draft => {
@@ -848,7 +842,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                             return filtered
                         }}
                         handleHomeEndKeys
-                        options={users_api.state.users}
+                        options={this.props.users_api.state.users}
                         getOptionLabel={option => {
                             return option.id === -1 ? `Add new User "${option.name}"` : option.name
                         }}
@@ -876,7 +870,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                     )]}
                 >
                     <Grid container spacing={2}>
-                        {this.props.library_assets_api.state.assets_by_group[3]?.map((asset, idx) => {
+                        {this.props.library_assets_api.state.assets_by_group[2]?.map((asset, idx) => {
                             return (
                                 <Grid
                                     key={idx}
@@ -1019,7 +1013,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                 <ViewContentModal
                     is_open={this.state.modals.view_content.is_open}
                     on_close={this.close_modals}
-                    metadata_api={metadata_api}
+                    metadata_api={this.props.metadata_api}
                     row={this.state.modals.view_content.row}
                 />
                 <ActionDialog
@@ -1042,10 +1036,11 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                     if (this.state.modals.add_folder.name.reason === "") {
                                         const path = this.props.library_versions_api.state.path
                                         this.props.library_versions_api.create_child_folder(
-                                            path.length > 0 ? path[path.length-1] : this.props.library_versions_api.state.current_version,
+                                            path.length > 0 ?
+                                                path[path.length - 1] :
+                                                this.props.library_versions_api.state.current_version,
                                             this.state.modals.add_folder.name.value
                                         )
-                                        .then(this.props.library_versions_api.refresh_library_versions)
                                         .then(this.close_modals)
                                     }
                                 })
@@ -1266,7 +1261,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                             return filtered
                         }}
                         handleHomeEndKeys
-                        options={library_modules_api.state.library_modules}
+                        options={this.props.library_modules_api.state.library_modules}
                         getOptionLabel={option => option.module_name}
                         renderInput={params => (
                             <TextField
@@ -1276,6 +1271,46 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                             />
                         )}
                     />
+                </ActionDialog>
+                <ActionDialog
+                    title={`Set Metadata Types of Version ${this.state.modals.set_version_metadata.library_version.library_name}`}
+                    open={this.state.modals.set_version_metadata.is_open}
+                    actions={[(
+                        <Button
+                            key={2}
+                            onClick={this.close_modals}
+                            color="primary"
+                        >
+                            Cancel
+                        </Button>
+                    )]}
+                >
+                    {this.props.metadata_api.state.metadata_types.map(metadata_type => {
+                        return <Box flexDirection="row" display="flex">
+                            <Box>
+                                <Checkbox
+                                    checked={this.state.modals.set_version_metadata.library_version.metadata_types.find(id => id === metadata_type.id) !== undefined}
+                                    onChange={(_evt, checked) => {
+                                        (checked ?
+                                            this.props.library_versions_api.add_metadata_type_to_version :
+                                            this.props.library_versions_api.remove_metadata_type_to_version)(
+                                                this.state.modals.set_version_metadata.library_version,
+                                                metadata_type
+                                            )
+                                            .then(version => {
+                                                console.log(checked, version)
+                                                this.update_state(draft => {
+                                                    draft.modals.set_version_metadata.library_version = version
+                                                })
+                                            })
+                                    }}
+                                />
+                            </Box>
+                            <Box>
+                                {metadata_type.name}
+                            </Box>
+                        </Box>
+                    })}
                 </ActionDialog>
             </>
         )

@@ -53,6 +53,9 @@ export default class VALIDATORS {
     static RIGHTS_STATEMENT(_rights_statement_str: any): string {
         return ""
     }
+    static RIGHTS_HOLDER(_rights_holder_str: any): string {
+        return ""
+    }
     static REVIEWED_ON(reviewed_on: any): string {
         if (!isNull(reviewed_on) && !isDate(reviewed_on)) {
             return "Must be a valid date or nothing"
