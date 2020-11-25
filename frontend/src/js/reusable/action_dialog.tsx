@@ -1,19 +1,28 @@
 import { DialogActions, DialogContent, Dialog, DialogTitle } from "@material-ui/core"
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 interface ActionDialogProps {
     title: string,
     open: boolean,
-    actions: JSX.Element[],
+    get_actions: (focus_ref: React.RefObject<HTMLButtonElement>) => JSX.Element[],
     on_close?: () => void
 }
 
 const ActionDialog: React.FunctionComponent<ActionDialogProps> = (props) => {
-    const on_close = props.on_close || (() => {})
+    const focus_ref = useRef<HTMLButtonElement>(null)
+    const actions = useState(props.get_actions(focus_ref))
+
+    useEffect(() => {
+        if (props.open) {
+            console.log(focus_ref.current)
+            focus_ref.current?.focus()
+        }
+    }, [props.open])
+    
     return (
         <Dialog
             open={props.open}
-            onClose={on_close}
+            onClose={props.on_close || (() => {})}
             maxWidth={false}
         >
             <DialogTitle>
@@ -23,7 +32,7 @@ const ActionDialog: React.FunctionComponent<ActionDialogProps> = (props) => {
                 {props.children}
             </DialogContent>
             <DialogActions>
-                {props.actions}
+                {actions}
             </DialogActions>
         </Dialog>
     )

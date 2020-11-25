@@ -17,6 +17,8 @@ import library_versions from "../images/home_icons/library_versions.png"
 import metadata from "../images/home_icons/metadata.png"
 import solarspell_images from "../images/home_icons/solarspell_images.png"
 import library_assets from "../images/home_icons/library_assets.png"
+import library_modules from "../images/home_icons/library_modules.png"
+
 import { Snackbar, CircularProgress, Box} from '@material-ui/core';
 import { Alert } from '@material-ui/lab';
 import { update_state } from './utils';
@@ -100,7 +102,7 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                         library_assets_api={apis.lib_assets_api}
                     />
                 ),
-                icon: library_assets
+                icon: library_modules
             },
             "libraries": {
                 display_label: "Libraries",
@@ -216,8 +218,8 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                         value={this.state.current_tab}
                         TabIndicatorProps={{style: {backgroundColor: '#75B2DD', height: '5px', borderRadius: '5px'}}}
                         onChange={(_, value) => {this.change_tab(value)}}
-                        centered
                         indicatorColor="secondary"
+                        variant="scrollable"
                     >
                         {tabs_jsx}
                     </Tabs>

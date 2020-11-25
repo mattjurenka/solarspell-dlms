@@ -288,7 +288,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                 <ActionDialog
                     title={`Delete Metadata item ${this.state.modals.delete_meta.metadata.name} of type ${this.state.modals.delete_meta.metadata.type_name}?`}
                     open={this.state.modals.delete_meta.is_open}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={0}
                             onClick={this.close_modals}
@@ -312,6 +312,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                                 })
                             }}
                             color="secondary"
+                            ref={focus_ref}
                         >
                             Confirm
                         </Button>
@@ -338,7 +339,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     title={"Create New Metadata Type"}
                     open={this.state.modals.create_type.is_open}
                     on_close={this.close_modals}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={0}
                             onClick={this.close_modals}
@@ -354,6 +355,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                                 this.close_modals()
                             }}
                             color="primary"
+                            ref={focus_ref}
                         >
                             Create
                         </Button>
@@ -375,7 +377,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     title={`Create a new Metadata of Type ${this.state.modals.create_meta.meta_type.name}`}
                     open={this.state.modals.create_meta.is_open}
                     on_close={this.close_modals}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={0}
                             onClick={this.close_modals}
@@ -391,6 +393,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                                 this.close_modals()
                             }}
                             color="primary"
+                            ref={focus_ref}
                         >
                             Create
                         </Button>
@@ -412,7 +415,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     title={`Edit Metadata ${this.state.modals.edit_meta.metadata.name}`}
                     open={this.state.modals.edit_meta.is_open}
                     on_close={this.close_modals}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={0}
                             onClick={this.close_modals}
@@ -428,6 +431,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                                 this.close_modals()
                             }}
                             color="primary"
+                            ref={focus_ref}
                         >
                             Confirm
                         </Button>
@@ -449,7 +453,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     title={`Edit Metadata Type ${this.state.modals.edit_type.old_type.name}`}
                     open={this.state.modals.edit_type.is_open}
                     on_close={this.close_modals}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={0}
                             onClick={this.close_modals}
@@ -465,6 +469,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                                 this.close_modals()
                             }}
                             color="primary"
+                            ref={focus_ref}
                         >
                             Confirm
                         </Button>
@@ -486,7 +491,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                     title={`Delete Metadata Type ${this.state.modals.delete_type.meta_type.name}`}
                     open={this.state.modals.delete_type.is_open}
                     on_close={this.close_modals}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={0}
                             onClick={this.close_modals}
@@ -510,6 +515,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                                 })
                             }}
                             color="secondary"
+                            ref={focus_ref}
                         >
                             Confirm
                         </Button>

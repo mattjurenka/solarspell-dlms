@@ -22,11 +22,12 @@ export const ViewContentModal = ({
     <ActionDialog
         title={"View Content Item"}
         open={is_open}
-        actions={[(
+        get_actions={focus_ref => [(
             <Button
                 key={1}
                 onClick={on_close}
                 color="secondary"
+                ref={focus_ref}
             >
                 Close
             </Button>
@@ -37,13 +38,14 @@ export const ViewContentModal = ({
                 {[
                     ["Title", row.title],
                     ["Description", row.description],
+                    ["Original Source", row.original_source],
                     ["Filename", <a href={new URL(row.file_name, APP_URLS.CONTENT_FOLDER).href}>{row.file_name}</a>],
                     ["Year Published", row.published_year],
                     ["Reviewed On", row.reviewed_on],
                     ["Copyright Notes", row.copyright],
                     ["Rights Statement", row.rights_statement],
-                    ["Rights Holder", row.rights_holder],
                     ["File Size", isNull(row.filesize) ? 0 : prettyBytes(row.filesize)],
+                    ["Additional Notes", row.additional_notes],
                     ["Duplicatable", row.duplicatable ? "Yes" : "No"]
                 ].map(([title, value], idx) => {
                     return (

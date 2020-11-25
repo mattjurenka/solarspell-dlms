@@ -58,7 +58,8 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                     return set(prev, [current.name], [])
                 },{} as metadata_dict)),
             rights_statement: get_field_info_default(""),
-            rights_holder: get_field_info_default(""),
+            additional_notes: get_field_info_default(""),
+            original_source: get_field_info_default(""),
             copyright: get_field_info_default(""),
             duplicatable: get_field_info_default(false)
         }
@@ -89,7 +90,8 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                 draft.fields.description = get_field_info_default(row.description === null ? "" : row.description)
                 draft.fields.metadata = get_field_info_default(metadata)
                 draft.fields.rights_statement = get_field_info_default(row.rights_statement === null? "" : row.rights_statement)
-                draft.fields.rights_holder = get_field_info_default(row.rights_holder === null? "" : row.rights_holder)
+                draft.fields.original_source = get_field_info_default(row.original_source === null? "" : row.original_source)
+                draft.fields.additional_notes = get_field_info_default(row.additional_notes === null? "" : row.additional_notes)
                 draft.fields.title = get_field_info_default(row.title === null ? "" : row.title)
                 draft.fields.year = get_field_info_default(row.published_year === null ? "" : row.published_year)
                 draft.fields.duplicatable = get_field_info_default(row.duplicatable)
@@ -104,7 +106,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
             <ActionDialog
                 title={this.props.modal_type === "add" ? "Add new content item" : `Edit content ${this.props.row?.title}`}
                 open={true}
-                actions={[(
+                get_actions={focus_ref => [(
                     <Button
                         key={1}
                         onClick={this.props.on_close}
@@ -152,7 +154,8 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 formData.append('description', this.state.fields.description.value)
                                 formData.append('duplicatable', this.state.fields.duplicatable.value ? "true" : "false")
                                 formData.append('rights_statement', this.state.fields.rights_statement.value)
-                                formData.append('rights_holder', this.state.fields.rights_holder.value)
+                                formData.append('original_source', this.state.fields.original_source.value)
+                                formData.append('additional_notes', this.state.fields.additional_notes.value)
                                 formData.append('copyright', this.state.fields.copyright.value)
                                 formData.append('published_date', `${this.state.fields.year.value}-01-01`)
                                 if (this.props.modal_type === "add") {
@@ -202,6 +205,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                             })
                         }}
                         color="primary"
+                        ref={focus_ref}
                     >
                         {this.props.modal_type === "add" ? "Add" : "Save"}
                     </Button>
@@ -232,6 +236,19 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 evt.persist()
                                 this.update_state(draft => {
                                     draft.fields.description.value = evt.target.value
+                                })
+                            }}
+                        />,
+                        <TextField
+                            fullWidth
+                            error={this.state.fields.original_source.reason !== ""}
+                            helperText={this.state.fields.original_source.reason}
+                            label={"Original Holder"}
+                            value={this.state.fields.original_source.value}
+                            onChange={(evt) => {
+                                evt.persist()
+                                this.update_state(draft => {
+                                    draft.fields.original_source.value = evt.target.value
                                 })
                             }}
                         />,
@@ -296,19 +313,6 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 evt.persist()
                                 this.update_state(draft => {
                                     draft.fields.rights_statement.value = evt.target.value
-                                })
-                            }}
-                        />,
-                        <TextField
-                            fullWidth
-                            error={this.state.fields.rights_holder.reason !== ""}
-                            helperText={this.state.fields.rights_holder.reason}
-                            label={"Rights Holder"}
-                            value={this.state.fields.rights_holder.value}
-                            onChange={(evt) => {
-                                evt.persist()
-                                this.update_state(draft => {
-                                    draft.fields.rights_holder.value = evt.target.value
                                 })
                             }}
                         />,
@@ -383,7 +387,21 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                     />
                                 </Grid>
                             )
-                        })
+                        }),
+                        <TextField
+                            fullWidth
+                            rows={3}
+                            error={this.state.fields.additional_notes.reason !== ""}
+                            helperText={this.state.fields.additional_notes.reason}
+                            label={"Additional Notes"}
+                            value={this.state.fields.additional_notes.value}
+                            onChange={(evt) => {
+                                evt.persist()
+                                this.update_state(draft => {
+                                    draft.fields.additional_notes.value = evt.target.value
+                                })
+                            }}
+                        />,
                     ].map((element, idx) => (
                         <Grid item key={idx} xs={12} style={{marginBottom: "10px"}}>
                             {element}

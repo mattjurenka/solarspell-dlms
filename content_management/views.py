@@ -138,6 +138,8 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
         if order_raw != None:
             try:
                 split = order_raw.split(",")
+                if split[0] == "file_name":
+                    split[0] = "content_file"
                 order_str = ("-" if split[1] == "desc" else "") + split[0]
                 queryset = queryset.order_by(order_str)
             except:

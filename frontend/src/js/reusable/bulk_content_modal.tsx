@@ -59,8 +59,7 @@ export default class BulkContentModal extends Component<BulkContentModalProps, B
             <ActionDialog
                 title={"Add Bulk Content and Metadata"}
                 open={true}
-                actions={[(
-
+                get_actions={focus_ref => [(
                     <Button
                         key={1}
                         onClick={() => {
@@ -112,6 +111,7 @@ export default class BulkContentModal extends Component<BulkContentModalProps, B
                             })
                         }}
                         color="primary"
+                        ref={focus_ref}
                     >
                         Add Files
                     </Button>

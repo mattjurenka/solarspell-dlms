@@ -73,7 +73,8 @@ export default class Content extends Component<ContentProps, ContentState> {
             reviewed_on: "",
             copyright: null,
             rights_statement: null,
-            rights_holder: null,
+            original_source: "",
+            additional_notes: "",
             active: false,
             metadata: [],
             metadata_info: [],
@@ -196,7 +197,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                 <ActionDialog
                     title={`Delete Content item ${delete_content.row.title}?`}
                     open={delete_content.is_open}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={1}
                             onClick={()=> {
@@ -212,6 +213,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                             key={2}
                             onClick={this.close_modals}
                             color="primary"
+                            ref={focus_ref}
                         >
                             Cancel
                         </Button>
@@ -238,7 +240,8 @@ export default class Content extends Component<ContentProps, ContentState> {
                         metadata: VALIDATORS.METADATA,
                         copyright: VALIDATORS.COPYRIGHT,
                         rights_statement: VALIDATORS.RIGHTS_STATEMENT,
-                        rights_holder: VALIDATORS.RIGHTS_HOLDER,
+                        original_source: VALIDATORS.ORIGINAL_SOURCE,
+                        additional_notes: VALIDATORS.ADDITIONAL_NOTES,
                         duplicatable: () => ""
                     }}
                     show_toast_message={this.props.show_toast_message}
@@ -265,7 +268,8 @@ export default class Content extends Component<ContentProps, ContentState> {
                         metadata: VALIDATORS.METADATA,
                         copyright: VALIDATORS.COPYRIGHT,
                         rights_statement: VALIDATORS.RIGHTS_STATEMENT,
-                        rights_holder: VALIDATORS.RIGHTS_HOLDER,
+                        original_source: VALIDATORS.ORIGINAL_SOURCE,
+                        additional_notes: VALIDATORS.ADDITIONAL_NOTES,
                         duplicatable: () => ""
                     }}
                     show_toast_message={this.props.show_toast_message}

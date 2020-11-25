@@ -52,12 +52,13 @@ interface SerializedContent {
     reviewed_on: string
     copyright: string|null
     rights_statement: string|null
-    rights_holder: string|null
+    original_source: string|null
     active: boolean
     duplicatable: boolean
     metadata: number[]
     metadata_info: SerializedMetadata[]
     published_year: string|null
+    additional_notes: string
 }
 
 interface SerializedMetadataType {
@@ -252,8 +253,9 @@ type content_fields = {
     metadata:           metadata_dict
     copyright:          string
     rights_statement:   string
-    rights_holder:   string
+    original_source:    string
     duplicatable:       boolean
+    additional_notes:   string
 }
 
 type active_search_option = "active" | "inactive" | "all"

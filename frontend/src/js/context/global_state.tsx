@@ -123,6 +123,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
         this.add_selected_to_folder = this.add_selected_to_folder.bind(this)
         this.set_contents_page = this.set_contents_page.bind(this)
         this.set_contents_page_size = this.set_contents_page_size.bind(this)
+        this.set_sorting = this.set_sorting.bind(this)
 
         //MetadataAPI
         this.refresh_metadata = this.refresh_metadata.bind(this)
@@ -387,9 +388,11 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
     }
 
     async set_sorting(sorting: Sorting[]) {
-        return this.update_state(draft => {
+        await this.update_state(draft => {
             draft.contents_api.sorting = sorting
+            draft.contents_api.page = 0
         })
+        return this.load_content_rows()
     }
 
     //METADATA ----------------------------------------------------------
