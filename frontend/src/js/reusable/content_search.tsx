@@ -303,12 +303,12 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                                 draft.is_show_column_open = true
                             })
                         }}>
-                            Open Column Select
+                            Open Metadata Column Select
                         </Button>
                         <ActionDialog
                             open={this.state.is_show_column_open}
-                            title="Show Columns"
-                            actions={[(
+                            title="Show Metadata Columns"
+                            get_actions={focus_ref => [(
                                 <Button
                                     key={2}
                                     onClick={() => {
@@ -317,6 +317,7 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                                         })
                                     }}
                                     color="primary"
+                                    ref={focus_ref}
                                 >
                                     Close
                                 </Button>

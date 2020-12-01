@@ -53,7 +53,10 @@ export default class VALIDATORS {
     static RIGHTS_STATEMENT(_rights_statement_str: any): string {
         return ""
     }
-    static RIGHTS_HOLDER(_rights_holder_str: any): string {
+    static ORIGINAL_SOURCE(_: any): string {
+        return ""
+    }
+    static ADDITIONAL_NOTES(_: any): string {
         return ""
     }
     static REVIEWED_ON(reviewed_on: any): string {

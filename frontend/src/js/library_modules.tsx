@@ -150,11 +150,12 @@ export default class LibraryModules extends React.Component<LibraryModulesProps,
                     on_close={this.close_modals}
                     open={this.state.modals.set_logo_image.is_open}
                     title={"Set Module Logo"}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={0}
                             onClick={this.close_modals}
                             color="secondary"
+                            ref={focus_ref}
                         >
                             Cancel
                         </Button>
@@ -189,7 +190,7 @@ export default class LibraryModules extends React.Component<LibraryModulesProps,
                     on_close={this.close_modals}
                     open={this.state.modals.add_module.is_open}
                     title={"Add Module"}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={0}
                             onClick={this.close_modals}
@@ -218,6 +219,7 @@ export default class LibraryModules extends React.Component<LibraryModulesProps,
                                 }
                             }}
                             color="primary"
+                            ref={focus_ref}
                         >
                             Add
                         </Button>
@@ -251,11 +253,12 @@ export default class LibraryModules extends React.Component<LibraryModulesProps,
                     on_close={this.close_modals}
                     open={this.state.modals.edit_module.is_open}
                     title={"Edit Module"}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={0}
                             onClick={this.close_modals}
                             color="secondary"
+                            ref={focus_ref}
                         >
                             Cancel
                         </Button>
@@ -314,7 +317,7 @@ export default class LibraryModules extends React.Component<LibraryModulesProps,
                     on_close={this.close_modals}
                     open={this.state.modals.delete_module.is_open}
                     title={"Delete Module"}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={0}
                             onClick={async () => {
@@ -339,6 +342,7 @@ export default class LibraryModules extends React.Component<LibraryModulesProps,
                             key={1}
                             onClick={this.close_modals}
                             color="primary"
+                            ref={focus_ref}
                         >
                             Cancel
                         </Button>

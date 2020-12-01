@@ -145,7 +145,8 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
             reviewed_on: "",
             copyright: null,
             rights_statement: null,
-            rights_holder: null,
+            original_source: "",
+            additional_notes: "",
             active: false,
             duplicatable: false,
             metadata: [],
@@ -664,7 +665,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                     on_close={this.close_modals}
                     open={this.state.modals.add_version.is_open}
                     title={"Add a Library Version"}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={0}
                             onClick={this.close_modals}
@@ -688,6 +689,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                 }).then(this.close_modals)
                             }}
                             color="primary"
+                            ref={focus_ref}
                         >
                             Add
                         </Button>
@@ -761,7 +763,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                     on_close={this.close_modals}
                     open={this.state.modals.edit_version.is_open}
                     title={"Edit a Library Version"}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={0}
                             onClick={this.close_modals}
@@ -786,6 +788,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                 }).then(this.close_modals)
                             }}
                             color="primary"
+                            ref={focus_ref}
                         >
                             Edit
                         </Button>
@@ -859,11 +862,12 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                     on_close={this.close_modals}
                     open={this.state.modals.set_banner.is_open}
                     title={"Set Library Banner"}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={0}
                             onClick={this.close_modals}
                             color="secondary"
+                            ref={focus_ref}
                         >
                             Cancel
                         </Button>
@@ -895,11 +899,12 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                     on_close={this.close_modals}
                     open={this.state.modals.set_folder_banner.is_open}
                     title={"Set Folder Banner"}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={0}
                             onClick={this.close_modals}
                             color="secondary"
+                            ref={focus_ref}
                         >
                             Cancel
                         </Button>
@@ -931,11 +936,12 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                     on_close={this.close_modals}
                     open={this.state.modals.set_folder_logo.is_open}
                     title={"Set Folder Logo"}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={0}
                             onClick={this.close_modals}
                             color="secondary"
+                            ref={focus_ref}
                         >
                             Cancel
                         </Button>
@@ -966,7 +972,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                 <ActionDialog
                     title={`Delete Version ${this.state.modals.delete_version.to_delete.library_name}?`}
                     open={this.state.modals.delete_version.is_open}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={1}
                             onClick={()=> {
@@ -991,6 +997,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                             key={2}
                             onClick={this.close_modals}
                             color="primary"
+                            ref={focus_ref}
                         >
                             Cancel
                         </Button>
@@ -1018,11 +1025,12 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                 />
                 <ActionDialog
                     title={"Add New Folder"}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={2}
                             onClick={this.close_modals}
                             color="secondary"
+                            ref={focus_ref}
                         >
                             Cancel
                         </Button>
@@ -1069,7 +1077,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                 <ActionDialog
                     title={`Delete Folder ${this.state.modals.delete_folder.to_delete.folder_name}`}
                     open={this.state.modals.delete_folder.is_open}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={1}
                             onClick={()=> {
@@ -1094,6 +1102,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                             key={2}
                             onClick={this.close_modals}
                             color="primary"
+                            ref={focus_ref}
                         >
                             Cancel
                         </Button>
@@ -1117,7 +1126,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                 <ActionDialog
                     title={`Rename Folder ${this.state.modals.rename_folder.to_rename.folder_name}`}
                     open={this.state.modals.rename_folder.is_open}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={2}
                             onClick={this.close_modals}
@@ -1142,6 +1151,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                 })
                             }}
                             color="secondary"
+                            ref={focus_ref}
                         >
                             Rename
                         </Button>
@@ -1164,11 +1174,12 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                 <ActionDialog
                     title={`Move Contents ${this.state.selected_files.map(content => content.file_name).join(", ")}`}
                     open={this.state.modals.move_content.is_open}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={2}
                             onClick={this.close_modals}
                             color="primary"
+                            ref={focus_ref}
                         >
                             Cancel
                         </Button>
@@ -1218,7 +1229,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                 <ActionDialog
                     title={`Choose a Module to add to the Library`}
                     open={this.state.modals.add_module_to_version.is_open}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={2}
                             onClick={this.close_modals}
@@ -1236,6 +1247,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                 ).then(this.close_modals)
                             }}
                             color="secondary"
+                            ref={focus_ref}
                         >
                             Add
                         </Button>
@@ -1275,11 +1287,12 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                 <ActionDialog
                     title={`Set Metadata Types of Version ${this.state.modals.set_version_metadata.library_version.library_name}`}
                     open={this.state.modals.set_version_metadata.is_open}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={2}
                             onClick={this.close_modals}
                             color="primary"
+                            ref={focus_ref}
                         >
                             Cancel
                         </Button>

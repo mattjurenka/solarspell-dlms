@@ -19,7 +19,7 @@ export default class HomeScreen extends Component<HomeScreenProps, {}> {
                 return null
             }
             return (
-                <Grid item key={tab_name} xs={2} justify="center">
+                <Grid item key={tab_name} xs={3} lg={2} justify="center">
                     <img
                         src={icon}
                         style={{
@@ -34,7 +34,11 @@ export default class HomeScreen extends Component<HomeScreenProps, {}> {
         }).filter(value => value !== null)
 
         return (
-            <Grid container justify="center">
+            <Grid container justify="center" style={{
+                textAlign: "center",
+                borderLeft: 32,
+                borderRight: 32
+            }}>
                 {
                     icon_entries
                 }

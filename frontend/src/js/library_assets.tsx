@@ -157,11 +157,12 @@ export default class LibraryAssets extends Component<LibraryAssetsProps, Library
                     ])} Asset`}
                     open={this.state.modals.add_asset.is_open}
                     on_close={this.close_modals}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={0}
                             onClick={this.close_modals}
                             color="secondary"
+                            ref={focus_ref}
                         >
                             Cancel
                         </Button>
@@ -198,7 +199,7 @@ export default class LibraryAssets extends Component<LibraryAssetsProps, Library
                     title={`Delete Library Asset ${this.state.modals.delete_asset.to_delete.file_name}`}
                     open={this.state.modals.delete_asset.is_open}
                     on_close={this.close_modals}
-                    actions={[(
+                    get_actions={focus_ref => [(
                         <Button
                             key={0}
                             onClick={this.close_modals}
@@ -222,6 +223,7 @@ export default class LibraryAssets extends Component<LibraryAssetsProps, Library
                                 })
                             }}
                             color="primary"
+                            ref={focus_ref}
                         >
                             Confirm
                         </Button>
