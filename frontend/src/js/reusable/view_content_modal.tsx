@@ -60,13 +60,17 @@ export const ViewContentModal = ({
                         <Container key={metadata_type.id} style={{marginBottom: "1em"}}>
                             <Typography variant={"h6"}>{metadata_type.name}</Typography>
                             <Paper>
-                                {row.metadata_info?.filter(value => value.type_name == metadata_type.name).map((metadata, idx) => (
+                                {
+                                    ((metadata) => metadata.length > 0 ?
+                                            metadata :
+                                            <Typography>No Metadata Entries</Typography>
+                                        )(row.metadata_info?.filter(value => value.type_name == metadata_type.name).map((metadata, idx) => (
                                         <li key={idx} style={{listStyle: "none"}}>
                                             <Chip
                                                 label={metadata.name}
                                             />
                                         </li>
-                                    ))
+                                    )))
                                 }
                             </Paper>
                         </Container>
@@ -77,9 +81,9 @@ export const ViewContentModal = ({
                 {is_open ? (
                     <object
                         style={{
-                            maxWidth: "100%",
-                            minHeight: "100%",
+                            minHeight: "600px",
                         }}
+                        width="600"
                         data={new URL(row.file_name, APP_URLS.CONTENT_FOLDER).href}
                     />
                 ) : null}

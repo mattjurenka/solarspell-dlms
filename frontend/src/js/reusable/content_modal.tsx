@@ -1,5 +1,5 @@
 import ActionDialog from "./action_dialog"
-import { cloneDeep, isEqual, set, isNull, isString, isArray } from "lodash"
+import { cloneDeep, isEqual, set, isNull, isString, isArray, isUndefined } from "lodash"
 import {Button, TextField, Grid, Checkbox, Typography} from "@material-ui/core"
 import Axios, { AxiosResponse } from "axios"
 import { APP_URLS } from "../urls"
@@ -372,7 +372,12 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                         handleHomeEndKeys
                                         options={metadata_api.state.metadata_by_type[metadata_type.name]}
                                         getOptionLabel={option => {
-                                            return option.id === 0 ? `Add new Metadata "${option.name}"` : option.name
+                                            if (isUndefined(option)) {
+                                                return "undefined"
+                                            }
+                                            return option.id === 0 ?
+                                                `Add new Metadata "${option.name}"` :
+                                                option.name
                                         }}
                                         renderInput={(params) => (
                                             <TextField

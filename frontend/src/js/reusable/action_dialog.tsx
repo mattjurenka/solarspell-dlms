@@ -10,11 +10,10 @@ interface ActionDialogProps {
 
 const ActionDialog: React.FunctionComponent<ActionDialogProps> = (props) => {
     const focus_ref = useRef<HTMLButtonElement>(null)
-    const actions = useState(props.get_actions(focus_ref))
+    const [actions] = useState(props.get_actions(focus_ref))
 
     useEffect(() => {
         if (props.open) {
-            console.log(focus_ref.current)
             focus_ref.current?.focus()
         }
     }, [props.open])

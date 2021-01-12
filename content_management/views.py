@@ -156,7 +156,7 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
             except Exception as e:
                 print(e)
 
-        return queryset
+        return queryset.order_by("id")
 
 
 class MetadataViewSet(StandardDataView, viewsets.ModelViewSet):
@@ -193,6 +193,9 @@ class LibraryVersionViewSet(StandardDataView, viewsets.ModelViewSet):
     serializer_class = LibraryVersionSerializer
     folder_serializer = LibraryFolderSerializer
     pagination_class = PageNumberSizePagination
+
+    def get_queryset(self):
+            return self.queryset.order_by("id")
 
     @action(methods=['post'], detail=True)
     def add_metadata_type(self, request, pk=None):
