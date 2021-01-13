@@ -114,6 +114,7 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
                         metadata_api={apis.metadata_api}
                         contents_api={apis.contents_api}
                         library_modules_api={apis.lib_modules_api}
+                        show_toast_message={this.show_toast_message}
                     />
                 ),
                 icon: library_versions
@@ -193,6 +194,7 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
             history.replaceState({}, "DLMS", this.state.url.toString())
         })
             .then(this.props.apis.contents_api.reset_search)
+            .then(this.props.apis.lib_versions_api.reset_to_defaults)
             .then(this.props.apis.contents_api.load_content_rows)
     }
     show_loader(){

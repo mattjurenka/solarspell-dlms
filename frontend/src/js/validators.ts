@@ -2,6 +2,7 @@ import { isString, isNull, isDate, isEqual } from 'lodash'
 import { metadata_dict } from './types'
 
 export default class VALIDATORS {
+    static RIGHTS_HOLDER: any
     static YEAR(year_str: any): string {
         const year_num = parseInt(year_str)
         if (isNaN(year_num)) {

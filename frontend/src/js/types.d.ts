@@ -110,7 +110,7 @@ type LibraryVersionsAPI = {
     enter_folder: (folder: LibraryFolder, back?: number) => Promise<any>
     enter_parent: () => Promise<any>
     add_version: (name: string, library_version: string, user: number) => Promise<any>
-    set_version_image: (asset: LibraryAsset) => Promise<any>
+    set_version_image: (version: LibraryVersion, asset: LibraryAsset) => Promise<any>
     update_version: (version: LibraryVersion, name?: string, number?: string, user?: User) => Promise<any>
     delete_version: (version: LibraryVersion) => Promise<any>
     create_child_folder: (parent: LibraryFolder | LibraryVersion, name: string) => Promise<any>
@@ -130,6 +130,7 @@ type LibraryVersionsAPI = {
     set_page: (page: number) => Promise<any>
     add_metadata_type_to_version: (version: LibraryVersion, metadata_type: SerializedMetadataType) => Promise<LibraryVersion>
     remove_metadata_type_to_version: (version: LibraryVersion, metadata_type: SerializedMetadataType) => Promise<LibraryVersion>
+    reset_to_defaults: () => Promise<any>
 }
 
 type UsersAPI = {

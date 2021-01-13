@@ -40,6 +40,7 @@ interface LibrariesProps {
     metadata_api: MetadataAPI
     contents_api: ContentsAPI
     library_modules_api: LibraryModulesAPI
+    show_toast_message: (message: string, is_success: boolean) => void
 }
 
 interface LibrariesState {
@@ -74,6 +75,7 @@ interface LibrariesModals {
         row: SerializedContent
     }
     set_banner: {
+        to_set: LibraryVersion
         is_open: boolean
     }
     add_folder: {
@@ -90,10 +92,6 @@ interface LibrariesModals {
         is_open: boolean
         name: field_info<string>
         to_delete: LibraryFolder
-    }
-    set_folder_banner: {
-        is_open: boolean
-        to_change: LibraryFolder
     }
     set_folder_logo: {
         is_open: boolean
@@ -202,6 +200,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                 row: cloneDeep(this.content_defaults)
             },
             set_banner: {
+                to_set: cloneDeep(this.library_version_default),
                 is_open: false
             },
             add_folder: {
@@ -218,10 +217,6 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                 is_open: false,
                 name: get_field_info_default(""),
                 to_delete: cloneDeep(this.library_folder_default)
-            },
-            set_folder_banner: {
-                is_open: false,
-                to_change: cloneDeep(this.library_folder_default)
             },
             set_folder_logo: {
                 is_open: false,
@@ -318,15 +313,14 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                             })
                                         }}
                                         imageFn={() => {
-                                            this.props.library_versions_api.enter_version_root(row)
-                                            .then(() => {
-                                                this.update_state(draft => {
-                                                    draft.modals.set_banner.is_open = true
-                                                })
+                                            this.update_state(draft => {
+                                                draft.modals.set_banner.to_set = cloneDeep(row)
+                                                draft.modals.set_banner.is_open = true
                                             })
                                         }}
                                         cloneFn={() => {
                                             this.props.library_versions_api.clone_version(row)
+                                            .then(() => this.props.show_toast_message("Library Successfully Cloned", true))
                                         }}
                                         buildFn={() => {
                                             this.update_state(draft => {
@@ -482,7 +476,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                             </Box>
                                             {
                                                 folder.logo_img > 0 ?
-                                                    <Box style={{paddingTop: "9px"}}>
+                                                    <Box style={{paddingTop: "9px", paddingLeft: "3px"}}>
                                                         <img
                                                             src={this.props.library_assets_api.state.assets_by_group[1]?.find(logo => logo.id === folder.logo_img)?.image_file as string}
                                                             style={{maxHeight: "24px"}}
@@ -490,7 +484,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                                     </Box> :
                                                     <></>
                                             }
-                                            <Box style={{paddingTop: "9px"}}>
+                                            <Box style={{paddingTop: "9px", paddingLeft: "3px"}}>
                                                 <Typography>
                                                     <Link
                                                         style={{cursor: "pointer"}}
@@ -521,17 +515,10 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                                             }, "Rename"
                                                         ]
                                                     ] as [() => void, string][]).concat(
-                                                        //If we are in the top level version add set folder and set logo menu items
+                                                        //If we are in the top level version add set logo menu items
                                                         this.props.library_versions_api.state.path.length === 0 ?
                                                         [
                                                             [
-                                                                () => {
-                                                                    this.update_state(draft => {
-                                                                        draft.modals.set_folder_banner.is_open = true
-                                                                        draft.modals.set_folder_banner.to_change = cloneDeep(folder)
-                                                                    })
-                                                                }, "Set Banner"
-                                                            ], [
                                                                 () => {
                                                                     this.update_state(draft => {
                                                                         draft.modals.set_folder_logo.is_open = true
@@ -640,13 +627,21 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                         }
                     </Grid>
                     <Grid item sm={6}>
-                        <Button onClick={() => {
-                            const path = this.props.library_versions_api.state.path
-                            const cd = path.length > 0 ? path[path.length - 1] : undefined
-                            if (cd) {
-                                this.props.contents_api.add_selected_to_folder(cd)
-                            }
-                        }}>Add Selected to CD</Button>
+                        <Button
+                            onClick={() => {
+                                const path = this.props.library_versions_api.state.path
+                                const cd = path.length > 0 ? path[path.length - 1] : undefined
+                                if (cd) {
+                                    this.props.contents_api.add_selected_to_folder(cd)
+                                }
+                            }}
+                            style={{
+                                marginLeft: "1em",
+                                marginBottom: "1em",
+                                backgroundColor: "#75b2dd",
+                                color: "#FFFFFF"
+                            }}
+                        >Add Selected to CD</Button>
                         <ContentSearch
                             contents_api={this.props.contents_api}
                             metadata_api={this.props.metadata_api}
@@ -879,47 +874,10 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                 <Grid
                                     key={idx}
                                     item
-                                    style={this.props.library_versions_api.state.current_version.library_banner === asset.id
+                                    style={this.state.modals.set_banner.to_set.library_banner === asset.id
                                     ? {backgroundColor: "#75b2dd"} : undefined}
                                     onClick={_ => {
-                                        this.props.library_versions_api.set_version_image(asset)
-                                        .then(this.close_modals)
-                                    }}
-                                >
-                                    <img
-                                        src={asset.image_file === null ? "" : asset.image_file}
-                                        style={{maxHeight: "100px", maxWidth: "100px"}}
-                                    />
-                                </Grid>
-                            )
-                        })}
-                    </Grid>
-                </ActionDialog>
-                <ActionDialog
-                    on_close={this.close_modals}
-                    open={this.state.modals.set_folder_banner.is_open}
-                    title={"Set Folder Banner"}
-                    get_actions={focus_ref => [(
-                        <Button
-                            key={0}
-                            onClick={this.close_modals}
-                            color="secondary"
-                            ref={focus_ref}
-                        >
-                            Cancel
-                        </Button>
-                    )]}
-                >
-                    <Grid container spacing={2}>
-                        {this.props.library_assets_api.state.assets_by_group[2]?.map((asset, idx) => {
-                            return (
-                                <Grid
-                                    key={idx}
-                                    item
-                                    style={this.state.modals.set_folder_banner.to_change.banner_img === asset.id
-                                    ? {backgroundColor: "#75b2dd"} : undefined}
-                                    onClick={_ => {
-                                        this.props.library_versions_api.set_folder_banner(this.state.modals.set_folder_banner.to_change, asset)
+                                        this.props.library_versions_api.set_version_image(this.state.modals.set_banner.to_set, asset)
                                         .then(this.close_modals)
                                     }}
                                 >
@@ -953,11 +911,12 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                 <Grid
                                     key={idx}
                                     item
-                                    style={this.state.modals.set_folder_logo.to_change.banner_img === asset.id
+                                    style={this.state.modals.set_folder_logo.to_change.logo_img === asset.id
                                     ? {backgroundColor: "#75b2dd"} : undefined}
                                     onClick={_ => {
                                         this.props.library_versions_api.set_folder_logo(this.state.modals.set_folder_logo.to_change, asset)
                                         .then(this.close_modals)
+                                        .then(this.props.library_versions_api.refresh_current_directory)
                                     }}
                                 >
                                     <img
@@ -1298,8 +1257,8 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                         </Button>
                     )]}
                 >
-                    {this.props.metadata_api.state.metadata_types.map(metadata_type => {
-                        return <Box flexDirection="row" display="flex">
+                    {this.props.metadata_api.state.metadata_types.map((metadata_type, idx) => {
+                        return <Box flexDirection="row" display="flex" key={idx}>
                             <Box>
                                 <Checkbox
                                     checked={this.state.modals.set_version_metadata.library_version.metadata_types.find(id => id === metadata_type.id) !== undefined}

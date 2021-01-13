@@ -4,6 +4,7 @@ from _datetime import datetime
 from django.db import models
 from django.dispatch import receiver
 from content_management.validators import validate_unique_filename, validate_unique_file
+from django.core.exceptions import ValidationError
 
 
 class MetadataType(models.Model):

@@ -11,8 +11,8 @@ def validate_unique_filename(value):
 def validate_unique_file(value):
     from content_management.utils import sha256
     files = [
-        os.path.join(settings.MEDIA_ROOT, "contents", filename) for filename
-        in os.listdir(os.path.join(settings.MEDIA_ROOT, "contents"))
+        os.path.join(settings.CONTENTS_ROOT, filename) for filename
+        in os.listdir(os.path.join(settings.CONTENTS_ROOT))
     ]
     for f in files:
         if os.path.getsize(f) == value.size:
