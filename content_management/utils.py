@@ -5,12 +5,13 @@ from typing import Dict, Union
 
 from django.utils import timezone
 from rest_framework import status
+from django.db.models.functions import Substr
 
 from dlms import settings
 from content_management.library_db_utils import LibraryDbUtil
 from content_management.models import (
     Content,
-    Metadata, MetadataType, LibraryFolder)
+    Metadata, MetadataType, LibraryFolder, LibraryModule, LibraryVersion)
 
 import hashlib
 
@@ -86,25 +87,30 @@ def get_associated_meta(sheet_row):
 class LibraryBuildUtil:
 
     def build_library(self, version_id):
-        metadata_types = MetadataType.objects.all().values_list('id', 'name')
-        metadata = Metadata.objects.filter(content__libraryfolder__version_id=version_id).values_list('id', 'name',
-                                                                                                      'type_id'). \
-            distinct(
-            'id')
+        metadata_types = LibraryVersion.metadata_types.through.objects.filter(libraryversion__id=version_id) \
+            .values_list('metadatatype_id', 'metadatatype__name')
+        metadata = Metadata.objects.filter(content__libraryfolder__version_id=version_id) \
+            .filter(type__pk__in=metadata_types.values_list('metadatatype_id')).values_list('id', 'name',
+                                                                                            'type__name',
+                                                                                            'type_id').distinct('id')
         folders = LibraryFolder.objects.filter(version_id=version_id).values_list('id', 'folder_name',
-                                                                                  'banner_img__image_file'
-                                                                                  , 'logo_img__image_file', 'parent_id')
+                                                                                  'logo_img__image_file', 'parent_id')
+        modules = LibraryModule.objects.filter(libraryversion__id=version_id).values_list('id', 'module_name',
+                                                                                          'logo_img__image_file')
         contents = Content.objects.filter(libraryfolder__version_id=version_id).values_list('id', 'title', 'description'
-                                                                                            , 'file_name',
+                                                                                            , Substr('content_file', 10),
                                                                                             'published_date',
-                                                                                            'copyright',
+                                                                                            'copyright_notes',
                                                                                             'rights_statement',
-                                                                                            'libraryfolder__id') \
+                                                                                            'filesize') \
             .distinct('id')
         contents_metadata = Content.metadata.through.objects.filter(content__libraryfolder__version_id=version_id) \
             .values_list('content_id', 'metadata_id')
-
-        db_util = LibraryDbUtil(metadata_types, metadata, folders, contents, contents_metadata)
+        contents_folder = LibraryFolder.library_content.through.objects.filter(libraryfolder__version_id=version_id) \
+            .values_list('content_id', 'libraryfolder_id', 'libraryfolder__library_content__title', \
+                         'libraryfolder__library_content__filesize')
+        db_util = LibraryDbUtil(metadata_types, metadata, folders, modules, contents, contents_metadata,
+                                contents_folder)
         db_util.create_library_db()
         return 'success'
 

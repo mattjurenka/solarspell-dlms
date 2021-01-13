@@ -20,7 +20,7 @@ const APP_URLS = {
         //TODO: refractor
         const content_filter = filters || {}
         const {
-            title, years, filename, copyright, active, metadata, sort, file_sizes, reviewed_on, duplicatable
+            title, years, filename, copyright_notes, active, metadata, sort, file_sizes, reviewed_on, duplicatable
         } = content_filter
         const filters_arr: [string, any][] = [["page", `${page}`], ["size", `${size}`]]
         
@@ -38,7 +38,7 @@ const APP_URLS = {
             if(reviewed_on[1] !== null) filters_arr.push(["reviewed_to", `${format(reviewed_on[1], "yyyy-MM-dd")}`])
         }
         if (!isUndefined(filename) && filename !== "") filters_arr.push(["file_name", filename])
-        if (!isUndefined(copyright) && copyright !== "") filters_arr.push(["copyright", copyright])
+        if (!isUndefined(copyright_notes) && copyright_notes !== "") filters_arr.push(["copyright_notes", copyright_notes])
         if (!isUndefined(active)) filters_arr.push(["active", active ? "true" : "false"])
         if (!isUndefined(metadata) && metadata.length > 0) filters_arr.push(["metadata", metadata.join(",")])
         if (!isUndefined(sort)) filters_arr.push(["sort", sort])

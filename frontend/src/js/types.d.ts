@@ -34,7 +34,8 @@ type content_filters = {
     file_sizes?: [number|null, number|null]
     reviewed_on?: [Date|null, Date|null]
     filename?: string
-    copyright?: string
+    copyright_notes?: string
+    copyright_site?: string
     active?: boolean
     metadata?: number[]
     sort?: string
@@ -50,7 +51,8 @@ interface SerializedContent {
     description: string|null
     modified_on: string
     reviewed_on: string
-    copyright: string|null
+    copyright_notes: string|null
+    copyright_site: string|null
     rights_statement: string|null
     original_source: string|null
     active: boolean
@@ -251,7 +253,8 @@ type content_fields = {
     year:               string
     reviewed_on:        Date|null
     metadata:           metadata_dict
-    copyright:          string
+    copyright_notes:    string
+    copyright_site:     string
     rights_statement:   string
     original_source:    string
     duplicatable:       boolean
@@ -261,7 +264,7 @@ type content_fields = {
 type active_search_option = "active" | "inactive" | "all"
 type search_state = {
     title: string
-    copyright: string
+    copyright_notes: string
     years_from: number | null
     years_to: number | null
     active: active_search_option

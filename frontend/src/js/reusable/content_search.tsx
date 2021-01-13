@@ -135,11 +135,11 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                                 <TextField
                                     fullWidth
                                     label={"Copyright Notes"}
-                                    value={search.copyright}
+                                    value={search.copyright_notes}
                                     onChange={(evt) => {
                                         evt.persist()
                                         contents_api.update_search_state(draft => {
-                                            draft.copyright = evt.target.value
+                                            draft.copyright_notes = evt.target.value
                                         })
                                     }}
                                 />
