@@ -128,6 +128,9 @@ STATIC_ROOT = env.str('STATIC_ROOT')
 MEDIA_ROOT = env.str('MEDIA_ROOT')
 MEDIA_URL = '/media/'
 
+CONTENTS_ROOT = env.str('CONTENTS_ROOT')
+CONTENTS_URL = '/media/contents/'
+
 BUILDS_ROOT = env.str('BUILDS_ROOT')
 BUILDS_URL = '/builds/'
 

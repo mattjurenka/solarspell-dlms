@@ -16,11 +16,10 @@ import {
     Column,
     SelectionState, IntegratedSelection 
 } from "@devexpress/dx-react-grid"
-import { ExpansionPanel, ExpansionPanelSummary, Typography, Grid, ExpansionPanelDetails, TextField, Container, Select, MenuItem, Button, Box, Checkbox } from '@material-ui/core'
+import { ExpansionPanel, ExpansionPanelSummary, Typography, Grid, ExpansionPanelDetails, TextField, Container, Select, MenuItem, } from '@material-ui/core'
 import { update_state } from '../utils'
 import { KeyboardDatePicker } from '@material-ui/pickers'
 import { Autocomplete } from '@material-ui/lab'
-import ActionDialog from './action_dialog'
 
 
 interface ContentSearchProps {
@@ -296,53 +295,6 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                         </Grid>
                     </ExpansionPanelDetails>
                 </ExpansionPanel>
-                {!this.props.versions_api ? 
-                    <>
-                        <Button onClick={_ => {
-                            this.update_state(draft => {
-                                draft.is_show_column_open = true
-                            })
-                        }}>
-                            Open Metadata Column Select
-                        </Button>
-                        <ActionDialog
-                            open={this.state.is_show_column_open}
-                            title="Show Metadata Columns"
-                            get_actions={focus_ref => [(
-                                <Button
-                                    key={2}
-                                    onClick={() => {
-                                        this.update_state(draft => {
-                                            draft.is_show_column_open = false
-                                        })
-                                    }}
-                                    color="primary"
-                                    ref={focus_ref}
-                                >
-                                    Close
-                                </Button>
-                            )]}
-                        >
-                            {this.props.metadata_api.state.metadata_types.map(metadata_type => {
-                                return <Box flexDirection="row" display="flex">
-                                    <Box>
-                                        <Checkbox
-                                            checked={this.props.metadata_api.state.show_columns[metadata_type.name]}
-                                            onChange={(_, checked) => {
-                                                this.props.metadata_api.set_view_metadata_column(draft => {
-                                                    draft[metadata_type.name] = checked
-                                                })
-                                            }}
-                                        />
-                                    </Box>
-                                    <Box>
-                                        <Typography>{metadata_type.name}</Typography>
-                                    </Box>
-                                </Box>
-                            })}
-                        </ActionDialog>
-                    </> : <></>
-                }
                 <DataGrid
                     columns={this.columns.concat(
                         this.props.metadata_api.state.metadata_types.filter(metadata_type => this.props.metadata_api.state.show_columns[metadata_type.name])
@@ -361,7 +313,7 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                         columnExtensions={this.columns.map(column => {
                             return {
                                 columnName: column.name,
-                                sortingEnabled: ["file_name", "title", "description"].includes(column.name)
+                                sortingEnabled: ["file_name", "title", "description", "published_year"].includes(column.name)
                             }
                         })}
                     />
@@ -370,7 +322,6 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                         onCurrentPageChange={this.props.contents_api.set_page}
                         pageSize={this.props.contents_api.state.page_size}
                         onPageSizeChange={n => {
-                            console.log(n)
                             this.props.contents_api.set_page_size(n)
                         }}
                     />
@@ -378,7 +329,8 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                         [<SelectionState
                             selection={this.props.contents_api.state.selection}
                             onSelectionChange={this.props.contents_api.set_selection}
-                        />, <IntegratedSelection />] : null
+                            key={0}
+                        />, <IntegratedSelection key={1} />] : null
                     }
                     <CustomPaging totalCount={this.props.contents_api.state.total_count}/>
                     <Table />

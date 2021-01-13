@@ -2,6 +2,7 @@ from rest_framework.serializers import ModelSerializer
 from content_management.models import (
     Content, Metadata, MetadataType, User,
     LibraryVersion, LibraryFolder, LibLayoutImage, LibraryModule)
+from rest_framework.validators import UniqueTogetherValidator
 
 
 class ContentSerializer(ModelSerializer):
@@ -14,6 +15,12 @@ class ContentSerializer(ModelSerializer):
 
 class MetadataSerializer(ModelSerializer):
     class Meta:
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Metadata.objects.all(),
+                fields=["type", "name"]
+            )
+        ]
         model = Metadata
         fields = ('id', 'name', 'type', 'type_name')
 

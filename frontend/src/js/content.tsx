@@ -4,7 +4,7 @@ import React, { Component } from 'react';
 import { APP_URLS } from './urls';
 import { cloneDeep } from 'lodash';
 import ActionDialog from './reusable/action_dialog';
-import {Button, Typography} from '@material-ui/core';
+import {Box, Button, Checkbox, Typography} from '@material-ui/core';
 import Axios from 'axios';
 import VALIDATORS from './validators';
 import { update_state } from './utils';
@@ -46,6 +46,9 @@ interface ContentModals {
         row: SerializedContent
     }
     bulk_add: {
+        is_open: boolean
+    }
+    column_select: {
         is_open: boolean
     }
 }
@@ -100,6 +103,9 @@ export default class Content extends Component<ContentProps, ContentState> {
             },
             bulk_add: {
                 is_open: false,
+            },
+            column_select: {
+                is_open: false,
             }
         }
 
@@ -123,7 +129,6 @@ export default class Content extends Component<ContentProps, ContentState> {
             add,
             view,
             edit,
-            delete_content,
             bulk_add
         } = this.state.modals
         const {
@@ -160,6 +165,25 @@ export default class Content extends Component<ContentProps, ContentState> {
                     }}
                 >Add Bulk Content
                 </Button>
+                <Button
+                    onClick={_ => {
+                        this.update_state(draft => {
+                            draft.modals.column_select.is_open = true
+                        })
+                    }}
+                    style={{
+                        marginLeft: "1em",
+                        marginBottom: "1em",
+                        float: "right",
+                        marginRight: "1em",
+                        //backgroundColor: "#75b2dd",
+                        //color: "#FFFFFF"
+                    }}
+                    variant="outlined"
+                >
+                    Column Select
+                </Button>
+                
                 <ContentSearch
                     contents_api={contents_api}
                     metadata_api={metadata_api}
@@ -195,13 +219,13 @@ export default class Content extends Component<ContentProps, ContentState> {
                     }}
                 />
                 <ActionDialog
-                    title={`Delete Content item ${delete_content.row.title}?`}
-                    open={delete_content.is_open}
+                    title={`Delete Content item ${this.state.modals.delete_content.row.title}?`}
+                    open={this.state.modals.delete_content.is_open}
                     get_actions={focus_ref => [(
                         <Button
                             key={1}
                             onClick={()=> {
-                                Axios.delete(APP_URLS.CONTENT_ITEM(delete_content.row.id))
+                                this.props.contents_api.delete_content(this.state.modals.delete_content.row)
                                 this.close_modals()
                             }}
                             color="secondary"
@@ -293,6 +317,42 @@ export default class Content extends Component<ContentProps, ContentState> {
                     show_loader={this.props.show_loader}
                     remove_loader={this.props.remove_loader}>
                </BulkContentModal>
+               <ActionDialog
+                    open={this.state.modals.column_select.is_open}
+                    title="Show Metadata Columns"
+                    get_actions={focus_ref => [(
+                        <Button
+                            key={2}
+                            onClick={() => {
+                                this.update_state(draft => {
+                                    draft.modals.column_select.is_open = false
+                                })
+                            }}
+                            color="primary"
+                            ref={focus_ref}
+                        >
+                            Close
+                        </Button>
+                    )]}
+                >
+                    {this.props.metadata_api.state.metadata_types.map((metadata_type, idx) => {
+                        return <Box flexDirection="row" display="flex" key={idx}>
+                            <Box key={0}>
+                                <Checkbox
+                                    checked={this.props.metadata_api.state.show_columns[metadata_type.name]}
+                                    onChange={(_, checked) => {
+                                        this.props.metadata_api.set_view_metadata_column(draft => {
+                                            draft[metadata_type.name] = checked
+                                        })
+                                    }}
+                                />
+                            </Box>
+                            <Box key={1}>
+                                <Typography>{metadata_type.name}</Typography>
+                            </Box>
+                        </Box>
+                    })}
+                </ActionDialog>
             </React.Fragment>
         )
     }

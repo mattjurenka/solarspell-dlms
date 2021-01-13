@@ -80,13 +80,12 @@ export default class LibraryAssets extends Component<LibraryAssetsProps, Library
                         const [group, assets] = entry
                         const asset_group_raw = Number.parseInt(group);
                         if (Number.isNaN(asset_group_raw) || (
-                            asset_group_raw !== 1 &&
-                            asset_group_raw !== 2
-                        )) {
-                            return <></>
+                                asset_group_raw !== 1 &&
+                                asset_group_raw !== 2
+                            ) || isUndefined(assets)) {
+                            return <Fragment key={idx}></Fragment>
                         }
                         const asset_group = asset_group_raw as AssetGroup
-                        if (isUndefined(assets)) return <Fragment key={idx}></Fragment>
                         return (
                             <Fragment key={idx}>
                                 <Grid container style={{marginBottom: "3%"}}>
@@ -103,6 +102,12 @@ export default class LibraryAssets extends Component<LibraryAssetsProps, Library
                                                     draft.modals.add_asset.is_open = true
                                                     draft.modals.add_asset.group = asset_group
                                                 })
+                                            }}
+                                            style={{
+                                                marginLeft: "1em",
+                                                marginBottom: "1em",
+                                                backgroundColor: "#75b2dd",
+                                                color: "#FFFFFF"
                                             }}
                                         >NEW {library_assets_api.state.group_name[asset_group]} ASSET</Button>
                                     </Grid>

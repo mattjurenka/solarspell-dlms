@@ -167,7 +167,8 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
         this.set_versions_page_size = this.set_versions_page_size.bind(this)
         this.add_metadata_type_to_version = this.add_metadata_type_to_version.bind(this)
         this.remove_metadata_type_to_version = this.remove_metadata_type_to_version.bind(this)
-
+        this.reset_to_library_defaults = this.reset_to_library_defaults.bind(this)
+        
         //Users API
         this.refresh_users = this.refresh_users.bind(this)
         this.add_user = this.add_user.bind(this)
@@ -221,7 +222,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
         })
         return Promise.all([
             this.load_content_rows(),
-            this.refresh_current_directory
+            this.refresh_current_directory()
         ])
     }
 
@@ -363,6 +364,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
     //Delete existing content record
     async delete_content(to_delete: SerializedContent) {
         return Axios.delete(APP_URLS.CONTENT_ITEM(to_delete.id))
+            .then(this.load_content_rows)
     }
 
     //Exposes the update_state function only for the search state
@@ -414,9 +416,24 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
                 return metadata_dict
             }, {})
             //Add metadata_name to show_columns if it doesn't already exist
+            //Parse cookies to see if the column should show up from cookies
+            const in_cookies = (if_exists => {
+                const value =  if_exists?.split("=")[1]
+                return value?.split(",")?.reduce((set, title) => {
+                    set.add(title)
+                    return set
+                }, new Set() as Set<string>)
+            })(document.cookie
+                .split("; ")
+                .find(row => row.startsWith("show_column")))
+
             draft.metadata_api.show_columns = metadata_types.reduce((acc, type) => {
+                console.log(type.name)
                 if (!(type.name in acc)) {
                     acc[type.name] = false
+                }
+                if (in_cookies?.has(type.name)) {
+                    acc[type.name] = true
                 }
                 return acc
             }, {} as show_metadata_column)
@@ -450,12 +467,14 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
     
     //Add Metadata with MetadataType
     async add_metadata(meta_name: string, meta_type: SerializedMetadataType) {
-        return Axios.post(APP_URLS.METADATA, {
+        const response = await Axios.post(APP_URLS.METADATA, {
             name: meta_name,
             type: meta_type.id
         })
-            .then(this.load_content_rows)
-            .finally(this.refresh_metadata)
+        return Promise.all([
+            this.load_content_rows,
+            this.refresh_metadata
+        ]).then(_ => response)
     }
     
     //Edit the name of an existing Met
@@ -477,8 +496,11 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
         await this.update_state(draft => {
             update_func(draft.metadata_api.show_columns)
         })
+        
         const x = Object.keys(this.state.metadata_api.show_columns).filter(name => this.state.metadata_api.show_columns[name])
-        Cookies.set('show_columns', x.join(','))
+        
+        
+        document.cookie = `show_columns=${x.join(',')}`
     }
     
     // LIBRARY ASSETS -------------------------------------------------------
@@ -640,8 +662,8 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
         }).then(this.refresh_library_versions)
     }
 
-    async set_version_image(asset: LibraryAsset) {
-        await Axios.patch(APP_URLS.LIBRARY_VERSION(this.state.library_versions_api.current_version.id), {
+    async set_version_image(version: LibraryVersion, asset: LibraryAsset) {
+        await Axios.patch(APP_URLS.LIBRARY_VERSION(version.id), {
             library_banner: asset.id
         })
         await this.refresh_library_versions()
@@ -794,6 +816,26 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
         return data.data
     }
 
+    async reset_to_library_defaults() {
+        return this.update_state(draft => {
+            draft.library_versions_api.folders_in_version = []
+            draft.library_versions_api.current_directory = {
+                folders: [],
+                files: []
+            }
+            draft.library_versions_api.current_version = {
+                id: 0,
+                library_name: "",
+                version_number: "",
+                library_banner: 0,
+                created_by: 0,
+                metadata_types: []
+            }
+            draft.library_versions_api.path = []
+            draft.library_versions_api.modules_in_version = []
+        })
+    }
+
     // USERS API -----------------------------------------------
     async refresh_users() {
         return get_data(APP_URLS.USERS)
@@ -923,6 +965,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
                     set_page_size: this.set_versions_page_size,
                     add_metadata_type_to_version: this.add_metadata_type_to_version,
                     remove_metadata_type_to_version: this.remove_metadata_type_to_version,
+                    reset_to_defaults: this.reset_to_library_defaults
 
                 },
                 metadata_api: {

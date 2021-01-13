@@ -125,13 +125,14 @@ export default class BulkContentModal extends Component<BulkContentModalProps, B
                    <Typography>Add Metadata File</Typography>
                     <input type="file"  ref={this.bulk_add_sheet_ref}/>
                 </Container>
-                {this.state.error_table_rows.length &&
-                <DataGrid
-                columns={this.error_table_columns}
-                rows={this.state.error_table_rows}>
-                    <Table />
-                    <TableHeaderRow />
-                </DataGrid>
+                {this.state.error_table_rows.length > 0 ? (
+                    <DataGrid
+                        columns={this.error_table_columns}
+                        rows={this.state.error_table_rows}
+                    >
+                        <Table />
+                        <TableHeaderRow />
+                    </DataGrid>) : <></>
                 }
            </ActionDialog>
         )
