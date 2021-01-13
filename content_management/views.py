@@ -134,17 +134,6 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
             except:
                 pass
 
-        order_raw = self.request.GET.get("sort", None)
-        if order_raw != None:
-            try:
-                split = order_raw.split(",")
-                if split[0] == "file_name":
-                    split[0] = "content_file"
-                order_str = ("-" if split[1] == "desc" else "") + split[0]
-                queryset = queryset.order_by(order_str)
-            except:
-                pass
-        
         exclude_version = self.request.GET.get("exclude_in_version", None)
         if exclude_version != None:
             try:
@@ -155,8 +144,21 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
                     queryset = queryset.filter(Q(duplicatable=True) | ~Q(id__in=filtered))
             except Exception as e:
                 print(e)
+        
+        order_raw = self.request.GET.get("sort", None)
+        if order_raw != None:
+            try:
+                split = order_raw.split(",")
+                if split[0] == "file_name":
+                    split[0] = "content_file"
+                if split[0] == "published_year":
+                    split[0] = "published_date"
+                order_str = ("-" if split[1] == "desc" else "") + split[0]
+                queryset = queryset.order_by(order_str)
+            except:
+                pass
 
-        return queryset.order_by("id")
+        return queryset
 
 
 class MetadataViewSet(StandardDataView, viewsets.ModelViewSet):

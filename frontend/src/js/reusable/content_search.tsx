@@ -313,7 +313,7 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                         columnExtensions={this.columns.map(column => {
                             return {
                                 columnName: column.name,
-                                sortingEnabled: ["file_name", "title", "description"].includes(column.name)
+                                sortingEnabled: ["file_name", "title", "description", "published_year"].includes(column.name)
                             }
                         })}
                     />

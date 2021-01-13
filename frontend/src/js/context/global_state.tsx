@@ -222,7 +222,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
         })
         return Promise.all([
             this.load_content_rows(),
-            this.refresh_current_directory
+            this.refresh_current_directory()
         ])
     }
 
@@ -467,12 +467,14 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
     
     //Add Metadata with MetadataType
     async add_metadata(meta_name: string, meta_type: SerializedMetadataType) {
-        return Axios.post(APP_URLS.METADATA, {
+        const response = await Axios.post(APP_URLS.METADATA, {
             name: meta_name,
             type: meta_type.id
         })
-            .then(this.load_content_rows)
-            .finally(this.refresh_metadata)
+        return Promise.all([
+            this.load_content_rows,
+            this.refresh_metadata
+        ]).then(_ => response)
     }
     
     //Edit the name of an existing Met
