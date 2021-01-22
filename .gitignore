@@ -1,7 +1,6 @@
 /.idea/
 /dlms/.env
-# /dlms/builds/*
-# /dlms/media/contents/*
+/dlms/builds/*
 /venv/
 __pycache__
 .vscode/
