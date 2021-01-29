@@ -313,9 +313,21 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                         columnExtensions={this.columns.map(column => {
                             return {
                                 columnName: column.name,
-                                sortingEnabled: ["file_name", "title", "description", "published_year"].includes(column.name)
+                                sortingEnabled: [
+                                    "file_name", "title",  "description",
+                                    "published_year"
+                                ].includes(column.name)
                             }
-                        })}
+                        }).concat(this.props.metadata_api.state.metadata_types
+                            .filter(metadata_type => this.props.metadata_api.state
+                            .show_columns[metadata_type.name])
+                            .map(metadata_type => {
+                                return {
+                                    columnName: metadata_type.name,
+                                    sortingEnabled: false
+                                }
+                            })
+                        )}
                     />
                     <PagingState
                         currentPage={this.props.contents_api.state.page}

@@ -191,9 +191,9 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                     metadata_api.refresh_metadata()
                                     this.props.contents_api.load_content_rows()
                                     this.props.on_close()
-				    this.update_state(draft => {
-				    	draft.fields = cloneDeep(this.default_fields)
-				    })
+                                    this.update_state(draft => {
+                                        draft.fields = cloneDeep(this.default_fields)
+                                    })
                                 }, (reason: any) => {
                                     this.props.remove_loader()
                                     const unknown_err_str = this.props.modal_type === "add" ? "Error while adding content" : "Error while editing content"

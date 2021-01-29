@@ -6,6 +6,9 @@ from django.dispatch import receiver
 from content_management.validators import validate_unique_filename, validate_unique_file
 from django.core.exceptions import ValidationError
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 class MetadataType(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -77,8 +80,10 @@ class Content(models.Model):
 
 @receiver(models.signals.post_delete, sender=Content)
 def on_content_delete(sender, instance, **kwargs):
+    logger.info("Delete request received for " + instance.content_file.path)
     if instance.content_file:
         if os.path.isfile(instance.content_file.path):
+            logger.info("Deleting file")
             os.remove(instance.content_file.path)
 
 class LibLayoutImage(models.Model):
