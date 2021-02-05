@@ -10,9 +10,10 @@ import { update_state, get_field_info_default } from '../utils'
 
 import { KeyboardDatePicker }   from '@material-ui/pickers';
 import { format } from 'date-fns'
-import { WrappedFieldInfo, metadata_dict, SerializedContent, MetadataAPI, SerializedMetadata, SerializedMetadataType,
-    content_fields, 
-    ContentsAPI} from '../types'
+import {
+    WrappedFieldInfo, metadata_dict, SerializedContent, MetadataAPI,
+    SerializedMetadata, SerializedMetadataType, content_fields, ContentsAPI
+} from '../types'
 
 interface ContentModalProps {
     is_open: boolean
@@ -54,7 +55,8 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
             description: get_field_info_default(""),
             year: get_field_info_default(""),
             reviewed_on: get_field_info_default(null),
-            metadata: get_field_info_default(this.props.metadata_api.state.metadata_types.reduce((prev, current) => {
+            metadata: get_field_info_default(
+                this.props.metadata_api.state.metadata_types.reduce((prev, current) => {
                     return set(prev, [current.name], [])
                 },{} as metadata_dict)),
             rights_statement: get_field_info_default(""),
@@ -79,21 +81,30 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
             && this.props.row !== undefined
             && !isEqual(this.props.row, prevProps.row)) {
             const row = this.props.row
-            const metadata = this.props.metadata_api.state.metadata_types.reduce((prev, metadata_type) => {
-                const filtered = row.metadata_info.filter(to_check => isEqual(to_check.type, metadata_type.id))
-                return set(prev, [metadata_type.name], filtered)
-            }, {} as metadata_dict)
+            const metadata = this.props.metadata_api.state.metadata_types
+                .reduce((prev, metadata_type) => {
+                    const filtered = row.metadata_info.filter(
+                        to_check => isEqual(to_check.type, metadata_type.id))
+                    return set(prev, [metadata_type.name], filtered)
+                }, {} as metadata_dict)
 
             this.update_state(draft => {
                 draft.fields.content_file = get_field_info_default(null)
-                draft.fields.copyright = get_field_info_default(row.copyright === null ? "" : row.copyright)
-                draft.fields.description = get_field_info_default(row.description === null ? "" : row.description)
+                draft.fields.copyright = get_field_info_default(
+                    row.copyright === null ? "" : row.copyright)
+                draft.fields.description = get_field_info_default(
+                    row.description === null ? "" : row.description)
                 draft.fields.metadata = get_field_info_default(metadata)
-                draft.fields.rights_statement = get_field_info_default(row.rights_statement === null? "" : row.rights_statement)
-                draft.fields.original_source = get_field_info_default(row.original_source === null? "" : row.original_source)
-                draft.fields.additional_notes = get_field_info_default(row.additional_notes === null? "" : row.additional_notes)
-                draft.fields.title = get_field_info_default(row.title === null ? "" : row.title)
-                draft.fields.year = get_field_info_default(row.published_year === null ? "" : row.published_year)
+                draft.fields.rights_statement = get_field_info_default(
+                    row.rights_statement === null? "" : row.rights_statement)
+                draft.fields.original_source = get_field_info_default(
+                    row.original_source === null? "" : row.original_source)
+                draft.fields.additional_notes = get_field_info_default(
+                    row.additional_notes === null? "" : row.additional_notes)
+                draft.fields.title = get_field_info_default(
+                    row.title === null ? "" : row.title)
+                draft.fields.year = get_field_info_default(
+                    row.published_year === null ? "" : row.published_year)
                 draft.fields.duplicatable = get_field_info_default(row.duplicatable)
             })
         }
@@ -104,7 +115,8 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
         const metadata_api = this.props.metadata_api
         return (
             <ActionDialog
-                title={this.props.modal_type === "add" ? "Add new content item" : `Edit content ${this.props.row?.title}`}
+                title={this.props.modal_type === "add" ?
+                    "Add new content item" : `Edit content ${this.props.row?.title}`}
                 open={true}
                 get_actions={focus_ref => [(
                     <Button
@@ -330,39 +342,61 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 }}
                             />
                         </>,
-                        metadata_api.state.metadata_types.map((metadata_type: SerializedMetadataType, idx) => {
+                        metadata_api.state.metadata_types
+                            .map((metadata_type: SerializedMetadataType, idx) => {
                             return (
                                 <Grid item key={idx}>
                                     <Autocomplete
                                         multiple
-                                        value={this.state.fields.metadata.value[metadata_type.name]}
+                                        value={this.state.fields
+                                            .metadata.value[metadata_type.name]}
                                         onChange={(_evt, value: SerializedMetadata[]) => {
-                                            //Determine which tokens are real or generated by the "Add new metadata ..." option
-                                            let valid_meta = value.filter(to_check => to_check.id !== 0)
-                                            let add_meta_tokens = value.filter(to_check => to_check.id === 0)
+                                            //Determine which tokens are real or generated
+                                            //by the "Add new metadata ..." option
+                                            let valid_meta = value.filter(
+                                                to_check => to_check.id !== 0
+                                            )
+                                            let add_meta_tokens = value.filter(
+                                                to_check => to_check.id === 0
+                                            )
                                             if (add_meta_tokens.length > 0) {
                                                 const to_add = add_meta_tokens[0]
-                                                metadata_api.add_metadata(to_add.name, metadata_type).then(res => {
-                                                    //add the created metadata to valid_meta with its new id
+                                                metadata_api.add_metadata(
+                                                    to_add.name, metadata_type
+                                                ).then(res => {
+                                                    //add the created metadata to 
+                                                    //valid_metadata with its new id
                                                     valid_meta.push(res?.data)
                                                     add_meta_tokens = []
                                                 }).then(() => {
                                                     this.update_state(draft => {
-                                                        draft.fields.metadata.value[metadata_type.name] = valid_meta
+                                                        draft.fields.metadata
+                                                            .value[metadata_type.name] 
+                                                            = valid_meta
                                                     })
                                                 })
                                             } else {
                                                 this.update_state(draft => {
-                                                    draft.fields.metadata.value[metadata_type.name] = valid_meta
+                                                    draft.fields.metadata
+                                                        .value[metadata_type.name]
+                                                        = valid_meta
                                                 })
                                             }
 
                                         }}
                                         filterOptions={(options, params) => {
-                                            const filtered = this.auto_complete_filter(options, params)
-                                            const already_loaded_metadata = this.props.metadata_api.state.metadata_by_type[metadata_type.name]
-                                                ?.find(match => match.name == params.inputValue)
-                                            if (params.inputValue !== '' && isUndefined(already_loaded_metadata)) {
+                                            const filtered = this.auto_complete_filter(
+                                                options, params
+                                            )
+                                            const already_loaded_metadata = this.props
+                                                .metadata_api.state
+                                                .metadata_by_type[metadata_type.name]
+                                                ?.find(match =>
+                                                    match.name == params.inputValue)
+                                            if (
+                                                params.inputValue !== '' &&
+                                                isUndefined(already_loaded_metadata)
+                                            ) {
                                                 filtered.push({
                                                     id: 0,
                                                     name: params.inputValue,
@@ -373,7 +407,8 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                             return filtered
                                         }}
                                         handleHomeEndKeys
-                                        options={metadata_api.state.metadata_by_type[metadata_type.name]}
+                                        options={metadata_api.state
+                                            .metadata_by_type[metadata_type.name]}
                                         getOptionLabel={option => {
                                             if (isUndefined(option)) {
                                                 return "undefined"
@@ -384,8 +419,10 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                         }}
                                         renderInput={(params) => (
                                             <TextField
-                                                error={this.state.fields.metadata.reason !== ""}
-                                                helperText={this.state.fields.metadata.reason}
+                                                error={this.state.fields
+                                                    .metadata.reason !== ""}
+                                                helperText={this.state
+                                                    .fields.metadata.reason}
                                                 {...params}
                                                 variant={"standard"}
                                                 label={metadata_type.name}
