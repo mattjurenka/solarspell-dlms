@@ -1,6 +1,6 @@
 import ActionDialog from "./action_dialog"
 import { cloneDeep, isEqual, set, isNull, isString, isArray, isUndefined } from "lodash"
-import {Button, TextField, Grid, Checkbox, Typography} from "@material-ui/core"
+import { Button, TextField, Grid, Checkbox, Typography } from "@material-ui/core"
 import Axios, { AxiosResponse } from "axios"
 import { APP_URLS } from "../urls"
 import { Autocomplete, createFilterOptions } from "@material-ui/lab"
@@ -56,8 +56,9 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
             year: get_field_info_default(""),
             reviewed_on: get_field_info_default(null),
             metadata: get_field_info_default(
-                this.props.metadata_api.state.metadata_types.reduce((prev, current) => {
-                    return set(prev, [current.name], [])
+                this.props.metadata_api.state.metadata_types.reduce((acc, current) => {
+                    acc[current.name] = []
+                    return acc
                 },{} as metadata_dict)),
             rights_statement: get_field_info_default(""),
             additional_notes: get_field_info_default(""),
@@ -107,12 +108,22 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                     row.published_year === null ? "" : row.published_year)
                 draft.fields.duplicatable = get_field_info_default(row.duplicatable)
             })
+        } else {
+            if (!isEqual(this.props.metadata_api.state.metadata_types,
+                prevProps.metadata_api.state.metadata_types)) {
+                this.props.metadata_api.state.metadata_types.map(type => {
+                    this.update_state(draft => {
+                        if (!(type.name in draft.fields.metadata.value)) {
+                            draft.fields.metadata.value[type.name] = []
+                        }
+                    })
+                })
+            }
         }
     }
 
     render() {
         if (!this.props.is_open) return <></>
-        const metadata_api = this.props.metadata_api
         return (
             <ActionDialog
                 title={this.props.modal_type === "add" ?
@@ -178,7 +189,8 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 if (!isNull(this.state.fields.reviewed_on.value)) {
                                     formData.append("reviewed_on", format(this.state.fields.reviewed_on.value, "yyyy-MM-dd"))
                                 }
-                                metadata_api.state.metadata_types.map(type => {
+                                this.props.metadata_api.state.metadata_types
+                                    .map(type => {
                                     if (type.name in this.state.fields.metadata.value) {
                                         this.state.fields.metadata.value[type.name].map(metadata => {
                                             formData.append("metadata", `${metadata.id}`)
@@ -200,7 +212,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 axios_response.then((_res?: AxiosResponse<any>) => {
                                     this.props.remove_loader()
                                     this.props.show_toast_message(this.props.modal_type === "add" ? "Added content successfully" : "Edited content successfully",true)
-                                    metadata_api.refresh_metadata()
+                                    this.props.metadata_api.refresh_metadata()
                                     this.props.contents_api.load_content_rows()
                                     this.props.on_close()
                                     this.update_state(draft => {
@@ -342,7 +354,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 }}
                             />
                         </>,
-                        metadata_api.state.metadata_types
+                        this.props.metadata_api.state.metadata_types
                             .map((metadata_type: SerializedMetadataType, idx) => {
                             return (
                                 <Grid item key={idx}>
@@ -361,17 +373,22 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                             )
                                             if (add_meta_tokens.length > 0) {
                                                 const to_add = add_meta_tokens[0]
-                                                metadata_api.add_metadata(
+                                                this.props.metadata_api.add_metadata(
                                                     to_add.name, metadata_type
                                                 ).then(res => {
                                                     //add the created metadata to 
                                                     //valid_metadata with its new id
                                                     valid_meta.push(res?.data)
                                                     add_meta_tokens = []
-                                                }).then(() => {
+                                                    console.log(valid_meta)
+                                                })
+                                                .then(() => {
+                                                    this.props.metadata_api.refresh_metadata()
+                                                })
+                                                .then(() => {
                                                     this.update_state(draft => {
                                                         draft.fields.metadata
-                                                            .value[metadata_type.name] 
+                                                            .value[metadata_type.name]
                                                             = valid_meta
                                                     })
                                                 })
@@ -407,7 +424,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                             return filtered
                                         }}
                                         handleHomeEndKeys
-                                        options={metadata_api.state
+                                        options={this.props.metadata_api.state
                                             .metadata_by_type[metadata_type.name]}
                                         getOptionLabel={option => {
                                             if (isUndefined(option)) {
