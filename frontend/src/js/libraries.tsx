@@ -630,7 +630,9 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                         <Button
                             onClick={() => {
                                 const path = this.props.library_versions_api.state.path
-                                const cd = path.length > 0 ? path[path.length - 1] : undefined
+                                const cd = path.length > 0 ?
+				    path[path.length - 1] :
+				    undefined
                                 if (cd) {
                                     this.props.contents_api.add_selected_to_folder(cd)
                                 }

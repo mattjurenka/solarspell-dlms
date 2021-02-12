@@ -1,9 +1,11 @@
 /.idea/
 /dlms/.env
 /dlms/builds/
-/dlms/media/
 /venv/
 __pycache__
 .vscode/
 /frontend/static
 node_modules/
+dlms.log
+dlms.log.*
+*.sqlite3

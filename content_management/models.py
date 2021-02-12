@@ -6,6 +6,9 @@ from django.dispatch import receiver
 from content_management.validators import validate_unique_filename, validate_unique_file
 from django.core.exceptions import ValidationError
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 class MetadataType(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -15,7 +18,8 @@ class MetadataType(models.Model):
 
 
 class Metadata(models.Model):
-    # TODO: Make sure there are no metadata with the same type and the same name when creating a new one
+    # TODO: Make sure there are no metadata with the same type and the
+    # same name when creating a new one
     name = models.CharField(max_length=300)
     type = models.ForeignKey(MetadataType, on_delete=models.CASCADE)
 
@@ -76,8 +80,10 @@ class Content(models.Model):
 
 @receiver(models.signals.post_delete, sender=Content)
 def on_content_delete(sender, instance, **kwargs):
+    logger.info("Delete request received for " + instance.content_file.path)
     if instance.content_file:
         if os.path.isfile(instance.content_file.path):
+            logger.info("Deleting file")
             os.remove(instance.content_file.path)
 
 class LibLayoutImage(models.Model):
@@ -95,7 +101,7 @@ class LibLayoutImage(models.Model):
         (2, 'Version'),
     )
     image_file = models.FileField(upload_to=get_folder_name)
-    image_group = models.PositiveSmallIntegerField(choices=GROUPS, default=3)
+    image_group = models.PositiveSmallIntegerField(choices=GROUPS, default=2)
 
     def file_name(self):
         return os.path.basename(self.image_file.name)
