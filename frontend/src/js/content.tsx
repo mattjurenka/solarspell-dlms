@@ -152,6 +152,16 @@ export default class Content extends Component<ContentProps, ContentState> {
                 >New Content
                 </Button>
                 <Button
+                    onClick={this.props.contents_api.delete_selection}
+                    style={{
+                        marginLeft: "1em",
+                        marginBottom: "1em",
+                        backgroundColor: "#75b2dd",
+                        color: "#FFFFFF"
+                    }}
+                >Delete Selected
+                </Button>
+                <Button
                     onClick={_ => {
                         this.update_state(draft => {
                             draft.modals.bulk_add.is_open = true
@@ -164,6 +174,17 @@ export default class Content extends Component<ContentProps, ContentState> {
                         color: "#FFFFFF"
                     }}
                 >Add Bulk Content
+                </Button>
+                <Button
+                    onClick={_ => this.props.contents_api.bulk_download()}
+                    style={{
+                        marginLeft: "1em",
+                        marginBottom: "1em",
+                        backgroundColor: "#75b2dd",
+                        color: "#FFFFFF"
+                    }}
+                >
+                    Bulk Download
                 </Button>
                 <Button
                     onClick={_ => {
