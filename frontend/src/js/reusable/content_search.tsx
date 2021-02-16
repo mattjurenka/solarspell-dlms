@@ -89,9 +89,6 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
             contents_api,
             metadata_api,
         } = this.props
-        const {
-            search
-        } = contents_api.state
         return (
             <>
                 <ExpansionPanel expanded={this.state.is_open} onChange={(_:any, expanded: boolean) => {
@@ -108,7 +105,7 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                                 <TextField
                                     fullWidth
                                     label={"Title"}
-                                    value={search.title}
+                                    value={contents_api.state.search.title}
                                     onChange={(evt) => {
                                         evt.persist()
                                         contents_api.update_search_state(draft => {
@@ -121,7 +118,7 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                                 <TextField
                                     fullWidth
                                     label={"Filename"}
-                                    value={search.filename}
+                                    value={contents_api.state.search.filename}
                                     onChange={(evt) => {
                                         evt.persist()
                                         contents_api.update_search_state(draft => {
@@ -134,7 +131,7 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                                 <TextField
                                     fullWidth
                                     label={"Copyright Notes"}
-                                    value={search.copyright_notes}
+                                    value={contents_api.state.search.copyright_notes}
                                     onChange={(evt) => {
                                         evt.persist()
                                         contents_api.update_search_state(draft => {
@@ -147,7 +144,8 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                                 <TextField
                                     fullWidth
                                     label={"Years From"}
-                                    value={search.years_from}
+                                    value={contents_api.state.search.years_from === null ?
+                                        "" : contents_api.state.search.years_from}
                                     InputProps={{inputProps: {min: 0, max: 2100}}}
                                     type={"number"}
                                     onChange={(evt) => {
@@ -163,7 +161,8 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                                 <TextField
                                     fullWidth
                                     label={"Years To"}
-                                    value={search.years_to}
+                                    value={contents_api.state.search.years_to === null ?
+                                        "" : contents_api.state.search.years_to}
                                     InputProps={{inputProps: {min: 0, max: 2100}}}
                                     type={"number"}
                                     onChange={(evt) => {
@@ -179,7 +178,8 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                                 <TextField
                                     fullWidth
                                     label={"Filesize From (MB)"}
-                                    value={search.file_size_from}
+                                    value={contents_api.state.search.file_size_from === null ?
+                                        "" : contents_api.state.search.file_size_from}
                                     InputProps={{inputProps: {min: 0, max: 1000000000000}}}
                                     type={"number"}
                                     onChange={(evt) => {
@@ -195,7 +195,8 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                                 <TextField
                                     fullWidth
                                     label={"Filesize To (MB)"}
-                                    value={search.file_size_to}
+                                    value={contents_api.state.search.file_size_to === null ?
+                                        "" : contents_api.state.search.file_size_to}
                                     InputProps={{inputProps: {min: 0, max: 1000000000000}}}
                                     type={"number"}
                                     onChange={(evt) => {
@@ -211,7 +212,7 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                                 <KeyboardDatePicker
                                     variant={"inline"}
                                     format={"MM/dd/yyyy"}
-                                    value={search.reviewed_from}
+                                    value={contents_api.state.search.reviewed_from}
                                     label={"Reviewed From"}
                                     onChange={value => {
                                         contents_api.update_search_state(draft => {
@@ -224,7 +225,7 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                                 <KeyboardDatePicker
                                     variant={"inline"}
                                     format={"MM/dd/yyyy"}
-                                    value={search.reviewed_to}
+                                    value={contents_api.state.search.reviewed_to}
                                     label={"Reviewed To"}
                                     onChange={value => {
                                         contents_api.update_search_state(draft => {
@@ -239,7 +240,7 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                                         <Select
                                             style={{alignSelf: "bottom"}}
                                             label={"Active"}
-                                            value={search.active}
+                                            value={contents_api.state.search.active}
                                             onChange={(event) => {
                                                 contents_api.update_search_state(draft => {
                                                     draft.active = event.target.value as active_search_option
@@ -254,7 +255,7 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                                     <Select
                                         style={{alignSelf: "bottom"}}
                                         label={"Duplicatable"}
-                                        value={search.duplicatable}
+                                        value={contents_api.state.search.duplicatable}
                                         onChange={(event) => {
                                             contents_api.update_search_state(draft => {
                                                 draft.duplicatable = event.target.value as "yes" | "no" | "all"
@@ -313,9 +314,21 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                         columnExtensions={this.columns.map(column => {
                             return {
                                 columnName: column.name,
-                                sortingEnabled: ["file_name", "title", "description", "published_year"].includes(column.name)
+                                sortingEnabled: [
+                                    "file_name", "title",  "description",
+                                    "published_year"
+                                ].includes(column.name)
                             }
-                        })}
+                        }).concat(this.props.metadata_api.state.metadata_types
+                            .filter(metadata_type => this.props.metadata_api.state
+                            .show_columns[metadata_type.name])
+                            .map(metadata_type => {
+                                return {
+                                    columnName: metadata_type.name,
+                                    sortingEnabled: false
+                                }
+                            })
+                        )}
                     />
                     <PagingState
                         currentPage={this.props.contents_api.state.page}

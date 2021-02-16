@@ -1,5 +1,4 @@
 import { Sorting } from "@devexpress/dx-react-grid"
-import { LoDashExplicitNumberArrayWrapper } from "lodash"
 
 interface TabDict {
     [key: string]: TabData

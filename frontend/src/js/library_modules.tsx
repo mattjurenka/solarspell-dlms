@@ -211,7 +211,11 @@ export default class LibraryModules extends React.Component<LibraryModulesProps,
                                 const reason = this.state.modals.add_module.module_name.reason
                                 const file = this.edit_module_file_ref.current?.files?.item(0)
 
-                                if (reason === "" && file !== null && file !== undefined && file.type !== "application/zip") {
+                                if (
+				     reason === "" && file !== null && file !== undefined
+				     && file.type === "application/zip"
+				) {
+				    console.log("added")
                                     return this.props.library_modules_api.add_module(
                                         this.state.modals.add_module.module_name.value,
                                         file

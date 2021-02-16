@@ -314,7 +314,14 @@ class LibraryVersionViewSet(StandardDataView, viewsets.ModelViewSet):
 
         #clone version
         version_to_clone.id = None
-        version_to_clone.library_name = "(CLONED) " +  version_to_clone.library_name
+
+        i = 0
+        new_name = version_to_clone.library_name + str(i)
+        while LibraryVersion.objects.filter(library_name=new_name).exists():
+            i += 1
+            new_name = version_to_clone.library_name + str(i)
+
+        version_to_clone.library_name = new_name
         version_to_clone.save()
         
         version_to_clone.library_modules.set(modules)
