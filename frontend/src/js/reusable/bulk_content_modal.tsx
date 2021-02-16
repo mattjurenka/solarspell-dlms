@@ -85,15 +85,15 @@ export default class BulkContentModal extends Component<BulkContentModalProps, B
                                     })
                                 })
                                 .then(() => {
-                                    const request_data = new FormData()
-                                    request_data.append("sheet_data", this.state.bulk_metadata)
-                                    for(let x = 0; x<this.state.bulk_content.length; x++) {
-                                        request_data.append(this.state.bulk_content[x].name, this.state.bulk_content[x])}
-                                        const axios_response = Axios.post(APP_URLS.CONTENT_BULK, request_data, {
-                                            headers: {
-                                                'Content-Type': 'multipart/form-data'
-                                            }
-                                        })
+                                    //const request_data = new FormData()
+                                    //request_data.append("sheet_data", this.state.bulk_metadata)
+                                    //request_data.append("content_path", "F://path")
+                                    //for(let x = 0; x<this.state.bulk_content.length; x++) {
+                                    //    request_data.append(this.state.bulk_content[x].name, this.state.bulk_content[x])
+                                    //}
+                                    const axios_response = Axios.post(APP_URLS.CONTENT_BULK,
+                                        {"sheet_data":this.state.bulk_metadata,
+                                            "content_path": "F://path"})
                                     axios_response.then((_res?: AxiosResponse<any>) => {
                                         this.props.remove_loader()
                                         this.props.show_toast_message(`${_res?.data?.data?.success_count} Content Added Successfully`,true)
