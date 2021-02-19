@@ -32,7 +32,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
 
         this.search_defaults = {
             active: "active",
-            copyright: "",
+            copyright_notes: "",
             file_size_from: null,
             file_size_to: null,
             filename: "",
@@ -255,7 +255,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
             file_sizes,
             reviewed_on,
             title: search.title,
-            copyright: search.copyright,
+            copyright_notes: search.copyright_notes,
             //Turn metadata_dict back to array of integers for search
             metadata: Object.keys(search.metadata).reduce((prev, current) => {
                 return prev.concat(search.metadata[current].map(metadata => metadata.id))

@@ -7,12 +7,15 @@ from dlms import settings
 
 class LibraryDbUtil:
 
-    def __init__(self, metadata_types, metadata, folders, contents, contents_metadata):
+    def __init__(self, metadata_types, metadata, folders, modules, contents, contents_metadata, contents_folder):
         self.metadata_types = metadata_types
         self.metadata = metadata
+        self.modules = modules
         self.folders = folders
         self.contents = contents
-        self.contents_metadata = contents_metadata
+        self.content_metadata = contents_metadata
+        self.content_folder = contents_folder
+
 
     def create_connection(self, db_file):
         """ create a database connection to the SQLite database
@@ -49,10 +52,12 @@ class LibraryDbUtil:
         try:
             c = conn.cursor()
             c.executemany('INSERT INTO metadata_type VALUES (?,?)', self.metadata_types)
-            c.executemany('INSERT INTO metadata VALUES (?,?,?)', self.metadata)
-            c.executemany('INSERT INTO folder VALUES (?,?,?,?,?)', self.folders)
+            c.executemany('INSERT INTO metadata VALUES (?,?,?,?)', self.metadata)
+            c.executemany('INSERT INTO folder VALUES (?,?,?,?)', self.folders)
+            c.executemany('INSERT INTO module VALUES (?,?,?)', self.modules)
             c.executemany('INSERT INTO content VALUES (?,?,?,?,?,?,?,?)', self.contents)
-            c.executemany('INSERT INTO content_metadata VALUES (?,?)', self.contents_metadata)
+            c.executemany('INSERT INTO content_metadata VALUES (?,?)', self.content_metadata)
+            c.executemany('INSERT INTO content_folder VALUES (?,?,?,?)', self.content_folder)
         except Error as e:
             print(e)
 
@@ -65,33 +70,45 @@ class LibraryDbUtil:
         sql_create_metadata_table = """CREATE TABLE IF NOT EXISTS metadata (
                                         id INTEGER PRIMARY KEY,
                                         meta_name TEXT NOT NULL,
+                                        type_name TEXT NOT NULL,
                                         type_id INTEGER NOT NULL, 
                                         FOREIGN KEY (type_id) REFERENCES metadata_type (id)
                                     );"""
         sql_create_folder_table = """ CREATE TABLE IF NOT EXISTS folder (
                                             id INTEGER PRIMARY KEY,
                                             folder_name TEXT NOT NULL,
-                                            banner TEXT,
                                             logo TEXT,
                                             parent_id INTEGER, 
                                             FOREIGN KEY (parent_id) REFERENCES folder (id)
-                                        ); """
-        sql_create_contents_table = """ CREATE TABLE IF NOT EXISTS content (
+                                        );"""
+        sql_create_module_table = """ CREATE TABLE IF NOT EXISTS module (
+                                            id INTEGER PRIMARY KEY,
+                                            module_name TEXT NOT NULL,
+                                            logo TEXT
+        );                                 """
+        sql_create_content_table = """ CREATE TABLE IF NOT EXISTS content (
                                             id INTEGER PRIMARY KEY,
                                             title text NOT NULL,
                                             description TEXT,
                                             file_name TEXT,
                                             published_date TEXT,
-                                            copyright TEXT,
+                                            copyright_notes TEXT,
                                             rights_statement TEXT,
-                                            folder_id INTEGER NOT NULL,
-                                            FOREIGN KEY (folder_id) REFERENCES folder (id)                             
+                                            file_size REAL
                                         ); """
         sql_create_content_metadata_table = """ CREATE TABLE IF NOT EXISTS content_metadata (
                                                content_id INTEGER NOT NULL,
                                                metadata_id INTEGER NOT NULL,
                                                FOREIGN KEY (content_id) REFERENCES content (id)                                                               
                                                FOREIGN KEY (metadata_id) REFERENCES metadata (id)                             
+                                           ); """
+        sql_create_content_folder_table = """ CREATE TABLE IF NOT EXISTS content_folder (
+                                               content_id INTEGER NOT NULL,
+                                               folder_id INTEGER NOT NULL,
+                                               title TEXT,
+                                               file_size REAL,
+                                               FOREIGN KEY (content_id) REFERENCES content (id)                                                               
+                                               FOREIGN KEY (folder_id) REFERENCES folder (id)                             
                                            ); """
 
         # create a database connection
@@ -102,8 +119,11 @@ class LibraryDbUtil:
             self.create_table(conn, sql_create_metadata_type_table)
             self.create_table(conn, sql_create_metadata_table)
             self.create_table(conn, sql_create_folder_table)
-            self.create_table(conn, sql_create_contents_table)
+            self.create_table(conn, sql_create_module_table)
+            self.create_table(conn, sql_create_content_table)
             self.create_table(conn, sql_create_content_metadata_table)
+            self.create_table(conn, sql_create_content_folder_table)
+
             # insert data
             self.insert_data(conn)
             conn.commit()

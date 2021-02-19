@@ -61,9 +61,9 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
         if file_name != None:
             queryset = queryset.filter(file_name__icontains=file_name)
         
-        copyright = self.request.GET.get("copyright", None)
-        if copyright != None:
-            queryset = queryset.filter(copyright__icontains=copyright)
+        copyright_notes = self.request.GET.get("copyright_notes", None)
+        if copyright_notes != None:
+            queryset = queryset.filter(copyright__icontains=copyright_notes)
         
         active_raw = self.request.GET.get("active", None)
         if active_raw != None:

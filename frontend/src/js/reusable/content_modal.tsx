@@ -63,7 +63,8 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
             rights_statement: get_field_info_default(""),
             additional_notes: get_field_info_default(""),
             original_source: get_field_info_default(""),
-            copyright: get_field_info_default(""),
+            copyright_notes: get_field_info_default(""),
+            copyright_site: get_field_info_default(""),
             duplicatable: get_field_info_default(false)
         }
 
@@ -91,8 +92,10 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
 
             this.update_state(draft => {
                 draft.fields.content_file = get_field_info_default(null)
-                draft.fields.copyright = get_field_info_default(
-                    row.copyright === null ? "" : row.copyright)
+                draft.fields.copyright_notes = get_field_info_default(
+                    row.copyright_notes === null ? "" : row.copyright_notes)
+                 draft.fields.copyright_site = get_field_info_default(
+                    row.copyright_site === null ? "" : row.copyright_site)
                 draft.fields.description = get_field_info_default(
                     row.description === null ? "" : row.description)
                 draft.fields.metadata = get_field_info_default(metadata)
@@ -179,7 +182,8 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 formData.append('rights_statement', this.state.fields.rights_statement.value)
                                 formData.append('original_source', this.state.fields.original_source.value)
                                 formData.append('additional_notes', this.state.fields.additional_notes.value)
-                                formData.append('copyright', this.state.fields.copyright.value)
+                                formData.append('copyright_notes', this.state.fields.copyright_notes.value)
+                                formData.append('copyright_site', this.state.fields.copyright_site.value)
                                 formData.append('published_date', `${this.state.fields.year.value}-01-01`)
                                 if (this.props.modal_type === "add") {
                                     formData.append('active', "true")
@@ -319,14 +323,27 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                         />,
                         <TextField
                             fullWidth
-                            error={this.state.fields.copyright.reason !== ""}
-                            helperText={this.state.fields.copyright.reason}
+                            error={this.state.fields.copyright_notes.reason !== ""}
+                            helperText={this.state.fields.copyright_notes.reason}
                             label={"Copyright Notes"}
-                            value={this.state.fields.copyright.value}
+                            value={this.state.fields.copyright_notes.value}
                             onChange={(evt) => {
                                 evt.persist()
                                 this.update_state(draft => {
-                                    draft.fields.copyright.value = evt.target.value
+                                    draft.fields.copyright_notes.value = evt.target.value
+                                })
+                            }}
+                        />,
+                        <TextField
+                            fullWidth
+                            error={this.state.fields.copyright_site.reason !== ""}
+                            helperText={this.state.fields.copyright_site.reason}
+                            label={"Copyright Site"}
+                            value={this.state.fields.copyright_site.value}
+                            onChange={(evt) => {
+                                evt.persist()
+                                this.update_state(draft => {
+                                    draft.fields.copyright_site.value = evt.target.value
                                 })
                             }}
                         />,
@@ -376,7 +393,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                                 this.props.metadata_api.add_metadata(
                                                     to_add.name, metadata_type
                                                 ).then(res => {
-                                                    //add the created metadata to 
+                                                    //add the created metadata to
                                                     //valid_metadata with its new id
                                                     valid_meta.push(res?.data)
                                                     add_meta_tokens = []

@@ -44,10 +44,17 @@ export default class VALIDATORS {
         }
         return ""
     }
-    static COPYRIGHT(copyright_str: any): string {
-        if (!isString(copyright_str)) return ""
-        if (copyright_str.length >= 500) {
-            return "Copyright must be less than 500 characters"
+    static COPYRIGHT_NOTES(copyright_notes_str: any): string {
+        if (!isString(copyright_notes_str)) return ""
+        if (copyright_notes_str.length >= 500) {
+            return "Copyright Site must be less than 500 characters"
+        }
+        return ""
+    }
+    static COPYRIGHT_SITE(copyright_site_str: any): string {
+        if (!isString(copyright_site_str)) return ""
+        if (copyright_site_str.length >= 500) {
+            return "Copyright Site must be less than 500 characters"
         }
         return ""
     }

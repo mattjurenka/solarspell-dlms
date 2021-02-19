@@ -49,7 +49,8 @@ class Content(models.Model):
     description = models.TextField(null=True)
     modified_on = models.DateTimeField(default=datetime.now)
     metadata = models.ManyToManyField(Metadata, blank=True)
-    copyright = models.CharField(max_length=500, null=True)
+    copyright_notes = models.CharField(max_length=500, null=True)
+    copyright_site = models.CharField(max_length=500, null=True)
     rights_statement = models.TextField(null=True)
     original_source = models.TextField(null=True)
     additional_notes = models.TextField(null=True)
@@ -93,15 +94,13 @@ class LibLayoutImage(models.Model):
             return os.path.join("images", "logos", file_name)
         elif self.image_group == 2:
             return os.path.join("images", "banners", file_name)
-        elif self.image_group == 3:
-            return os.path.join("images", "libversions", file_name)
 
     GROUPS = (
         (1, 'Logo'),
-        (2, 'Version'),
+        (2, 'Banner'),
     )
     image_file = models.FileField(upload_to=get_folder_name)
-    image_group = models.PositiveSmallIntegerField(choices=GROUPS, default=2)
+    image_group = models.PositiveSmallIntegerField(choices=GROUPS, default=1)
 
     def file_name(self):
         return os.path.basename(self.image_file.name)
@@ -165,7 +164,6 @@ def on_version_save(sender, instance, created, **kwargs):
 
 class LibraryFolder(models.Model):
     folder_name = models.CharField(max_length=300)
-    banner_img = models.ForeignKey(LibLayoutImage, related_name="banners", on_delete=models.SET_NULL, null=True)
     logo_img = models.ForeignKey(LibLayoutImage, related_name="logos", on_delete=models.SET_NULL, null=True)
     version = models.ForeignKey(LibraryVersion, related_name='folders', on_delete=models.CASCADE)
     parent = models.ForeignKey('self', on_delete=models.CASCADE, related_name="subfolders", null=True)
