@@ -133,7 +133,7 @@ def on_module_delete(sender, instance, **kwargs):
 
 class LibraryVersion(models.Model):
     library_name = models.CharField(max_length=300)
-    version_number = models.CharField(max_length=300)
+    version_number = models.CharField(max_length=300, unique=True)
     library_banner = models.ForeignKey(
         LibLayoutImage, related_name="versions", on_delete=models.SET_NULL, null=True
     )

@@ -21,7 +21,9 @@ from django.http import HttpResponse
 import csv
 from rest_framework.generics import get_object_or_404
 from rest_framework.renderers import JSONRenderer
-
+import xlsxwriter
+import io
+import datetime
 
 class StandardDataView:
 
@@ -159,7 +161,50 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
                 pass
 
         return queryset
+    
+    @action(methods=['get'], detail=False)
+    def get_spreadsheet(self, request):
+        output = io.BytesIO()
 
+        workbook = xlsxwriter.Workbook(output, {'remove_timezone': True})
+        worksheet = workbook.add_worksheet()
+        
+        content_fields = [
+            "title", "description", "modified_on", "copyright",
+            "rights_statement", "original_source", "additional_notes",
+            "published_date", "reviewed_on", "active", "duplicatable", "filesize"
+        ]
+
+        metadata_types = MetadataType.objects.all().order_by("name")
+        for col_num, field_name in enumerate(content_fields):
+            worksheet.write(0, col_num, field_name)
+
+        for type_num, metadata in enumerate(metadata_types):
+            worksheet.write(0, len(content_fields) + type_num, metadata.name)
+
+        for row_num, content in enumerate(self.get_queryset()):
+            for col_num, field_name in enumerate(content_fields):
+                attr = getattr(content, field_name, "")
+                to_write = str(attr) if not isinstance(attr, datetime.date) else attr.strftime("%m/%d/%Y, %H:%M:%S")
+                worksheet.write(row_num + 1, col_num, to_write)
+
+            for type_num, metadata in enumerate(metadata_types):
+                worksheet.write(
+                    row_num + 1,
+                    type_num + len(content_fields),
+                    ",".join([metadata.name for metadata in content.metadata.filter(type=metadata).all()])
+                )
+
+        workbook.close()
+        output.seek(0)
+
+        filename = 'bulk_download.xlsx'
+        response = HttpResponse(
+            output,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        response['Content-Disposition'] = 'attachment; filename={}'.format(filename)
+        return response
 
 class MetadataViewSet(StandardDataView, viewsets.ModelViewSet):
     queryset = Metadata.objects.all()

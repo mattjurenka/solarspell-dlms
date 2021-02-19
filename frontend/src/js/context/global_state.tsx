@@ -492,6 +492,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
             name: meta_name,
             type: meta_type.id
         })
+        console.log("called")
         return Promise.all([
             this.load_content_rows,
             this.refresh_metadata
