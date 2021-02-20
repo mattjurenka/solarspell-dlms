@@ -494,8 +494,8 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
         })
         console.log("called")
         return Promise.all([
-            this.load_content_rows,
-            this.refresh_metadata
+            this.load_content_rows(),
+            this.refresh_metadata()
         ]).then(_ => response)
     }
     
