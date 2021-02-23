@@ -8,7 +8,6 @@ import { APP_URLS, get_data } from '../urls';
 import { update_state } from '../utils';
 import { cloneDeep, get, range } from 'lodash';
 import React from 'react';
-import Cookies from 'js-cookie';
 
 interface GlobalStateProps {
     render: React.ComponentType<{
@@ -124,6 +123,8 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
         this.set_contents_page = this.set_contents_page.bind(this)
         this.set_contents_page_size = this.set_contents_page_size.bind(this)
         this.set_sorting = this.set_sorting.bind(this)
+        this.bulk_download = this.bulk_download.bind(this)
+        this.delete_selection = this.delete_selection.bind(this)
 
         //MetadataAPI
         this.refresh_metadata = this.refresh_metadata.bind(this)
@@ -183,6 +184,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
         this.get_disk_info = this.get_disk_info.bind(this)
 
         this.update_state = update_state.bind(this)
+        this.get_content_filters = this.get_content_filters.bind(this)
     }
 
     componentDidMount() {
@@ -226,9 +228,8 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
         ])
     }
 
-    //Load content rows by page, with sorting and filters
-    load_content_rows = async () => {
-
+    get_content_filters(): content_filters {
+        
         const search = this.state.contents_api.search
         const active_filter = {
             "all": undefined,
@@ -249,7 +250,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
             search.reviewed_from !== null && search.reviewed_to !== null && search.reviewed_from >= search.reviewed_to
         ) ? undefined : [search.reviewed_from, search.reviewed_to]
 
-        const filters: content_filters = {
+        return {
             years,
             file_sizes,
             reviewed_on,
@@ -264,6 +265,14 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
             duplicatable: {"all": undefined, "yes": true, "no": false}[search.duplicatable],
             sort: this.state.contents_api.sorting.length > 0 ? `${this.state.contents_api.sorting[0].columnName},${this.state.contents_api.sorting[0].direction}` : undefined
         }
+    }
+
+    bulk_download() {
+        return window.open(APP_URLS.CONTENT_BULK_DOWNLOAD(this.get_content_filters()))
+    }
+
+    //Load content rows by page, with sorting and filters
+    load_content_rows = async () => {
 
         const req_timestamp = Date.now()
 
@@ -271,7 +280,11 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
             undefined : this.state.library_versions_api.current_version
 
         // Add one to page because dx-react-grid and django paging start from different places
-        const data: any = await get_data(APP_URLS.CONTENT_PAGE(this.state.contents_api.page + 1, this.state.contents_api.page_size, filters, exclude_version))
+        const data: any = await get_data(APP_URLS.CONTENT_PAGE(
+            this.state.contents_api.page + 1,
+            this.state.contents_api.page_size,
+            this.get_content_filters(), exclude_version
+        ))
         // Only update the state if the request was sent after the most recent received request
         if (req_timestamp >= this.state.contents_api.last_request_timestamp) {
             //Adds the MetadataTypes defined in content_display as a key to each item in row so it can be easily accessed
@@ -364,6 +377,14 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
     //Delete existing content record
     async delete_content(to_delete: SerializedContent) {
         return Axios.delete(APP_URLS.CONTENT_ITEM(to_delete.id))
+            .then(this.load_content_rows)
+    }
+    
+    // Delete content items selected
+    async delete_selection() {
+        return Promise.all(this.state.contents_api.selection
+            .map(selected_idx => this.state.contents_api.loaded_content[selected_idx])
+            .map(this.delete_content))
             .then(this.load_content_rows)
     }
 
@@ -471,9 +492,10 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
             name: meta_name,
             type: meta_type.id
         })
+        console.log("called")
         return Promise.all([
-            this.load_content_rows,
-            this.refresh_metadata
+            this.load_content_rows(),
+            this.refresh_metadata()
         ]).then(_ => response)
     }
     
@@ -929,7 +951,9 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
                     update_search_state: this.update_search_state,
                     set_page: this.set_contents_page,
                     set_page_size: this.set_contents_page_size,
-                    set_sorting: this.set_sorting
+                    set_sorting: this.set_sorting,
+                    bulk_download: this.bulk_download,
+                    delete_selection: this.delete_selection
                 },
                 lib_assets_api: {
                     state: this.state.library_assets_api,

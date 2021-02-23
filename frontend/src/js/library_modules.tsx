@@ -100,6 +100,12 @@ export default class LibraryModules extends React.Component<LibraryModulesProps,
                     onClick={() => this.update_state(draft => {
                         draft.modals.add_module.is_open = true
                     })}
+                    style={{
+                        marginLeft: "1em",
+                        marginBottom: "1em",
+                        backgroundColor: "#75b2dd",
+                        color: "#FFFFFF"
+                    }}
                 >Add Module</Button>
                 <DataGrid
                     columns={[

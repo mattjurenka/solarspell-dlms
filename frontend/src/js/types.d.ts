@@ -93,6 +93,7 @@ type ContentsAPI = {
     add_content: (fields: content_fields) => Promise<any>
     edit_content: (fields: content_fields, to_edit: SerializedContent) => Promise<any>
     delete_content: (to_delete: SerializedContent) => Promise<any>
+    delete_selection: () => Promise<any>
     update_search_state: (update_func: (draft: search_state) => void) => Promise<any>
     add_selected_to_folder: (folder: LibraryFolder) => Promise<any>
     set_selection: (selection: any[]) => Promise<any>
@@ -100,6 +101,7 @@ type ContentsAPI = {
     set_page: (page: number) => Promise<any>
     set_page_size: (page_size: number) => Promise<any>
     set_sorting: (sorting: Sorting[]) => Promise<any>
+    bulk_download: () => void
 }
 
 type LibraryVersionsAPI = {

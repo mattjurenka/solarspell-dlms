@@ -13,42 +13,47 @@ function url_with_params(urlstr: string, params:[string, any][]=[]) {
     return url.toString()
 }
 
+function get_filters_arr(page?: number, size?: number, filters?: content_filters, exclude_if_in_version?: LibraryVersion): [string, any][] {
+    const content_filter = filters || {}
+    const {
+        title, years, filename, copyright, active, metadata, sort, file_sizes, reviewed_on, duplicatable
+    } = content_filter
+    const filters_arr: [string, any][] = page !== undefined ?
+        [["page", `${page}`], ["size", `${size}`]] :
+        []
+    
+    if (!isUndefined(title) && title !== "") filters_arr.push(["title", title])
+    if (!isUndefined(years)) {
+        if(years[0] !== null) filters_arr.push(["published_year_from", `${years[0]}`])
+        if(years[1] !== null) filters_arr.push(["published_year_to", `${years[1]}`])
+    }
+    if (!isUndefined(file_sizes)) {
+        if(file_sizes[0] !== null) filters_arr.push(["filesize_from", `${file_sizes[0]}`])
+        if(file_sizes[1] !== null) filters_arr.push(["filesize_to", `${file_sizes[1]}`])
+    }
+    if (!isUndefined(reviewed_on)) {
+        if(reviewed_on[0] !== null) filters_arr.push(["reviewed_from", `${format(reviewed_on[0], "yyyy-MM-dd")}`])
+        if(reviewed_on[1] !== null) filters_arr.push(["reviewed_to", `${format(reviewed_on[1], "yyyy-MM-dd")}`])
+    }
+    if (!isUndefined(filename) && filename !== "") filters_arr.push(["file_name", filename])
+    if (!isUndefined(copyright) && copyright !== "") filters_arr.push(["copyright", copyright])
+    if (!isUndefined(active)) filters_arr.push(["active", active ? "true" : "false"])
+    if (!isUndefined(metadata) && metadata.length > 0) filters_arr.push(["metadata", metadata.join(",")])
+    if (!isUndefined(sort)) filters_arr.push(["sort", sort])
+    if (!isUndefined(duplicatable)) filters_arr.push(["duplicatable", duplicatable])
+    if (!isUndefined(exclude_if_in_version)) filters_arr.push(["exclude_in_version", exclude_if_in_version.id])
+    return filters_arr
+}
+
 const APP_URLS = {
     API: url_with_params(api_path),
     CONTENT: url_with_params(`${api_path}/contents/`),
-    CONTENT_PAGE: (page: number, size: number, filters?: content_filters, exclude_if_in_version?: LibraryVersion) => {
-        //TODO: refractor
-        const content_filter = filters || {}
-        const {
-            title, years, filename, copyright_notes, active, metadata, sort, file_sizes, reviewed_on, duplicatable
-        } = content_filter
-        const filters_arr: [string, any][] = [["page", `${page}`], ["size", `${size}`]]
-        
-        if (!isUndefined(title) && title !== "") filters_arr.push(["title", title])
-        if (!isUndefined(years)) {
-            if(years[0] !== null) filters_arr.push(["published_year_from", `${years[0]}`])
-            if(years[1] !== null) filters_arr.push(["published_year_to", `${years[1]}`])
-        }
-        if (!isUndefined(file_sizes)) {
-            if(file_sizes[0] !== null) filters_arr.push(["filesize_from", `${file_sizes[0]}`])
-            if(file_sizes[1] !== null) filters_arr.push(["filesize_to", `${file_sizes[1]}`])
-        }
-        if (!isUndefined(reviewed_on)) {
-            if(reviewed_on[0] !== null) filters_arr.push(["reviewed_from", `${format(reviewed_on[0], "yyyy-MM-dd")}`])
-            if(reviewed_on[1] !== null) filters_arr.push(["reviewed_to", `${format(reviewed_on[1], "yyyy-MM-dd")}`])
-        }
-        if (!isUndefined(filename) && filename !== "") filters_arr.push(["file_name", filename])
-        if (!isUndefined(copyright_notes) && copyright_notes !== "") filters_arr.push(["copyright_notes", copyright_notes])
-        if (!isUndefined(active)) filters_arr.push(["active", active ? "true" : "false"])
-        if (!isUndefined(metadata) && metadata.length > 0) filters_arr.push(["metadata", metadata.join(",")])
-        if (!isUndefined(sort)) filters_arr.push(["sort", sort])
-        if (!isUndefined(duplicatable)) filters_arr.push(["duplicatable", duplicatable])
-        if (!isUndefined(exclude_if_in_version)) filters_arr.push(["exclude_in_version", exclude_if_in_version.id])
-
-        return url_with_params(`${api_path}/contents/`, filters_arr)
-    },
+    CONTENT_PAGE: (page: number, size: number, filters?: content_filters, exclude_if_in_version?: LibraryVersion) =>
+        url_with_params(`${api_path}/contents/`, get_filters_arr(page, size, filters, exclude_if_in_version)),
     CONTENT_ITEM: (id: number) => url_with_params(`${api_path}/contents/${id}/`),
     CONTENT_BULK: url_with_params(`${api_path}/content_bulk_add/`),
+    CONTENT_BULK_DOWNLOAD: (filters?: content_filters) =>
+        url_with_params(`${api_path}/contents/get_spreadsheet/`, get_filters_arr(undefined, undefined, filters)),
     CONTENT_FOLDER: url_with_params("media/contents/"),
     MODULE_FOLDER: url_with_params("media/modules/"),
     DISK_INFO: url_with_params(`${api_path}/disk_info/`),

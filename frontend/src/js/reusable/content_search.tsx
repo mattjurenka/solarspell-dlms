@@ -68,7 +68,6 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                 <ActionPanel
                     row={display_row}
                     editFn={on_edit === undefined ? undefined : () => on_edit(display_row)}
-                    deleteFn={on_delete === undefined ? undefined : () => on_delete(display_row)}
                     viewFn={on_view === undefined ? undefined : () => on_view(display_row)}
                     setActive={on_toggle_active === undefined ? undefined : () => on_toggle_active(display_row)}
                     addFn={on_add === undefined ? undefined : () => on_add(display_row)}
@@ -338,17 +337,16 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                             this.props.contents_api.set_page_size(n)
                         }}
                     />
-                    {this.props.selection ?
-                        [<SelectionState
-                            selection={this.props.contents_api.state.selection}
-                            onSelectionChange={this.props.contents_api.set_selection}
-                            key={0}
-                        />, <IntegratedSelection key={1} />] : null
-                    }
+                    <SelectionState
+                        selection={this.props.contents_api.state.selection}
+                        onSelectionChange={this.props.contents_api.set_selection}
+                        key={0}
+                    />
+                    <IntegratedSelection />
                     <CustomPaging totalCount={this.props.contents_api.state.total_count}/>
                     <Table />
                     <TableHeaderRow showSortingControls />
-                    {this.props.selection ? <TableSelection showSelectAll /> : null}
+                    <TableSelection showSelectAll />
                     <PagingPanel pageSizes={this.props.contents_api.state.page_sizes} />
                 </DataGrid>
             </>

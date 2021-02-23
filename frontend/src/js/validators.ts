@@ -4,6 +4,10 @@ import { metadata_dict } from './types'
 export default class VALIDATORS {
     static RIGHTS_HOLDER: any
     static YEAR(year_str: any): string {
+        if (year_str == "") {
+            return ""
+        }
+
         const year_num = parseInt(year_str)
         if (isNaN(year_num)) {
             return "Invalid Year"

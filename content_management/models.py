@@ -132,7 +132,7 @@ def on_module_delete(sender, instance, **kwargs):
 
 class LibraryVersion(models.Model):
     library_name = models.CharField(max_length=300)
-    version_number = models.CharField(max_length=300)
+    version_number = models.CharField(max_length=300, unique=True)
     library_banner = models.ForeignKey(
         LibLayoutImage, related_name="versions", on_delete=models.SET_NULL, null=True
     )
@@ -171,3 +171,11 @@ class LibraryFolder(models.Model):
 
     def __str__(self):
         return f'{self.folder_name}'
+
+@receiver(models.signals.post_save, sender=LibraryVersion)
+def on_folder_save(sender, instance, *args, **kwargs):
+    if LibraryVersion.objects.filter(
+            library_name=instance.library_name,
+            version_number=instance.version_number
+    ).exists():
+        return
