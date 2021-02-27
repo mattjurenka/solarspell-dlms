@@ -192,13 +192,14 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
                 worksheet.write(
                     row_num + 1,
                     type_num + len(content_fields),
-                    ",".join([metadata.name for metadata in content.metadata.filter(type=metadata).all()])
+                    " | ".join([metadata.name for metadata in content.metadata.filter(type=metadata).all()])
                 )
 
         workbook.close()
         output.seek(0)
 
-        filename = 'bulk_download.xlsx'
+        filename = 'dlms-content-{}.xlsx'.format(datetime.datetime.now()
+            .strftime("%m-%d-%Y"))
         response = HttpResponse(
             output,
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -361,12 +362,13 @@ class LibraryVersionViewSet(StandardDataView, viewsets.ModelViewSet):
         version_to_clone.id = None
 
         i = 0
-        new_name = version_to_clone.library_name + str(i)
-        while LibraryVersion.objects.filter(library_name=new_name).exists():
+        new_number = version_to_clone.version_number + str(i)
+        while LibraryVersion.objects.filter(version_number=new_number).exists():
             i += 1
-            new_name = version_to_clone.library_name + str(i)
+            new_number = version_to_clone.version_number + str(i)
 
-        version_to_clone.library_name = new_name
+
+        version_to_clone.version_number = new_number
         version_to_clone.save()
         
         version_to_clone.library_modules.set(modules)
