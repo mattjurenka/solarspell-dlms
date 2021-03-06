@@ -297,11 +297,12 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                 </ExpansionPanel>
                 <DataGrid
                     columns={this.columns.concat(
-                        this.props.metadata_api.state.metadata_types.filter(metadata_type => this.props.metadata_api.state.show_columns[metadata_type.name])
-                            .map(metadata_type => {
+                        Object.keys(this.props.metadata_api.state.show_columns)
+                            .filter(key => this.props.metadata_api.state.show_columns[key])
+                            .map(col_name => {
                                 return {
-                                    name: metadata_type.name,
-                                    title: metadata_type.name
+                                    name: col_name,
+                                    title: col_name,
                                 }
                             })
                     )}

@@ -102,6 +102,7 @@ type ContentsAPI = {
     set_page_size: (page_size: number) => Promise<any>
     set_sorting: (sorting: Sorting[]) => Promise<any>
     bulk_download: () => void
+    set_show_column: () => Promise<any>
 }
 
 type LibraryVersionsAPI = {
@@ -221,6 +222,9 @@ type ContentsProviderState = {
     filter_out: number[]
     page_sizes: number[]
     sorting: Sorting[]
+    show_columns: {
+        [col_name: string]: string
+    }
 }
 
 type UserProviderState = {

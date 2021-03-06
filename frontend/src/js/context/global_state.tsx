@@ -61,6 +61,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
                 selection: [],
                 page_sizes: contents_page_sizes,
                 sorting: [],
+                show_columns: {},
             },
             metadata_api: {
                 metadata: [],
@@ -528,8 +529,8 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
             update_func(draft.metadata_api.show_columns)
         })
         
-        const x = Object.keys(this.state.metadata_api.show_columns).filter(name => this.state.metadata_api.show_columns[name])
-        
+        const x = Object.keys(this.state.metadata_api.show_columns)
+            .filter(name => this.state.metadata_api.show_columns[name])
         
         document.cookie = `show_columns=${x.join(',')}`
     }
