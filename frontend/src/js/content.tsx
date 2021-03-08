@@ -205,7 +205,6 @@ export default class Content extends Component<ContentProps, ContentState> {
                 >
                     Column Select
                 </Button>
-                
                 <ContentSearch
                     contents_api={contents_api}
                     metadata_api={metadata_api}
@@ -359,8 +358,25 @@ export default class Content extends Component<ContentProps, ContentState> {
                         </Button>
                     )]}
                 >
-                    {this.props.metadata_api.state.metadata_types.map((metadata_type, idx) => {
+                    {["filesize", "content_file", "rights_statement", "description", "modified_on", "reviewed_on", "copyright_site", "copyright_notes", "published_year", "duplicatable"].map((name, idx) => {
                         return <Box flexDirection="row" display="flex" key={idx}>
+                            <Box key={0}>
+                                <Checkbox
+                                    checked={this.props.metadata_api.state.show_columns[name]}
+                                    onChange={(_, checked) => {
+                                        this.props.metadata_api.set_view_metadata_column(draft => {
+                                            draft[name] = checked
+                                        })
+                                    }}
+                                />
+                            </Box>
+                            <Box key={1}>
+                                <Typography>{name}</Typography>
+                            </Box>
+                        </Box>
+                    })}
+                    {this.props.metadata_api.state.metadata_types.map((metadata_type, idx) => {
+                        return <Box flexDirection="row" display="flex" key={idx + 999}>
                             <Box key={0}>
                                 <Checkbox
                                     checked={this.props.metadata_api.state.show_columns[metadata_type.name]}

@@ -320,7 +320,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                         }}
                                         cloneFn={() => {
                                             this.props.library_versions_api.clone_version(row)
-                                            .then(() => this.props.show_toast_message("Library Successfully Cloned", true))
+                                                .then(() => this.props.show_toast_message("Library Successfully Cloned", true))
                                         }}
                                         buildFn={() => {
                                             this.update_state(draft => {
@@ -682,7 +682,7 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                         this.state.modals.add_version.name.value,
                                         this.state.modals.add_version.number.value,
                                         this.state.modals.add_version.created_by.id
-                                    )
+                                    ).catch(console.error)
                                 }).then(this.close_modals)
                             }}
                             color="primary"

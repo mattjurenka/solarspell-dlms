@@ -184,7 +184,9 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 formData.append('additional_notes', this.state.fields.additional_notes.value)
                                 formData.append('copyright_notes', this.state.fields.copyright_notes.value)
                                 formData.append('copyright_site', this.state.fields.copyright_site.value)
-                                formData.append('published_date', `${this.state.fields.year.value}-01-01`)
+                                if (this.state.fields.year.value !== "") {
+                                    formData.append('published_date', `${this.state.fields.year.value}-01-01`)
+                                }
                                 if (this.props.modal_type === "add") {
                                     formData.append('active', "true")
                                 } else {

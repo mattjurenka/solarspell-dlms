@@ -61,6 +61,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
                 selection: [],
                 page_sizes: contents_page_sizes,
                 sorting: [],
+                show_columns: {},
             },
             metadata_api: {
                 metadata: [],
@@ -272,46 +273,55 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
     }
 
     //Load content rows by page, with sorting and filters
-    load_content_rows = async () => {
+    load_content_rows = async (): Promise<any> => {
 
         const req_timestamp = Date.now()
 
         const exclude_version = this.state.library_versions_api.current_version.id === 0 ?
             undefined : this.state.library_versions_api.current_version
 
-        // Add one to page because dx-react-grid and django paging start from different places
-        const data: any = await get_data(APP_URLS.CONTENT_PAGE(
-            this.state.contents_api.page + 1,
-            this.state.contents_api.page_size,
-            this.get_content_filters(), exclude_version
-        ))
-        // Only update the state if the request was sent after the most recent received request
-        if (req_timestamp >= this.state.contents_api.last_request_timestamp) {
-            //Adds the MetadataTypes defined in content_display as a key to each item in row so it can be easily accessed
-            //by dx-react-grid later
-            //Unfortunately this means we have to store each content twice, once as SerializedContent and again as any
-            const rows = data.results as SerializedContent[]
-            const display_rows = cloneDeep(rows).map((row: any) => {
-                row.metadata_info.map((info: SerializedMetadata) => {
-                    if (this.state.metadata_api.metadata_types.map(type => type.name).includes(info.type_name)) {
-                        const new_metadata_entry = get(row, [info.type_name], []).concat([info.name])
-                        row[info.type_name] = new_metadata_entry
-                    }
-                })
-                this.state.metadata_api.metadata_types.map(type => {
-                    row[type.name] = get(row, [type.name], []).join(", ")
-                })
-                return row
-            })
+        try {
+            // Add one to page because dx-react-grid and django paging start from different places
+            const data: any = await get_data(APP_URLS.CONTENT_PAGE(
+                this.state.contents_api.page + 1,
+                this.state.contents_api.page_size,
+                this.get_content_filters(), exclude_version
+            ))
 
-            return this.update_state(draft => {
-                draft.contents_api.last_request_timestamp = req_timestamp
-                draft.contents_api.loaded_content = rows
-                draft.contents_api.display_rows = display_rows
-                draft.contents_api.total_count = data.count
-                draft.contents_api.selection = []
-            })
+            if (req_timestamp >= this.state.contents_api.last_request_timestamp) {
+                //Adds the MetadataTypes defined in content_display as a key to each item in row so it can be easily accessed
+                //by dx-react-grid later
+                //Unfortunately this means we have to store each content twice, once as SerializedContent and again as any
+                const rows = data.results as SerializedContent[]
+                const display_rows = cloneDeep(rows).map((row: any) => {
+                    row.metadata_info.map((info: SerializedMetadata) => {
+                        if (this.state.metadata_api.metadata_types.map(type => type.name).includes(info.type_name)) {
+                            const new_metadata_entry = get(row, [info.type_name], []).concat([info.name])
+                            row[info.type_name] = new_metadata_entry
+                        }
+                    })
+                    this.state.metadata_api.metadata_types.map(type => {
+                        row[type.name] = get(row, [type.name], []).join(", ")
+                    })
+                    return row
+                })
+
+                return this.update_state(draft => {
+                    draft.contents_api.last_request_timestamp = req_timestamp
+                    draft.contents_api.loaded_content = rows
+                    draft.contents_api.display_rows = display_rows
+                    draft.contents_api.total_count = data.count
+                    draft.contents_api.selection = []
+                })
+            }
+        } catch(err) {
+            if (err.data.error.detail === "Invalid page.") {
+                return this.update_state(draft => {
+                    draft.contents_api.page = draft.contents_api.page - 1
+                }).then(this.load_content_rows)
+            }
         }
+        // Only update the state if the request was sent after the most recent received request
     }
 
     //Creates new content record from content_fields
@@ -519,8 +529,8 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
             update_func(draft.metadata_api.show_columns)
         })
         
-        const x = Object.keys(this.state.metadata_api.show_columns).filter(name => this.state.metadata_api.show_columns[name])
-        
+        const x = Object.keys(this.state.metadata_api.show_columns)
+            .filter(name => this.state.metadata_api.show_columns[name])
         
         document.cookie = `show_columns=${x.join(',')}`
     }
@@ -593,18 +603,26 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
     }
     
     //Load all library versions
-    async refresh_library_versions() {
-        const response: {
-            results: LibraryVersion[],
-            count: number
-        } = await get_data(APP_URLS.LIBRARY_VERSIONS(
-            this.state.library_versions_api.library_versions_page + 1,
-            this.state.library_versions_api.library_versions_page_size,
-        ))
-        this.update_state(draft => {
-            draft.library_versions_api.library_versions = response.results
-            draft.library_versions_api.library_versions_count = response.count
-        })
+    async refresh_library_versions(): Promise<any> {
+        try {
+            const response: {
+                results: LibraryVersion[],
+                count: number
+            } = await get_data(APP_URLS.LIBRARY_VERSIONS(
+                this.state.library_versions_api.library_versions_page + 1,
+                this.state.library_versions_api.library_versions_page_size,
+            ))
+            return this.update_state(draft => {
+                draft.library_versions_api.library_versions = response.results
+                draft.library_versions_api.library_versions_count = response.count
+            })
+        } catch (err) {
+            if (err.data.error.detail === "Invalid page.") {
+                return this.update_state(draft => {
+                    draft.library_versions_api.library_versions_page -= 1
+                }).then(this.refresh_library_versions)
+            }
+        }
     }
 
     //Set LibraryVersion as current_directory and load the root folders

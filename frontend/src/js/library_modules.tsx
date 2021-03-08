@@ -97,9 +97,11 @@ export default class LibraryModules extends React.Component<LibraryModulesProps,
         return (
             <>
                 <Button
-                    onClick={() => this.update_state(draft => {
-                        draft.modals.add_module.is_open = true
-                    })}
+                    onClick={() => {
+                        this.update_state(draft => {
+                            draft.modals.add_module.is_open = true
+                        })
+                    }}
                     style={{
                         marginLeft: "1em",
                         marginBottom: "1em",
