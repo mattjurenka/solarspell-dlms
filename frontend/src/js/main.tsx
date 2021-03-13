@@ -45,6 +45,7 @@ interface MainScreenState {
     loader_state: {
         loading: boolean
     }
+    has_error: boolean
 }
 
 class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
@@ -153,7 +154,8 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
             },
             loader_state:{
                 loading:false
-            }
+            },
+            has_error: false,
         }
 
         this.close_toast = this.close_toast.bind(this)
@@ -212,6 +214,10 @@ class MainScreen extends React.Component<MainScreenProps, MainScreenState> {
         const tabs_jsx = Object.entries(this.tabs).map(([tab_name, tab_data]) => {
             return <Tab key={tab_name} value={tab_name} label={(tab_data as any).display_label} />
         })
+        
+        if (this.state.has_error) {
+            return <h1>An Error has Occurred 😭</h1>
+        }
 
         return (
             <React.Fragment>

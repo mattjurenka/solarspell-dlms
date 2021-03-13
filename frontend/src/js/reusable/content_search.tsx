@@ -1,6 +1,7 @@
 import React, {Component} from "react"
 import { ContentsAPI, active_search_option, MetadataAPI, SerializedMetadata, SerializedContent, LibraryVersionsAPI } from '../types'
 import ActionPanel from './action_panel'
+import prettyByte from "pretty-bytes"
 
 import {
     Grid as DataGrid,
@@ -75,7 +76,7 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
             )},
             {name: "title", title: "Title"},
             {name: "description", title: "Description"},
-            {name: "published_year", title: "Year Published"},
+            {name: "published_year", title: "Year of Publication"},
             {name: "file_name", title: "File Name"}
         ]
 
@@ -306,6 +307,8 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                                 }
                             })
                     )}
+                    getCellValue={(row, col_name) => col_name == "filesize" ?
+                        prettyByte(row["filesize"]) : row[col_name]}
                     rows={contents_api.state.display_rows}
                 >
                     <SortingState

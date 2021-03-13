@@ -302,7 +302,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                             fullWidth
                             error={this.state.fields.year.reason !== ""}
                             helperText={this.state.fields.year.reason}
-                            label={"Year Published"}
+                            label={"Year of Publication"}
                             value={this.state.fields.year.value}
                             onChange={(evt) => {
                                 evt.persist()
