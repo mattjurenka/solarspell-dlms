@@ -132,7 +132,7 @@ def on_module_delete(sender, instance, **kwargs):
 
 class LibraryVersion(models.Model):
     library_name = models.CharField(max_length=300)
-    version_number = models.CharField(max_length=300)
+    version_number = models.CharField(max_length=300, unique=True)
     library_banner = models.ForeignKey(
         LibLayoutImage, related_name="versions", on_delete=models.SET_NULL, null=True
     )
@@ -141,13 +141,6 @@ class LibraryVersion(models.Model):
     library_modules = models.ManyToManyField(LibraryModule, blank=True)
     metadata_types = models.ManyToManyField(MetadataType, blank=True)
 
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["library_name", "version_number"], name="unique name and number"
-            )
-        ]
     def user_info(self):
         if self.created_by is None:
             return None

@@ -221,7 +221,7 @@ export default class LibraryModules extends React.Component<LibraryModulesProps,
 
                                 if (
 				     reason === "" && file !== null && file !== undefined
-				     && file.type === "application/zip"
+				     && (file.type === "application/zip" || file.type === "x-zip-compressed")
 				) {
 				    console.log("added")
                                     return this.props.library_modules_api.add_module(

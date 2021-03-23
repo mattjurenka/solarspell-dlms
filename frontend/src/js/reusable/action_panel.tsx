@@ -1,5 +1,6 @@
 import React from "react"
-import { Edit, Delete, CheckCircleOutline, HighlightOff, Visibility, ArrowBack, CropOriginal, FileCopy, Build, GetApp } from "@material-ui/icons"
+import { Edit, Delete, CheckCircleOutline, HighlightOff, Visibility, ArrowBack, CropOriginal, FileCopy, LocalOffer, GetApp } from "@material-ui/icons"
+import Tooltip from "@material-ui/core/Tooltip/";
 
 interface ActionPanelProps {
     row?: any,
@@ -12,10 +13,18 @@ interface ActionPanelProps {
     cloneFn?: () => void
     buildFn?: () => void
     downloadFn?: () => void
+    editHint?: string
+    deleteHint?: string
+    viewHint?: string
+    logoHint?: string
+    cloneHint?: string
+    metadataHint?: string
 }
 
 export default function ActionPanel(props:ActionPanelProps) {
-    const { row, editFn, deleteFn, setActive, viewFn, addFn, imageFn, cloneFn, buildFn, downloadFn } = props
+    const { row, editFn, deleteFn, setActive, viewFn, addFn, imageFn, cloneFn, buildFn, downloadFn,
+        editHint, deleteHint, viewHint, imageHint, cloneHint, metadataHint
+    } = props
     const pointerStyle = {
         cursor: 'pointer'
     }
@@ -30,18 +39,22 @@ export default function ActionPanel(props:ActionPanelProps) {
                 <></>
             )}
             {editFn !== undefined ? (
-                <Edit
-                    style={pointerStyle}
-                    onClick={editFn}
-                />
+                <Tooltip title={editHint || ""}>
+                    <Edit
+                        style={pointerStyle}
+                        onClick={editFn}
+                    />
+                </Tooltip>
             ) : (
                 <></>
             )}
             {deleteFn !== undefined ? (
-                <Delete
-                    style={pointerStyle}
-                    onClick={deleteFn}
-                />
+                <Tooltip title={deleteHint || ""}>
+                    <Delete
+                        style={pointerStyle}
+                        onClick={deleteFn}
+                    />
+                </Tooltip>
             ) : (
                 <></>
             )}
@@ -61,30 +74,40 @@ export default function ActionPanel(props:ActionPanelProps) {
                <></> 
             )}
             {viewFn !== undefined ? (
-                <Visibility
-                    style={pointerStyle}
-                    onClick={viewFn}
-                />
+                <Tooltip title={viewHint || ""}>
+                    <Visibility
+                        style={pointerStyle}
+                        onClick={viewFn}
+                    />
+                </Tooltip>
             ) : (
                 <></>
             )}
             {imageFn !== undefined ? (
-                <CropOriginal
-                    style={pointerStyle}
-                    onClick={imageFn}
-                />
+                <Tooltip title={imageHint || ""}>
+                    <CropOriginal
+                        style={pointerStyle}
+                        onClick={imageFn}
+                    />
+                </Tooltip>
             ) : <></>}
             {cloneFn !== undefined ? (
-                <FileCopy
-                    style={pointerStyle}
-                    onClick={cloneFn}
-                />
+                <Tooltip title={cloneHint || ""}>
+                    <FileCopy
+                        style={pointerStyle}
+                        onClick={cloneFn}
+                    />
+            </Tooltip>
             ) : <></>}
             {buildFn !== undefined ? (
-                <Build
+                <Tooltip title={metadataHint || ""}>
+
+
+                <LocalOffer
                     style={pointerStyle}
                     onClick={buildFn}
                 />
+            </Tooltip>
             ) : <></>}
             {downloadFn !== undefined ? (
                 <GetApp
