@@ -63,7 +63,6 @@ interface MetadataModals {
     delete_meta: {
         is_open: boolean
         metadata: SerializedMetadata
-        confirm_text: field_info<string>
     }
     edit_meta: {
         is_open: boolean
@@ -106,7 +105,6 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
             delete_meta: {
                 is_open: false,
                 metadata: this.metadata_defaults,
-                confirm_text: get_field_info_default("")
             },
             create_type: {
                 is_open: false,
@@ -300,16 +298,8 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                         <Button
                             key={1}
                             onClick={()=> {
-                                this.update_state(draft => {
-                                    draft.modals.delete_meta.confirm_text.reason = VALIDATORS.DELETE_IF_EQUALS(
-                                        draft.modals.delete_meta.confirm_text.value, this.state.modals.delete_meta.metadata.name
-                                    )
-                                }).then(() => {
-                                    if (this.state.modals.delete_meta.confirm_text.reason === "") {
-                                        this.props.metadata_api.delete_metadata(this.state.modals.delete_meta.metadata)
-                                        this.close_modals()
-                                    }
-                                })
+                                this.props.metadata_api.delete_metadata(this.state.modals.delete_meta.metadata)
+                                this.close_modals()
                             }}
                             color="secondary"
                             ref={focus_ref}
@@ -320,20 +310,7 @@ export default class Metadata extends Component<MetadataProps, MetadataState> {
                 >
                     <Typography>
                         WARNING: Deleting a metadata will also delete each of that metadata on every content and is irreversible.
-                        Re-enter "{this.state.modals.delete_meta.metadata.name}"" to confirm deletion
                     </Typography>
-                    <TextField
-                        fullWidth
-                        error={this.state.modals.delete_meta.confirm_text.reason === ""}
-                        helperText={this.state.modals.delete_meta.confirm_text.reason}
-                        value={this.state.modals.delete_meta.confirm_text.value}
-                        onChange={(evt) => {
-                            evt.persist()
-                            this.update_state(draft => {
-                                draft.modals.delete_meta.confirm_text.value = evt.target.value
-                            })
-                        }}
-                    />
                 </ActionDialog>
                 <ActionDialog
                     title={"Create New Metadata Type"}

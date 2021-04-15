@@ -39,7 +39,7 @@ export const ViewContentModal = ({
                     ["Title", row.title],
                     ["Description", row.description],
                     ["Filename", <a href={new URL(row.file_name, APP_URLS.CONTENT_FOLDER).href}>{row.file_name}</a>],
-                    ["Year Published", row.published_year],
+                    ["Year of Publication", row.published_year],
                     ["Reviewed On", row.reviewed_on],
                     ["Copyright Notes", row.copyright_notes],
                     ["Rights Statement", row.rights_statement],

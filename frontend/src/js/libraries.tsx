@@ -290,15 +290,18 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                             columns={[
                                 {name: "actions", title: "Actions", getCellValue: (row: LibraryVersion) => (
                                     <ActionPanel
+                                        viewHint="view"
                                         viewFn={() => {
                                             this.props.library_versions_api.enter_version_root(row)
                                         }}
+                                        deleteHint="Delete"
                                         deleteFn={() => {
                                             this.update_state(draft => {
                                                 draft.modals.delete_version.is_open = true
                                                 draft.modals.delete_version.to_delete = row
                                             })
                                         }}
+                                        editHint="Edit"
                                         editFn={() => {
                                             this.update_state(draft => {
                                                 draft.modals.edit_version.is_open = true
@@ -317,10 +320,12 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                                 draft.modals.set_banner.is_open = true
                                             })
                                         }}
+                                        cloneHint="Clone"
                                         cloneFn={() => {
                                             this.props.library_versions_api.clone_version(row)
                                                 .then(() => this.props.show_toast_message("Library Successfully Cloned", true))
                                         }}
+                                        metadataHint="Set Metadata"
                                         buildFn={() => {
                                             this.update_state(draft => {
                                                 draft.modals.set_version_metadata.is_open = true
@@ -681,7 +686,10 @@ export default class Libraries extends React.Component<LibrariesProps, Libraries
                                         this.state.modals.add_version.name.value,
                                         this.state.modals.add_version.number.value,
                                         this.state.modals.add_version.created_by.id
-                                    ).catch(console.error)
+                                    ).then(
+                                        () => this.props.show_toast_message("Created Successfully", true),
+                                        () => this.props.show_toast_message("Failed to Create Version", false)
+                                    )
                                 }).then(this.close_modals)
                             }}
                             color="primary"
