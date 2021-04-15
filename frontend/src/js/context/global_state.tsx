@@ -35,7 +35,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
             copyright_notes: "",
             file_size_from: null,
             file_size_to: null,
-            filename: "",
+            file_name: "",
             metadata: {},
             reviewed_from: null,
             reviewed_to: null,
@@ -262,7 +262,7 @@ export default class GlobalState extends React.Component<GlobalStateProps, Globa
                 return prev.concat(search.metadata[current].map(metadata => metadata.id))
             }, [] as number[]),
             active: active_filter,
-            filename: search.filename,
+            file_name: search.file_name,
             duplicatable: {"all": undefined, "yes": true, "no": false}[search.duplicatable],
             sort: this.state.contents_api.sorting.length > 0 ? `${this.state.contents_api.sorting[0].columnName},${this.state.contents_api.sorting[0].direction}` : undefined
         }

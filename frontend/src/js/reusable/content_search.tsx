@@ -117,11 +117,11 @@ export default class ContentSearch extends Component<ContentSearchProps, Content
                                 <TextField
                                     fullWidth
                                     label={"Filename"}
-                                    value={contents_api.state.search.filename}
+                                    value={contents_api.state.search.file_name}
                                     onChange={(evt) => {
                                         evt.persist()
                                         contents_api.update_search_state(draft => {
-                                            draft.filename = evt.target.value
+                                            draft.file_name = evt.target.value
                                         })
                                     }}
                                 />

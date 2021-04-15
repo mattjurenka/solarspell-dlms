@@ -9,8 +9,8 @@ class ContentSerializer(ModelSerializer):
     class Meta:
         model = Content
         fields = ('id', 'file_name', 'content_file', 'title', 'description', 'modified_on', 'copyright_notes',
-                  'copyright_site', 'rights_statement', 'published_date', 'active', 'metadata', 'metadata_info',
-                  "published_year", "file_name", "filesize", "reviewed_on", 'duplicatable', 'original_source')
+                  'rights_statement', 'published_date', 'active', 'metadata', 'additional_notes', 'metadata_info',
+                  "published_year", "filesize", "reviewed_on", 'duplicatable')
 
 
 class MetadataSerializer(ModelSerializer):

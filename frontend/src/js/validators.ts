@@ -2,7 +2,6 @@ import { isString, isNull, isDate, isEqual } from 'lodash'
 import { metadata_dict } from './types'
 
 export default class VALIDATORS {
-    static RIGHTS_HOLDER: any
     static YEAR(year_str: any): string {
         if (year_str == "") {
             return ""
@@ -36,36 +35,26 @@ export default class VALIDATORS {
         if (file_input === null) {
             return "Field Required"
         }
-        if (file_input.name.length > 300) {
-            return "Filename must be less than 300 characters"
+        if (file_input.name.length > 500) {
+            return "Filename must be less than 500 characters"
         }
         return ""
     }
     static EDIT_FILE(file_input: any): string {
         if (file_input === null) return ""
-        if (file_input.name.length > 300) {
-            return "Filename must be less than 300 characters"
+        if (file_input.name.length > 500) {
+            return "Filename must be less than 500 characters"
         }
         return ""
     }
     static COPYRIGHT_NOTES(copyright_notes_str: any): string {
         if (!isString(copyright_notes_str)) return ""
         if (copyright_notes_str.length >= 500) {
-            return "Copyright Site must be less than 500 characters"
-        }
-        return ""
-    }
-    static COPYRIGHT_SITE(copyright_site_str: any): string {
-        if (!isString(copyright_site_str)) return ""
-        if (copyright_site_str.length >= 500) {
-            return "Copyright Site must be less than 500 characters"
+            return "Copyright Notes must be less than 500 characters"
         }
         return ""
     }
     static RIGHTS_STATEMENT(_rights_statement_str: any): string {
-        return ""
-    }
-    static ORIGINAL_SOURCE(_: any): string {
         return ""
     }
     static ADDITIONAL_NOTES(_: any): string {

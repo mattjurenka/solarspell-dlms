@@ -75,9 +75,7 @@ export default class Content extends Component<ContentProps, ContentState> {
             modified_on: "",
             reviewed_on: "",
             copyright_notes: null,
-            copyright_site: null,
             rights_statement: null,
-            original_source: "",
             additional_notes: "",
             active: false,
             metadata: [],
@@ -284,9 +282,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                         reviewed_on: VALIDATORS.REVIEWED_ON,
                         metadata: VALIDATORS.METADATA,
                         copyright_notes: VALIDATORS.COPYRIGHT_NOTES,
-                        copyright_site: VALIDATORS.COPYRIGHT_SITE,
                         rights_statement: VALIDATORS.RIGHTS_STATEMENT,
-                        original_source: VALIDATORS.ORIGINAL_SOURCE,
                         additional_notes: VALIDATORS.ADDITIONAL_NOTES,
                         duplicatable: () => ""
                     }}
@@ -313,9 +309,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                         reviewed_on: VALIDATORS.REVIEWED_ON,
                         metadata: VALIDATORS.METADATA,
                         copyright_notes: VALIDATORS.COPYRIGHT_NOTES,
-                        copyright_site: VALIDATORS.COPYRIGHT_SITE,
                         rights_statement: VALIDATORS.RIGHTS_STATEMENT,
-                        original_source: VALIDATORS.ORIGINAL_SOURCE,
                         additional_notes: VALIDATORS.ADDITIONAL_NOTES,
                         duplicatable: () => ""
                     }}
@@ -358,7 +352,7 @@ export default class Content extends Component<ContentProps, ContentState> {
                         </Button>
                     )]}
                 >
-                    {["filesize", "content_file", "rights_statement", "description", "modified_on", "reviewed_on", "copyright_site", "copyright_notes", "published_year", "duplicatable"].map((name, idx) => {
+                    {["filesize", "content_file", "rights_statement", "description", "modified_on", "reviewed_on", "copyright_notes", "published_year", "duplicatable"].map((name, idx) => {
                         return <Box flexDirection="row" display="flex" key={idx}>
                             <Box key={0}>
                                 <Checkbox
