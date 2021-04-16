@@ -54,7 +54,7 @@ class Content(models.Model):
     description = models.TextField(null=True)
     modified_on = models.DateTimeField(default=datetime.now)
     metadata = models.ManyToManyField(Metadata, blank=True)
-    copyright_notes = models.CharField(max_length=500, null=True)
+    copyright_notes = models.TextField(null=True)
     rights_statement = models.TextField(null=True)
     additional_notes = models.TextField(null=True)
     published_date = models.DateField(null=True)
