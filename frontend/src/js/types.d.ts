@@ -89,6 +89,7 @@ type LibraryAssetsAPI = {
 
 type ContentsAPI = {
     state: ContentsProviderState
+    /** Fetch content rows from server */
     load_content_rows: () => Promise<void>
     add_content: (fields: content_fields) => Promise<any>
     edit_content: (fields: content_fields, to_edit: SerializedContent) => Promise<any>

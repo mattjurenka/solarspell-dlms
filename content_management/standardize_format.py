@@ -1,6 +1,7 @@
 from rest_framework.views import exception_handler
 from rest_framework import status
 from rest_framework.response import Response
+from typing import Any, Literal
 
 
 def standard_exception_handler(exc, context):
@@ -13,7 +14,12 @@ def standard_exception_handler(exc, context):
         }
     return response
 
-def build_response(data=None, status=status.HTTP_200_OK, success=True, error=None):
+
+def build_response(data: Any=None, status: int=status.HTTP_200_OK, success: bool=True, error: Any=None) -> Response: 
+    """
+    Builds a standardized JSON response given data and a success flag
+    If success is false also takes an error
+    """
     return Response({
         "success": success,
         "data": data,

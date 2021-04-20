@@ -1,0 +1,1652 @@
+{
+  "config": {
+    "title": "Build Automation Frontend",
+    "description": "Front-end for SolarSPELL build automation using ReactJS",
+    "menu": [],
+    "version": "1.0.0",
+    "repository": null,
+    "native": false,
+    "themeConfig": {},
+    "separator": "-",
+    "typescript": true
+  },
+  "entries": [
+    {
+      "key": "docz/test.mdx",
+      "value": {
+        "id": "8d40dfb28c522895919788e17c13927e",
+        "filepath": "docz/test.mdx",
+        "fullpath": "/home/matt/solarspell-dlms/frontend/docz/test.mdx",
+        "link": "",
+        "hidden": false,
+        "slug": "docz-test",
+        "route": "/docz-test",
+        "name": "Test",
+        "menu": "",
+        "headings": [
+          {
+            "slug": "route-action_dialog",
+            "depth": 2,
+            "value": "route: /action_dialog"
+          },
+          {
+            "slug": "props",
+            "depth": 1,
+            "value": "Props"
+          },
+          {
+            "slug": "usage-example",
+            "depth": 1,
+            "value": "Usage Example"
+          }
+        ]
+      }
+    }
+  ],
+  "props": [
+    {
+      "key": "src/js/content.tsx",
+      "value": [
+        {
+          "tags": {},
+          "description": "",
+          "displayName": "content",
+          "methods": [],
+          "props": {
+            "metadata_api": {
+              "defaultValue": null,
+              "description": "",
+              "name": "metadata_api",
+              "parent": {
+                "fileName": "src/js/content.tsx",
+                "name": "ContentProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "src/js/content.tsx",
+                  "name": "ContentProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "MetadataAPI"
+              }
+            },
+            "contents_api": {
+              "defaultValue": null,
+              "description": "",
+              "name": "contents_api",
+              "parent": {
+                "fileName": "src/js/content.tsx",
+                "name": "ContentProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "src/js/content.tsx",
+                  "name": "ContentProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "ContentsAPI"
+              }
+            },
+            "show_toast_message": {
+              "defaultValue": null,
+              "description": "",
+              "name": "show_toast_message",
+              "parent": {
+                "fileName": "src/js/content.tsx",
+                "name": "ContentProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "src/js/content.tsx",
+                  "name": "ContentProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "(message: string, is_success: boolean) => void"
+              }
+            },
+            "close_toast": {
+              "defaultValue": null,
+              "description": "",
+              "name": "close_toast",
+              "parent": {
+                "fileName": "src/js/content.tsx",
+                "name": "ContentProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "src/js/content.tsx",
+                  "name": "ContentProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "() => void"
+              }
+            },
+            "show_loader": {
+              "defaultValue": null,
+              "description": "",
+              "name": "show_loader",
+              "parent": {
+                "fileName": "src/js/content.tsx",
+                "name": "ContentProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "src/js/content.tsx",
+                  "name": "ContentProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "() => void"
+              }
+            },
+            "remove_loader": {
+              "defaultValue": null,
+              "description": "",
+              "name": "remove_loader",
+              "parent": {
+                "fileName": "src/js/content.tsx",
+                "name": "ContentProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "src/js/content.tsx",
+                  "name": "ContentProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "() => void"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "src/js/home_screen.tsx",
+      "value": [
+        {
+          "tags": {},
+          "description": "",
+          "displayName": "homescreen",
+          "methods": [],
+          "props": {
+            "tabs": {
+              "defaultValue": null,
+              "description": "",
+              "name": "tabs",
+              "parent": {
+                "fileName": "src/js/home_screen.tsx",
+                "name": "HomeScreenProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "src/js/home_screen.tsx",
+                  "name": "HomeScreenProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "TabDict"
+              }
+            },
+            "change_tab": {
+              "defaultValue": null,
+              "description": "",
+              "name": "change_tab",
+              "parent": {
+                "fileName": "src/js/home_screen.tsx",
+                "name": "HomeScreenProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "src/js/home_screen.tsx",
+                  "name": "HomeScreenProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "(tab_name: string) => void"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "src/js/index.tsx",
+      "value": []
+    },
+    {
+      "key": "src/js/libraries.tsx",
+      "value": [
+        {
+          "tags": {},
+          "description": "",
+          "displayName": "libraries",
+          "methods": [],
+          "props": {
+            "users_api": {
+              "defaultValue": null,
+              "description": "",
+              "name": "users_api",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/libraries.tsx",
+                "name": "LibrariesProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/libraries.tsx",
+                  "name": "LibrariesProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "UsersAPI"
+              }
+            },
+            "library_assets_api": {
+              "defaultValue": null,
+              "description": "",
+              "name": "library_assets_api",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/libraries.tsx",
+                "name": "LibrariesProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/libraries.tsx",
+                  "name": "LibrariesProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "LibraryAssetsAPI"
+              }
+            },
+            "library_versions_api": {
+              "defaultValue": null,
+              "description": "",
+              "name": "library_versions_api",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/libraries.tsx",
+                "name": "LibrariesProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/libraries.tsx",
+                  "name": "LibrariesProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "LibraryVersionsAPI"
+              }
+            },
+            "metadata_api": {
+              "defaultValue": null,
+              "description": "",
+              "name": "metadata_api",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/libraries.tsx",
+                "name": "LibrariesProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/libraries.tsx",
+                  "name": "LibrariesProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "MetadataAPI"
+              }
+            },
+            "contents_api": {
+              "defaultValue": null,
+              "description": "",
+              "name": "contents_api",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/libraries.tsx",
+                "name": "LibrariesProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/libraries.tsx",
+                  "name": "LibrariesProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "ContentsAPI"
+              }
+            },
+            "library_modules_api": {
+              "defaultValue": null,
+              "description": "",
+              "name": "library_modules_api",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/libraries.tsx",
+                "name": "LibrariesProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/libraries.tsx",
+                  "name": "LibrariesProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "LibraryModulesAPI"
+              }
+            },
+            "show_toast_message": {
+              "defaultValue": null,
+              "description": "",
+              "name": "show_toast_message",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/libraries.tsx",
+                "name": "LibrariesProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/libraries.tsx",
+                  "name": "LibrariesProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "(message: string, is_success: boolean) => void"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "src/js/library_assets.tsx",
+      "value": [
+        {
+          "tags": {},
+          "description": "",
+          "displayName": "libraryassets",
+          "methods": [],
+          "props": {
+            "library_assets_api": {
+              "defaultValue": null,
+              "description": "",
+              "name": "library_assets_api",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/library_assets.tsx",
+                "name": "LibraryAssetsProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/library_assets.tsx",
+                  "name": "LibraryAssetsProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "LibraryAssetsAPI"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "src/js/library_images.tsx",
+      "value": [
+        {
+          "tags": {},
+          "description": "",
+          "displayName": "libraryimages",
+          "methods": [],
+          "props": {
+            "library_versions_api": {
+              "defaultValue": null,
+              "description": "",
+              "name": "library_versions_api",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/library_images.tsx",
+                "name": "LibraryImagesProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/library_images.tsx",
+                  "name": "LibraryImagesProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "LibraryVersionsAPI"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "src/js/library_modules.tsx",
+      "value": [
+        {
+          "tags": {},
+          "description": "",
+          "displayName": "librarymodules",
+          "methods": [],
+          "props": {
+            "library_modules_api": {
+              "defaultValue": null,
+              "description": "",
+              "name": "library_modules_api",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/library_modules.tsx",
+                "name": "LibraryModulesProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/library_modules.tsx",
+                  "name": "LibraryModulesProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "LibraryModulesAPI"
+              }
+            },
+            "library_assets_api": {
+              "defaultValue": null,
+              "description": "",
+              "name": "library_assets_api",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/library_modules.tsx",
+                "name": "LibraryModulesProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/library_modules.tsx",
+                  "name": "LibraryModulesProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "LibraryAssetsAPI"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "src/js/main.tsx",
+      "value": [
+        {
+          "tags": {},
+          "description": "",
+          "displayName": "MainScreen",
+          "methods": [],
+          "props": {
+            "apis": {
+              "defaultValue": null,
+              "description": "",
+              "name": "apis",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/main.tsx",
+                "name": "MainScreenProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/main.tsx",
+                  "name": "MainScreenProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "APIs"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "src/js/metadata.tsx",
+      "value": [
+        {
+          "tags": {},
+          "description": "",
+          "displayName": "metadata",
+          "methods": [],
+          "props": {
+            "metadata_api": {
+              "defaultValue": null,
+              "description": "",
+              "name": "metadata_api",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/metadata.tsx",
+                "name": "MetadataProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/metadata.tsx",
+                  "name": "MetadataProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "MetadataAPI"
+              }
+            },
+            "show_toast_message": {
+              "defaultValue": null,
+              "description": "",
+              "name": "show_toast_message",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/metadata.tsx",
+                "name": "MetadataProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/metadata.tsx",
+                  "name": "MetadataProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "(message: string, is_success: boolean) => void"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "src/js/system_info.tsx",
+      "value": [
+        {
+          "tags": {},
+          "description": "",
+          "displayName": "systeminfo",
+          "methods": [],
+          "props": {
+            "utils_api": {
+              "defaultValue": null,
+              "description": "",
+              "name": "utils_api",
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/system_info.tsx",
+                  "name": "TypeLiteral"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "UtilsAPI"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "src/js/urls.tsx",
+      "value": [
+        {
+          "tags": {},
+          "description": "",
+          "displayName": "get_data",
+          "methods": [],
+          "props": {}
+        }
+      ]
+    },
+    {
+      "key": "src/js/context/global_state.tsx",
+      "value": [
+        {
+          "tags": {},
+          "description": "",
+          "displayName": "globalstate",
+          "methods": [],
+          "props": {
+            "render": {
+              "defaultValue": null,
+              "description": "",
+              "name": "render",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/context/global_state.tsx",
+                "name": "GlobalStateProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/context/global_state.tsx",
+                  "name": "GlobalStateProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "ComponentType<{ apis: APIs; }>"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "src/js/reusable/action_dialog.tsx",
+      "value": [
+        {
+          "tags": {},
+          "description": "",
+          "displayName": "actiondialog",
+          "methods": [],
+          "props": {
+            "title": {
+              "defaultValue": null,
+              "description": "",
+              "name": "title",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_dialog.tsx",
+                "name": "ActionDialogProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_dialog.tsx",
+                  "name": "ActionDialogProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "string"
+              }
+            },
+            "open": {
+              "defaultValue": null,
+              "description": "",
+              "name": "open",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_dialog.tsx",
+                "name": "ActionDialogProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_dialog.tsx",
+                  "name": "ActionDialogProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "boolean"
+              }
+            },
+            "get_actions": {
+              "defaultValue": null,
+              "description": "",
+              "name": "get_actions",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_dialog.tsx",
+                "name": "ActionDialogProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_dialog.tsx",
+                  "name": "ActionDialogProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "((focus_ref: RefObject<HTMLButtonElement>) => Element[]) | ForwardRefExoticComponent<RefAttributes<HTMLButtonElement>>"
+              }
+            },
+            "on_close": {
+              "defaultValue": null,
+              "description": "",
+              "name": "on_close",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_dialog.tsx",
+                "name": "ActionDialogProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_dialog.tsx",
+                  "name": "ActionDialogProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "(() => void) | undefined"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "src/js/reusable/action_panel.tsx",
+      "value": [
+        {
+          "tags": {},
+          "description": "",
+          "displayName": "actionpanel",
+          "methods": [],
+          "props": {
+            "row": {
+              "defaultValue": null,
+              "description": "",
+              "name": "row",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                "name": "ActionPanelProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                  "name": "ActionPanelProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "any"
+              }
+            },
+            "editFn": {
+              "defaultValue": null,
+              "description": "",
+              "name": "editFn",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                "name": "ActionPanelProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                  "name": "ActionPanelProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "(() => void) | undefined"
+              }
+            },
+            "deleteFn": {
+              "defaultValue": null,
+              "description": "",
+              "name": "deleteFn",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                "name": "ActionPanelProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                  "name": "ActionPanelProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "(() => void) | undefined"
+              }
+            },
+            "setActive": {
+              "defaultValue": null,
+              "description": "",
+              "name": "setActive",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                "name": "ActionPanelProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                  "name": "ActionPanelProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "((is_active: boolean) => void) | undefined"
+              }
+            },
+            "viewFn": {
+              "defaultValue": null,
+              "description": "",
+              "name": "viewFn",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                "name": "ActionPanelProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                  "name": "ActionPanelProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "(() => void) | undefined"
+              }
+            },
+            "addFn": {
+              "defaultValue": null,
+              "description": "",
+              "name": "addFn",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                "name": "ActionPanelProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                  "name": "ActionPanelProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "(() => void) | undefined"
+              }
+            },
+            "imageFn": {
+              "defaultValue": null,
+              "description": "",
+              "name": "imageFn",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                "name": "ActionPanelProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                  "name": "ActionPanelProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "(() => void) | undefined"
+              }
+            },
+            "cloneFn": {
+              "defaultValue": null,
+              "description": "",
+              "name": "cloneFn",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                "name": "ActionPanelProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                  "name": "ActionPanelProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "(() => void) | undefined"
+              }
+            },
+            "buildFn": {
+              "defaultValue": null,
+              "description": "",
+              "name": "buildFn",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                "name": "ActionPanelProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                  "name": "ActionPanelProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "(() => void) | undefined"
+              }
+            },
+            "downloadFn": {
+              "defaultValue": null,
+              "description": "",
+              "name": "downloadFn",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                "name": "ActionPanelProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                  "name": "ActionPanelProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "(() => void) | undefined"
+              }
+            },
+            "editHint": {
+              "defaultValue": null,
+              "description": "",
+              "name": "editHint",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                "name": "ActionPanelProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                  "name": "ActionPanelProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "string | undefined"
+              }
+            },
+            "deleteHint": {
+              "defaultValue": null,
+              "description": "",
+              "name": "deleteHint",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                "name": "ActionPanelProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                  "name": "ActionPanelProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "string | undefined"
+              }
+            },
+            "viewHint": {
+              "defaultValue": null,
+              "description": "",
+              "name": "viewHint",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                "name": "ActionPanelProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                  "name": "ActionPanelProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "string | undefined"
+              }
+            },
+            "logoHint": {
+              "defaultValue": null,
+              "description": "",
+              "name": "logoHint",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                "name": "ActionPanelProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                  "name": "ActionPanelProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "string | undefined"
+              }
+            },
+            "cloneHint": {
+              "defaultValue": null,
+              "description": "",
+              "name": "cloneHint",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                "name": "ActionPanelProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                  "name": "ActionPanelProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "string | undefined"
+              }
+            },
+            "metadataHint": {
+              "defaultValue": null,
+              "description": "",
+              "name": "metadataHint",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                "name": "ActionPanelProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/action_panel.tsx",
+                  "name": "ActionPanelProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "string | undefined"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "src/js/reusable/bulk_content_modal.tsx",
+      "value": [
+        {
+          "tags": {},
+          "description": "",
+          "displayName": "bulkcontentmodal",
+          "methods": [],
+          "props": {
+            "is_open": {
+              "defaultValue": null,
+              "description": "",
+              "name": "is_open",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/bulk_content_modal.tsx",
+                "name": "BulkContentModalProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/bulk_content_modal.tsx",
+                  "name": "BulkContentModalProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "boolean"
+              }
+            },
+            "show_toast_message": {
+              "defaultValue": null,
+              "description": "",
+              "name": "show_toast_message",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/bulk_content_modal.tsx",
+                "name": "BulkContentModalProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/bulk_content_modal.tsx",
+                  "name": "BulkContentModalProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "(message: string, is_success: boolean) => void"
+              }
+            },
+            "on_close": {
+              "defaultValue": null,
+              "description": "",
+              "name": "on_close",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/bulk_content_modal.tsx",
+                "name": "BulkContentModalProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/bulk_content_modal.tsx",
+                  "name": "BulkContentModalProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "() => void"
+              }
+            },
+            "show_loader": {
+              "defaultValue": null,
+              "description": "",
+              "name": "show_loader",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/bulk_content_modal.tsx",
+                "name": "BulkContentModalProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/bulk_content_modal.tsx",
+                  "name": "BulkContentModalProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "() => void"
+              }
+            },
+            "remove_loader": {
+              "defaultValue": null,
+              "description": "",
+              "name": "remove_loader",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/bulk_content_modal.tsx",
+                "name": "BulkContentModalProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/bulk_content_modal.tsx",
+                  "name": "BulkContentModalProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "() => void"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "src/js/reusable/content_modal.tsx",
+      "value": [
+        {
+          "tags": {},
+          "description": "",
+          "displayName": "contentmodal",
+          "methods": [],
+          "props": {
+            "is_open": {
+              "defaultValue": null,
+              "description": "",
+              "name": "is_open",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_modal.tsx",
+                "name": "ContentModalProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_modal.tsx",
+                  "name": "ContentModalProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "boolean"
+              }
+            },
+            "modal_type": {
+              "defaultValue": null,
+              "description": "",
+              "name": "modal_type",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_modal.tsx",
+                "name": "ContentModalProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_modal.tsx",
+                  "name": "ContentModalProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "\"add\" | \"edit\""
+              }
+            },
+            "row": {
+              "defaultValue": null,
+              "description": "",
+              "name": "row",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_modal.tsx",
+                "name": "ContentModalProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_modal.tsx",
+                  "name": "ContentModalProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "SerializedContent | undefined"
+              }
+            },
+            "validators": {
+              "defaultValue": null,
+              "description": "",
+              "name": "validators",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_modal.tsx",
+                "name": "ContentModalProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_modal.tsx",
+                  "name": "ContentModalProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "{ content_file: (value: any) => string; title: (value: any) => string; description: (value: any) => string; year: (value: any) => string; reviewed_on: (value: any) => string; metadata: (value: any) => string; ... 5 more ...; additional_notes: (value: any) => string; }"
+              }
+            },
+            "metadata_api": {
+              "defaultValue": null,
+              "description": "",
+              "name": "metadata_api",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_modal.tsx",
+                "name": "ContentModalProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_modal.tsx",
+                  "name": "ContentModalProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "MetadataAPI"
+              }
+            },
+            "contents_api": {
+              "defaultValue": null,
+              "description": "",
+              "name": "contents_api",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_modal.tsx",
+                "name": "ContentModalProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_modal.tsx",
+                  "name": "ContentModalProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "ContentsAPI"
+              }
+            },
+            "show_toast_message": {
+              "defaultValue": null,
+              "description": "",
+              "name": "show_toast_message",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_modal.tsx",
+                "name": "ContentModalProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_modal.tsx",
+                  "name": "ContentModalProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "(message: string, is_success: boolean) => void"
+              }
+            },
+            "on_close": {
+              "defaultValue": null,
+              "description": "",
+              "name": "on_close",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_modal.tsx",
+                "name": "ContentModalProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_modal.tsx",
+                  "name": "ContentModalProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "() => void"
+              }
+            },
+            "show_loader": {
+              "defaultValue": null,
+              "description": "",
+              "name": "show_loader",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_modal.tsx",
+                "name": "ContentModalProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_modal.tsx",
+                  "name": "ContentModalProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "() => void"
+              }
+            },
+            "remove_loader": {
+              "defaultValue": null,
+              "description": "",
+              "name": "remove_loader",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_modal.tsx",
+                "name": "ContentModalProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_modal.tsx",
+                  "name": "ContentModalProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "() => void"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "src/js/reusable/content_search.tsx",
+      "value": [
+        {
+          "tags": {},
+          "description": "",
+          "displayName": "contentsearch",
+          "methods": [],
+          "props": {
+            "on_view": {
+              "defaultValue": null,
+              "description": "",
+              "name": "on_view",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_search.tsx",
+                "name": "ContentSearchProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_search.tsx",
+                  "name": "ContentSearchProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "((row: SerializedContent) => void) | undefined"
+              }
+            },
+            "on_edit": {
+              "defaultValue": null,
+              "description": "",
+              "name": "on_edit",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_search.tsx",
+                "name": "ContentSearchProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_search.tsx",
+                  "name": "ContentSearchProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "((row: SerializedContent) => void) | undefined"
+              }
+            },
+            "on_delete": {
+              "defaultValue": null,
+              "description": "",
+              "name": "on_delete",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_search.tsx",
+                "name": "ContentSearchProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_search.tsx",
+                  "name": "ContentSearchProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "((row: SerializedContent) => void) | undefined"
+              }
+            },
+            "on_toggle_active": {
+              "defaultValue": null,
+              "description": "",
+              "name": "on_toggle_active",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_search.tsx",
+                "name": "ContentSearchProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_search.tsx",
+                  "name": "ContentSearchProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "((row: SerializedContent) => void) | undefined"
+              }
+            },
+            "on_add": {
+              "defaultValue": null,
+              "description": "",
+              "name": "on_add",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_search.tsx",
+                "name": "ContentSearchProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_search.tsx",
+                  "name": "ContentSearchProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "((row: SerializedContent) => void) | undefined"
+              }
+            },
+            "contents_api": {
+              "defaultValue": null,
+              "description": "",
+              "name": "contents_api",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_search.tsx",
+                "name": "ContentSearchProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_search.tsx",
+                  "name": "ContentSearchProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "ContentsAPI"
+              }
+            },
+            "metadata_api": {
+              "defaultValue": null,
+              "description": "",
+              "name": "metadata_api",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_search.tsx",
+                "name": "ContentSearchProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_search.tsx",
+                  "name": "ContentSearchProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "MetadataAPI"
+              }
+            },
+            "versions_api": {
+              "defaultValue": null,
+              "description": "",
+              "name": "versions_api",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_search.tsx",
+                "name": "ContentSearchProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_search.tsx",
+                  "name": "ContentSearchProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "LibraryVersionsAPI | undefined"
+              }
+            },
+            "selection": {
+              "defaultValue": null,
+              "description": "",
+              "name": "selection",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_search.tsx",
+                "name": "ContentSearchProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/content_search.tsx",
+                  "name": "ContentSearchProps"
+                }
+              ],
+              "required": false,
+              "type": {
+                "name": "boolean | undefined"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "src/js/reusable/kebab_menu.tsx",
+      "value": [
+        {
+          "tags": {},
+          "description": "",
+          "displayName": "kebabmenu",
+          "methods": [],
+          "props": {
+            "items": {
+              "defaultValue": null,
+              "description": "",
+              "name": "items",
+              "parent": {
+                "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/kebab_menu.tsx",
+                "name": "KebabMenuProps"
+              },
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/kebab_menu.tsx",
+                  "name": "KebabMenuProps"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "[() => void, string][]"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "src/js/reusable/view_content_modal.tsx",
+      "value": [
+        {
+          "tags": {},
+          "description": "",
+          "displayName": "ViewContentModal",
+          "methods": [],
+          "props": {
+            "metadata_api": {
+              "defaultValue": null,
+              "description": "",
+              "name": "metadata_api",
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/view_content_modal.tsx",
+                  "name": "TypeLiteral"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "MetadataAPI"
+              }
+            },
+            "on_close": {
+              "defaultValue": null,
+              "description": "",
+              "name": "on_close",
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/view_content_modal.tsx",
+                  "name": "TypeLiteral"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "() => void"
+              }
+            },
+            "is_open": {
+              "defaultValue": null,
+              "description": "",
+              "name": "is_open",
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/view_content_modal.tsx",
+                  "name": "TypeLiteral"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "boolean"
+              }
+            },
+            "row": {
+              "defaultValue": null,
+              "description": "",
+              "name": "row",
+              "declarations": [
+                {
+                  "fileName": "/home/matt/solarspell-dlms/frontend/src/js/reusable/view_content_modal.tsx",
+                  "name": "TypeLiteral"
+                }
+              ],
+              "required": true,
+              "type": {
+                "name": "SerializedContent"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
