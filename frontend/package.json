@@ -30,7 +30,7 @@
     "@types/js-cookie": "^2.2.6",
     "@types/lodash": "^4.14.153",
     "@types/react-dom": "^16.9.8",
-    "axios": "^0.19.1",
+    "axios": "^0.21.1",
     "babel-polyfill": "^6.26.0",
     "chart.js": "^2.9.3",
     "csv": "^5.3.1",
