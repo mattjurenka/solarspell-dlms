@@ -3,8 +3,10 @@ import json
 import os
 from typing import Dict, Union
 
+from django.core.exceptions import ValidationError
 from django.core.files import File
 from django.utils import timezone
+from django.utils.text import get_valid_filename
 from rest_framework import status
 from django.db.models.functions import Substr
 
@@ -13,6 +15,8 @@ from content_management.library_db_utils import LibraryDbUtil
 from content_management.models import (
     Content,
     Metadata, MetadataType, LibraryFolder, LibraryModule, LibraryVersion)
+from content_management.validators import validate_unique_filename, validate_unique_file
+
 
 import hashlib
 
@@ -29,9 +33,9 @@ class ContentSheetUtil:
         successful_uploads_count = 0
         try:
             content_data = json.loads(sheet_contents.get("sheet_data"))
+            main_path = sheet_contents.get("content_path")
             for each_content in content_data:
                 # if the actual file is not uploaded, don't upload its metadata
-                main_path = 'F:/allpi'
                 file_path = os.path.join(main_path, each_content.get("File Name"))
                 if os.path.exists(file_path) is not True:
                     unsuccessful_uploads.append({'file_name': each_content.get("File Name"),
@@ -40,34 +44,43 @@ class ContentSheetUtil:
                 else:
                     try:
                         content = Content()
-
                         content.title = each_content.get("Title")
                         content.description = each_content.get("Description")
                         content.copyright_notes = each_content.get("Copyright Notes")
-                        content.copyright_site = each_content.get("Copyright Site")
+                        content.reviewed_on = datetime.datetime.now()
                         content.rights_statement = each_content.get("Rights Statement")
-                        content.original_source = each_content.get("Original Source")
-                        if each_content.get("Publication Date"):
+                        if each_content.get("Year Published"):
                             try:
-                                content.published_date = datetime.date(each_content.get("Publication Date"), 1, 1)
+                                content.published_date = datetime.date(each_content.get("Year Published"), 1, 1)
                             except ValueError:
                                 content.published_date = None
                         content.modified_on = timezone.now()
                         content.additional_notes = each_content.get("Additional Notes")
                         content.active = True
-                        content.save()
-                        upload_content_file(file_path, content)
-                        metadata = get_associated_meta(each_content)
-                        for metadata_item in metadata:
-                            obj, created = Metadata.objects.get_or_create(defaults={'name': metadata_item.get("name")},
-                                                                          name__iexact=metadata_item.get("name"),
-                                                                          type_id=metadata_item.get("type_id"))
-                            content.metadata.add(obj)
-                        content.save()
-                        successful_uploads_count = successful_uploads_count + 1
-                    except Exception as e:
-                        unsuccessful_uploads.append({'file_name': each_content.get("File Name"), 'error': str(e)
-                                                    .partition('DETAIL:')[-1]})
+                        content.filesize = os.stat(file_path).st_size
+                        try:
+                            content.save()
+                        except Exception as e:
+                            raise Exception(str(e))
+                        try:
+                            upload_content_file(file_path, content)
+                        except (Exception, ValidationError) as e:
+                            content.delete()
+                            raise e
+                        try:
+                            metadata = get_associated_meta(each_content)
+                            for metadata_item in metadata:
+                                obj, created = Metadata.objects.get_or_create(defaults={'name': metadata_item.name},
+                                                                              name__iexact=metadata_item.name,
+                                                                              type_id=metadata_item.type.id)
+                                content.metadata.add(obj)
+                            content.save()
+                            successful_uploads_count = successful_uploads_count + 1
+                        except Exception as e:
+                            content.delete()
+                            raise e
+                    except (Exception, ValidationError) as e:
+                        unsuccessful_uploads.append({'file_name': each_content.get("File Name"), 'error': str(e)})
                         continue
             data = {
                 'success_count': successful_uploads_count,
@@ -97,9 +110,13 @@ def get_associated_meta(sheet_row):
 
 
 def upload_content_file(full_path, content: Content):
-        content_file = open(full_path, 'r')
-        content.content_file.save(content_file.name, File(full_path))
-        content_file.close()
+    content_file = open(full_path, "rb")
+    base_name = get_valid_filename(os.path.basename(content_file.name))
+    validate_unique_filename(File(content_file, base_name))
+    validate_unique_file(File(content_file, base_name))
+    content.file_name = base_name
+    content.content_file.save(base_name, File(content_file))
+    content_file.close()
 
 
 class LibraryBuildUtil:

@@ -1,10 +1,12 @@
 import os
 import filecmp
 from django.core.exceptions import ValidationError
+from django.utils.text import get_valid_filename
+
 from dlms import settings
 
 def validate_unique_filename(value):
-    filepath = os.path.join(settings.MEDIA_ROOT, value.name)
+    filepath = os.path.join(settings.CONTENTS_ROOT, get_valid_filename(value.name))
     if os.path.isfile(filepath):
         raise ValidationError('Filename already exists.')
 

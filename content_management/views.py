@@ -162,8 +162,6 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
         if order_raw != None:
             try:
                 split = order_raw.split(",")
-                if split[0] == "file_name":
-                    split[0] = "content_file"
                 if split[0] == "published_year":
                     split[0] = "published_date"
                 order_str = ("-" if split[1] == "desc" else "") + split[0]
@@ -181,9 +179,9 @@ class ContentViewSet(StandardDataView, viewsets.ModelViewSet):
         worksheet = workbook.add_worksheet()
         
         content_fields = [
-            "title", "description", "modified_on", "copyright",
-            "rights_statement", "original_source", "additional_notes",
-            "published_date", "reviewed_on", "active", "duplicatable", "filesize"
+            "title", "file_name", "description", "modified_on", "copyright_notes",
+            "rights_statement", "additional_notes", "published_date", "reviewed_on", "active",
+            "duplicatable", "filesize"
         ]
 
         metadata_types = MetadataType.objects.all().order_by("name")

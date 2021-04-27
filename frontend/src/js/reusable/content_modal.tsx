@@ -62,9 +62,7 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                 },{} as metadata_dict)),
             rights_statement: get_field_info_default(""),
             additional_notes: get_field_info_default(""),
-            original_source: get_field_info_default(""),
             copyright_notes: get_field_info_default(""),
-            copyright_site: get_field_info_default(""),
             duplicatable: get_field_info_default(false)
         }
 
@@ -94,15 +92,11 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                 draft.fields.content_file = get_field_info_default(null)
                 draft.fields.copyright_notes = get_field_info_default(
                     row.copyright_notes === null ? "" : row.copyright_notes)
-                 draft.fields.copyright_site = get_field_info_default(
-                    row.copyright_site === null ? "" : row.copyright_site)
                 draft.fields.description = get_field_info_default(
                     row.description === null ? "" : row.description)
                 draft.fields.metadata = get_field_info_default(metadata)
                 draft.fields.rights_statement = get_field_info_default(
                     row.rights_statement === null? "" : row.rights_statement)
-                draft.fields.original_source = get_field_info_default(
-                    row.original_source === null? "" : row.original_source)
                 draft.fields.additional_notes = get_field_info_default(
                     row.additional_notes === null? "" : row.additional_notes)
                 draft.fields.title = get_field_info_default(
@@ -180,10 +174,8 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 formData.append('description', this.state.fields.description.value)
                                 formData.append('duplicatable', this.state.fields.duplicatable.value ? "true" : "false")
                                 formData.append('rights_statement', this.state.fields.rights_statement.value)
-                                formData.append('original_source', this.state.fields.original_source.value)
                                 formData.append('additional_notes', this.state.fields.additional_notes.value)
                                 formData.append('copyright_notes', this.state.fields.copyright_notes.value)
-                                formData.append('copyright_site', this.state.fields.copyright_site.value)
                                 if (this.state.fields.year.value !== "") {
                                     formData.append('published_date', `${this.state.fields.year.value}-01-01`)
                                 }
@@ -272,19 +264,6 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 })
                             }}
                         />,
-                        <TextField
-                            fullWidth
-                            error={this.state.fields.original_source.reason !== ""}
-                            helperText={this.state.fields.original_source.reason}
-                            label={"Original Holder"}
-                            value={this.state.fields.original_source.value}
-                            onChange={(evt) => {
-                                evt.persist()
-                                this.update_state(draft => {
-                                    draft.fields.original_source.value = evt.target.value
-                                })
-                            }}
-                        />,
                         <>
                             {
                                 this.props.row?.content_file ? 
@@ -333,19 +312,6 @@ export default class ContentModal extends Component<ContentModalProps, ContentMo
                                 evt.persist()
                                 this.update_state(draft => {
                                     draft.fields.copyright_notes.value = evt.target.value
-                                })
-                            }}
-                        />,
-                        <TextField
-                            fullWidth
-                            error={this.state.fields.copyright_site.reason !== ""}
-                            helperText={this.state.fields.copyright_site.reason}
-                            label={"Copyright Site"}
-                            value={this.state.fields.copyright_site.value}
-                            onChange={(evt) => {
-                                evt.persist()
-                                this.update_state(draft => {
-                                    draft.fields.copyright_site.value = evt.target.value
                                 })
                             }}
                         />,

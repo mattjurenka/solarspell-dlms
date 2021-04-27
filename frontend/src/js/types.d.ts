@@ -34,7 +34,6 @@ type content_filters = {
     reviewed_on?: [Date|null, Date|null]
     filename?: string
     copyright_notes?: string
-    copyright_site?: string
     active?: boolean
     metadata?: number[]
     sort?: string
@@ -51,9 +50,7 @@ interface SerializedContent {
     modified_on: string
     reviewed_on: string
     copyright_notes: string|null
-    copyright_site: string|null
     rights_statement: string|null
-    original_source: string|null
     active: boolean
     duplicatable: boolean
     metadata: number[]
@@ -261,9 +258,7 @@ type content_fields = {
     reviewed_on:        Date|null
     metadata:           metadata_dict
     copyright_notes:    string
-    copyright_site:     string
     rights_statement:   string
-    original_source:    string
     duplicatable:       boolean
     additional_notes:   string
 }

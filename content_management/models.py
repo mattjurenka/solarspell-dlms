@@ -3,8 +3,9 @@ from _datetime import datetime
 
 from django.db import models
 from django.dispatch import receiver
+from django.utils.text import get_valid_filename
+
 from content_management.validators import validate_unique_filename, validate_unique_file
-from django.core.exceptions import ValidationError
 
 import logging
 
@@ -20,7 +21,7 @@ class MetadataType(models.Model):
 class Metadata(models.Model):
     # TODO: Make sure there are no metadata with the same type and the
     # same name when creating a new one
-    name = models.CharField(max_length=300)
+    name = models.CharField(max_length=500)
     type = models.ForeignKey(MetadataType, on_delete=models.CASCADE)
 
     def type_name(self):
@@ -33,26 +34,28 @@ class Metadata(models.Model):
 class Content(models.Model):
     def set_file_name(self, file_name):
         path = os.path.join("contents", file_name)
-        self.filesize = self.content_file.size
+        # get file size if this content was saved individually
+        if(self.content_file):
+            self.filesize = self.content_file.size
+            self.file_name = get_valid_filename(file_name)
         return path
 
     content_file = models.FileField(
         "File",
         upload_to=set_file_name,
-        max_length=300,
+        max_length=500,
         validators=[
             validate_unique_filename,
             validate_unique_file
         ])
     filesize = models.FloatField(null=True, editable=True)
-    title = models.CharField(max_length=300, unique=True)
+    file_name = models.CharField(max_length=500, null=True)
+    title = models.CharField(max_length=300)
     description = models.TextField(null=True)
     modified_on = models.DateTimeField(default=datetime.now)
     metadata = models.ManyToManyField(Metadata, blank=True)
-    copyright_notes = models.CharField(max_length=500, null=True)
-    copyright_site = models.CharField(max_length=500, null=True)
+    copyright_notes = models.TextField(null=True)
     rights_statement = models.TextField(null=True)
-    original_source = models.TextField(null=True)
     additional_notes = models.TextField(null=True)
     published_date = models.DateField(null=True)
     reviewed_on = models.DateField(null=True)
@@ -61,9 +64,6 @@ class Content(models.Model):
 
     def published_year(self):
         return None if self.published_date == None else str(self.published_date.year)
-
-    def file_name(self):
-        return os.path.basename(self.content_file.name)
 
     def metadata_info(self):
         return [{
@@ -81,7 +81,7 @@ class Content(models.Model):
 
 @receiver(models.signals.post_delete, sender=Content)
 def on_content_delete(sender, instance, **kwargs):
-    logger.info("Delete request received for " + instance.content_file.path)
+    logger.info("Delete request received for " + instance.title)
     if instance.content_file:
         if os.path.isfile(instance.content_file.path):
             logger.info("Deleting file")
