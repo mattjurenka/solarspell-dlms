@@ -59,7 +59,7 @@
     "react-keyed-file-browser": "^1.9.0",
     "react-pdf": "^4.1.0",
     "react-sortable-tree": "^2.7.1",
-    "xlsx": "^0.16.6"
+    "xlsx": "^0.17.0"
   },
   "devDependencies": {
     "@babel/core": "^7.7.5",
